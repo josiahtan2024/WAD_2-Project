@@ -1,0 +1,5 @@
+-- TODO(student): Row-level security. Write the policies yourself.
+-- Needed:
+--   * universities, smu_modules, credit_mappings: enable RLS, anyone can SELECT
+--   * shortlists, schedule_blocks: a user can SELECT/INSERT/UPDATE/DELETE only rows where user_id = auth.uid()
+--   * reviews: anyone can SELECT, only logged-in users can INSERT (with user_id = auth.uid())
