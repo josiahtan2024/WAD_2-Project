@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
-import { filterUniversities, sortUniversities } from '@/utils/universityFilters'
 import FilterBar from '@/components/FilterBar.vue'
 import UniversityCard from '@/components/UniversityCard.vue'
 
@@ -15,12 +14,33 @@ const router = useRouter()
 
 // Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
 const results = computed(() => {
-  try {
-    const filtered = filterUniversities(uni.items, { query: uni.query, ...uni.filters })
-    return sortUniversities(filtered, uni.sortBy)
-  } catch {
-    return uni.items
-  }
+  const keyword = uni.query.trim().toLowerCase()
+  const filtered = uni.items.filter((university) => {
+    const fields = [
+      university.name,
+      university.country,
+      university.city,
+    ]
+ 
+    const matchesKeyword = fields.some((value) => 
+        String(value ?? '').toLowerCase().includes(keyword))
+    
+    const matchesRegion = !uni.filters.region || university.region === uni.filters.region
+    return matchesKeyword && matchesRegion
+  })
+
+  return filtered.sort((a, b) => {
+    if (uni.sortBy === 'country') return a.country.localeCompare(b.country)
+    if (uni.sortBy === 'cost') {
+      const costA = a.region_band_min == null ? Infinity : Number(a.region_band_min)
+      const costB = b.region_band_min == null ? Infinity : Number(b.region_band_min)
+
+      if(costA < costB) return -1
+      if(costA > costB) return 1
+    }
+    return a.name.localeCompare(b.name)
+  })
+
 })
 const regions = computed(() => Array.from(new Set(uni.items.map((u) => u.region))).sort())
 const isShortlisted = (id) => shortlist.items.some((s) => s.university_id === id)
