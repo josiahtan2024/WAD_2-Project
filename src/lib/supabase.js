@@ -8,4 +8,10 @@ if (!url || !anonKey) {
   console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Copy .env.example to .env.')
 }
 
-export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'missing-key')
+export const supabase = createClient(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})

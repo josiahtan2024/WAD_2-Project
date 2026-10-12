@@ -1,9 +1,13 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
 
+const pageLoading = ref(true)
+const pageError = ref('')
+
 const shortlist = useShortlistStore()
+
 const uni = useUniversitiesStore()
 
 const saved = computed(() =>
@@ -19,11 +23,17 @@ async function remove(u) {
 }
 
 onMounted(async () => {
+  pageLoading.value = true
+  pageError.value = ''
   try {
-    if (!uni.items.length) await uni.load()
-    await shortlist.load()
-  } catch (e) {
-    shortlist.error = e.message
+    await Promise.all([
+      uni.items.length ? Promise.resolve() : uni.load(),
+      shortlist.load(),
+    ])
+  } catch (error) {
+    pageError.value = error.message
+  } finally {
+    pageLoading.value = false
   }
 })
 </script>
@@ -34,12 +44,32 @@ onMounted(async () => {
       <h1 class="h3 mb-0">Your shortlist</h1>
       <RouterLink v-if="saved.length > 1" to="/compare" class="btn btn-primary btn-sm" data-testid="shortlist-compare-link">Compare</RouterLink>
     </div>
-    <div v-if="shortlist.loading" class="text-muted" data-testid="shortlist-loading">Loading shortlist...</div>
-    <div v-else-if="shortlist.error" class="alert alert-danger" data-testid="shortlist-error">{{ shortlist.error }}</div>
-    <p v-else-if="!saved.length" class="text-muted" data-testid="shortlist-empty">
-      Nothing shortlisted yet. <RouterLink to="/universities">Browse universities</RouterLink>.
-    </p>
-    <ul v-else class="list-group" data-testid="shortlist-list">
+<div
+  v-if="shortlist.error || pageError"
+  class="alert alert-danger"
+  data-testid="shortlist-error"
+>
+  {{ shortlist.error || pageError }}
+</div>
+
+<div
+  v-if="pageLoading || shortlist.loading"
+  class="text-muted"
+  data-testid="shortlist-loading"
+>
+  Loading shortlist...
+</div>
+
+<p
+  v-else-if="!saved.length && !pageError"
+  class="text-muted"
+  data-testid="shortlist-empty"
+>
+  Nothing shortlisted yet.
+  <RouterLink to="/universities">Browse universities</RouterLink>.
+</p>
+
+<ul v-else-if="saved.length" class="list-group" data-testid="shortlist-list">
       <li v-for="u in saved" :key="u.id" class="list-group-item d-flex flex-wrap gap-2 justify-content-between align-items-center" data-testid="shortlist-item">
         <div>
           <strong>{{ u.name }}</strong>
