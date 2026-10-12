@@ -5,5 +5,24 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js' // Bootstrap 5 (https://getbo
 import './assets/styles/theme.css'
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from '@/stores/auth'
 
-createApp(App).use(createPinia()).use(router).mount('#app')
+async function bootstrap() {
+  const app = createApp(App)
+  const pinia = createPinia()
+
+  app.use(pinia)
+
+  const auth = useAuthStore(pinia)
+
+  try {
+    await auth.init()
+  } catch (error) {
+    console.error('恢复登录会话失败：', error.message)
+  }
+
+  app.use(router)
+  app.mount('#app')
+}
+
+bootstrap()
