@@ -12,7 +12,9 @@ async function logout() {
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-md bg-white border-bottom" data-testid="nav-bar">
+  <nav class="navbar navbar-expand-md border-bottom app-navbar" 
+  data-bs-theme="dark"
+  data-testid="nav-bar">
     <div class="container-xl">
       <RouterLink class="navbar-brand fw-semibold" to="/" data-testid="nav-brand">Exchange Planner</RouterLink>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-menu" aria-label="Toggle navigation" data-testid="nav-toggle">
@@ -28,11 +30,11 @@ async function logout() {
         </ul>
         <div class="d-flex gap-2">
           <template v-if="auth.user">
-            <button class="btn btn-outline-secondary btn-sm" @click="logout" data-testid="nav-logout-btn">Log out</button>
+            <button class="btn btn-outline-light btn-sm" @click="logout" data-testid="nav-logout-btn">Log out</button>
           </template>
           <template v-else>
-            <RouterLink class="btn btn-outline-primary btn-sm" to="/login" data-testid="nav-login-link">Log in</RouterLink>
-            <RouterLink class="btn btn-primary btn-sm" to="/signup" data-testid="nav-signup-link">Sign up</RouterLink>
+            <RouterLink class="btn btn-outline-light btn-sm" to="/login" data-testid="nav-login-link">Log in</RouterLink>
+            <RouterLink class="btn btn-light btn-sm nav-signup" to="/signup" data-testid="nav-signup-link">Sign up</RouterLink>
           </template>
         </div>
       </div>
