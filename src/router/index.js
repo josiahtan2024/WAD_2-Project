@@ -9,6 +9,7 @@ import UniversityView from '@/views/UniversityView.vue'
 import ShortlistView from '@/views/ShortlistView.vue'
 import CompareView from '@/views/CompareView.vue'
 import ScheduleView from '@/views/ScheduleView.vue'
+import CostEstimator from '@/views/CostEstimatorView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
@@ -22,6 +23,12 @@ const routes = [
     path: '/schedule/:universityId',
     name: 'schedule',
     component: ScheduleView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/cost-estimator',
+    name: 'cost-estimator',
+    component: CostEstimator,
     meta: { requiresAuth: true },
   },
 ]
