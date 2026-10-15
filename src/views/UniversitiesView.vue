@@ -81,7 +81,7 @@ onMounted(async () => {
     <div v-else-if="uni.error" class="alert alert-danger" data-testid="universities-error">Could not load universities: {{ uni.error }}</div>
     <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No universities match your search.</p>
     <div v-else class="row g-3" data-testid="universities-grid">
-      <div v-for="u in results" :key="u.id" class="col-12 col-sm-6 col-lg-4">
+      <div v-for="u in results" :key="u.id" class="col-6 col-lg-4">
         <UniversityCard :university="u" :shortlisted="isShortlisted(u.id)" @toggle-shortlist="toggle" />
       </div>
     </div>
