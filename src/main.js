@@ -19,7 +19,8 @@ async function bootstrap() {
   try {
     await auth.init()
   } catch (error) {
-    console.error('恢复登录会话失败：', error.message)
+    console.error('Unable to initialize authentication:', error.message)
+
   }
 
   app.use(router)

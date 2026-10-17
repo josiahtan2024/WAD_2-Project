@@ -12,7 +12,9 @@ async function logout() {
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-md bg-white border-bottom" data-testid="nav-bar">
+  <nav class="navbar navbar-expand-md border-bottom app-navbar" 
+  data-bs-theme="dark"
+  data-testid="nav-bar">
     <div class="container-xl">
       <RouterLink
         class="navbar-brand fw-semibold"

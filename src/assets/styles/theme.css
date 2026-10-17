@@ -17,3 +17,23 @@
 .card {
   border-radius: var(--app-radius);
 }
+
+.app-navbar {
+  background-color: #0b2348;
+
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #cbdcff;
+  --bs-navbar-active-color: #fff;
+
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-brand-hover-color: #cbdcff;
+
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.5);
+}
+
+
+.app-navbar .nav-signup {
+  --bs-btn-color: #0b2348;
+  --bs-btn-hover-color: #0b2348;
+  --bs-btn-active-color: #0b2348;
+}
