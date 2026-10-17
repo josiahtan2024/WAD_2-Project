@@ -2,8 +2,8 @@
 :root {
   --bs-primary: #1f4e9c;
   --bs-primary-rgb: 31, 78, 156;
-  --bs-body-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --bs-body-bg: #f8f9fb;
+  --bs-body-font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  --bs-body-bg: #ffffff;
   --app-radius: 0.75rem;
 }
 
