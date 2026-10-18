@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS universities (
     state TEXT,
     city TEXT,
     region TEXT NOT NULL,
-    lat DOUBLE PRECISION,
-    long DOUBLE PRECISION,
+    lat DOUBLE PRECISION NOT NULL,
+    long DOUBLE PRECISION NOT NULL,
     timezone TEXT,
     website_url TEXT,
     modules_url TEXT,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS exchange_periods (
     period_name TEXT NOT NULL,
     term TEXT,
     academic_year TEXT,
-    start_date DATE,
-    end_date DATE,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
     min_temperature INT,
     max_temperature INT,
     description TEXT,
@@ -42,14 +42,10 @@ CREATE TABLE IF NOT EXISTS exchange_periods (
     UNIQUE (id, university_id),
 
     CHECK (
-        start_date IS NULL
-        OR end_date IS NULL
-        OR end_date >= start_date
+        end_date >= start_date
     ),
     CHECK (
-        min_temperature IS NULL
-        OR max_temperature IS NULL
-        OR max_temperature >= min_temperature
+        max_temperature >= min_temperature
     )
 );
 
@@ -178,8 +174,8 @@ CREATE TABLE IF NOT EXISTS planned_modules (
     UNIQUE (timetable_id, university_module_id),
 
     CHECK (
-        start_time IS NULL
-        OR end_time IS NULL
-        OR end_time > start_time
+        (start_time IS NULL AND end_time IS NULL)
+        OR 
+        (start_time IS NOT NULL AND end_time IS NOT NULL AND end_time > start_time)
     )
 );
