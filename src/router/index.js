@@ -18,7 +18,7 @@ const routes = [
   { path: '/universities', name: 'universities', component: UniversitiesView },
   { path: '/universities/:id', name: 'university', component: UniversityView },
   { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { requiresAuth: true } },
-  { path: '/compare', name: 'compare', component: CompareView, meta: { requiresAuth: true } },
+  { path: '/compare', name: 'compare', component: CompareView },
   {
     path: '/schedule/:universityId',
     name: 'schedule',

@@ -15,3 +15,5 @@ export const supabase = createClient(url, anonKey, {
     detectSessionInUrl: true,
   },
 })
+
+export const STORAGE_URL = `${url}/storage/v1/object/public`

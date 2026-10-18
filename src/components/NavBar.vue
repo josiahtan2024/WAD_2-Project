@@ -47,6 +47,16 @@ async function logout() {
             </RouterLink>
           </li>
 
+          <li class="nav-item">
+            <RouterLink
+              class="nav-link"
+              to="/compare"
+              data-testid="nav-compare"
+            >
+              Compare
+            </RouterLink>
+          </li>
+
           <template v-if="auth.user">
             <li class="nav-item">
               <RouterLink
@@ -55,16 +65,6 @@ async function logout() {
                 data-testid="nav-shortlist"
               >
                 Shortlist
-              </RouterLink>
-            </li>
-
-            <li class="nav-item">
-              <RouterLink
-                class="nav-link"
-                to="/compare"
-                data-testid="nav-compare"
-              >
-                Compare
               </RouterLink>
             </li>
 
