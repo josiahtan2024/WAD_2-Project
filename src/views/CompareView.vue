@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { supabase, STORAGE_URL } from '@/lib/supabase'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
-
+// TODO TO-DO FIX SCALING AND RESPONSIVE UI
 const universities = ref([])
 const isLoading = ref(true)
 
@@ -18,18 +18,35 @@ async function fetchUniversities() {
             .select(`
                 *,
                 university_languages ( instruction_language ),
-                exchange_periods ( * ),
                 university_costs ( * ),
-                university_modules ( count )
+                university_modules ( * ),
+                exchange_periods ( * )
             `)
 
         if (error) throw error
 
         universities.value = data.map(uni => {
-            const primaryPeriod = uni.exchange_periods?.[0] || {}
-            const languages = uni.university_languages?.map(l => l.instruction_language).join(', ') || 'N/A'
-            const cost = uni.university_costs?.[0] || uni.university_costs || {}
-            const modulesCount = uni.university_modules?.[0]?.count || 0
+            const languages = uni.university_languages?.map(l => l.instruction_language).join(', ') || '-'
+            const cost = uni.university_costs || {}
+            const modulesCount = uni.university_modules?.length || 0
+
+            const accom = Number(cost.accommodation || 0)
+            const food = Number(cost.food || 0)
+            const transport = Number(cost.transport || 0)
+            const personal = Number(cost.personal_expenses || 0)
+            const total = accom + food + transport + personal
+
+            const periods = (uni.exchange_periods || []).map(period => ({
+                id: period.id,
+                periodName: period.period_name || '-',
+                term: period.term || '-',
+                academicYear: period.academic_year || '-',
+                startDate: period.start_date || '-',
+                endDate: period.end_date || '-',
+                minTemp: period.min_temperature ?? '-',
+                maxTemp: period.max_temperature ?? '-',
+                description: period.description || '-'
+            })).sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 
             let logoURL = ''
             if (uni.logo_url) {
@@ -56,34 +73,25 @@ async function fetchUniversities() {
                 },
                 cost: {
                     currency: cost.currency_code || 'USD',
-                    total: (Number(cost.accommodation) || 0) +
-                            (Number(cost.food) || 0) +
-                            (Number(cost.transport) || 0) + 
-                            (Number(cost.personal_expenses) || 0),
-                    accommodation: cost.accommodation ? Number(cost.accommodation) : null,
-                    food: cost.food ? Number(cost.food) : null,
-                    transport: cost.transport ? Number(cost.transport) : null,
-                    personalExpenses: cost.personal_expenses ? Number(cost.personal_expenses) : null
+                    total: total,
+                    accommodation: accom,
+                    food: food,
+                    transport: transport,
+                    personalExpenses: personal
                 },
                 academic: {
-                    modulesOffered: modulesCount,
+                    mappedModules: modulesCount,
                     language: languages,
-                    modulesURL: uni.modules_url
+                    modulesURL: uni.modules_url || '#'
                 },
                 exchange: {
-                    name: primaryPeriod.period_name || 'N/A',
-                    startDate: primaryPeriod.start_date || 'N/A',
-                    endDate: primaryPeriod.end_date || 'N/A'
-                },
-                climate: {
-                    minTemp: primaryPeriod.min_temperature ?? '-',
-                    maxTemp: primaryPeriod.max_temperature ?? '-',
-                    description: primaryPeriod.description || 'N/A'
+                    upcomingExchanges: periods.length,
+                    periods: periods
                 }
             }
         })
-    } catch (err) {
-        console.error('Error fetching universities from Supabase:', err.message)
+    } catch (error) {
+        console.error('Error fetching universities from Supabase:', error.message)
     } finally {
         isLoading.value = false
     }
@@ -134,14 +142,9 @@ const remainingUnis = computed(() => {
 })
 
 // TO-DO: Slot1 from Query(or pass in hidden payload)
-const uniSlots = ref([
-    // universities.value[0]?.id || 
-    null,
-    null,
-    null
-])
-
+const uniSlots = ref([null, null, null])
 const uniCurrencies = ref(['home', 'home', 'home'])
+const uniProgrammes = ref([0, 0, 0])
 
 // Comparision Data
 const unisToCompare = computed (() => {
@@ -153,11 +156,10 @@ const selectRefs = ref([]);
 const openDropdown = (idx) => {
     const selectEl = selectRefs.value[idx];
     if (selectEl) {
-        // showPicker() opens the native dropdown immediately on click
+        // showPicker() opens the dropdown immediately on click
         if (typeof selectEl.showPicker === 'function') {
             selectEl.showPicker();
         } else {
-            // Fallback for older browsers
             selectEl.focus();
         }
     }
@@ -178,9 +180,7 @@ function selectUniversity(slotIndex, uniId) {
     }
 
     // If the user selected the same university, do nothing
-    if (oldUniId === uniId) {
-        return
-    }
+    if (oldUniId === uniId) return
 
     // Find whether this university is already in another slot
     const existingSlotIndex = uniSlots.value.findIndex(
@@ -196,7 +196,6 @@ function selectUniversity(slotIndex, uniId) {
     } else if (oldUniId === null) {
         // Put university into leftmost empty slot
         const firstEmptyIndex = uniSlots.value.findIndex(id => id === null)
-
         if (firstEmptyIndex !== -1) {
             uniSlots.value[firstEmptyIndex] = uniId
         }
@@ -208,13 +207,10 @@ function selectUniversity(slotIndex, uniId) {
 
 // Location Helper
 function formatLocation(location) {
+    if (!location) return ''
     const { city, state, country } = location
-    if (city === state && state === country) {
-        return country
-    }
-    if (city === state || state === country) {
-        return `${city}, ${country}`
-    }
+    if (city === state && state === country) return country
+    if (city === state || state === country) return `${city}, ${country}`
     return `${city}, ${state}, ${country}`
 }
 
@@ -225,24 +221,21 @@ function distanceFromSMU(coordinates) {
     const lon1 = 103.85185
     const lat2 = coordinates.lat
     const lon2 = coordinates.lon
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-              
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c); // Returns clean, rounded distance (e.g., 11050 km)
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return Math.round(R * c)
 }
 
 // Cost/Currency Helpers
 function formatCurrency(value, currency) {
-    if (value === null || value === undefined) {
-        return '-'
-    }
-    
+    if (value === null || value === undefined) return '-'
     return value.toLocaleString('en-SG', {
         style: 'currency',
         currency: currency,
@@ -251,10 +244,7 @@ function formatCurrency(value, currency) {
 }
 
 function formatCost(value, homeCurrency, idx) {
-    if (value === null || value === undefined) {
-        return '-'
-    }
-
+    if (value === null || value === undefined) return '-'
     // Check if user selected SGD
     const showSGD = uniCurrencies.value[idx] === 'SGD'
     if (showSGD && homeCurrency !== 'SGD') {
@@ -262,19 +252,15 @@ function formatCost(value, homeCurrency, idx) {
         // Convert to SGD if rate exists, otherwise default to home currency
         return rate ? formatCurrency(value / rate, 'SGD') : formatCurrency(value, homeCurrency)
     }
-
     return formatCurrency(value, homeCurrency)
 }
 
 //  Exchange Helper
 function formatExchangeDate(dateStr) {
     if (dateStr === null || dateStr === 'N/A') return 'N/A'
-
     const [year, month, day] = dateStr.split('-')
     if (!year || !month || !day) return dateStr
-
     const date = new Date(year, month - 1, day)
-    
     return date.toLocaleDateString('en-US', {
         month: 'short',
         year: 'numeric'
@@ -298,20 +284,15 @@ async function createMap(idx) {
     }
 
     // No uni selected
-    if (!uni || !element || !uni.location.coordinates.lat) {
-        return
-    }
+    if (!uni || !element || !uni.location.coordinates.lat) return
 
     const { lat, lon } = uni.location.coordinates
 
-    const map = L.map(element, {
-        scrollWheelZoom: false
-    }).setView([lat, lon], 13)
+    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
 
     map.on('click', () => {
         const googleMapsUrl =
             `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
-
         window.open(googleMapsUrl, '_blank', 'noopener,noreferrer')
     })
 
@@ -336,7 +317,6 @@ async function fetchCurrencyRates() {
         const response = await axios.get(url)
         const data = response.data.map(({base, ...rest}) => rest)
         currencyRates.value = data
-        // console.log(data)
     } catch (error) {
         console.error(error.message)
     }
@@ -362,6 +342,7 @@ watch(
         newSlots.forEach((slot, idx) => {
             if (slot !== oldSlots[idx]) {
                 uniCurrencies.value[idx] = 'home'
+                uniProgrammes.value[idx] = 0
                 createMap(idx)
             }
         })
@@ -370,10 +351,7 @@ watch(
 </script>
 
 <template>
-    <!-- min-vh-100 sets minimum height to full screen
-    d-flex and flex-column turns it into vertical layout -->
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
-    <!-- flex-grow-1 forces main element to expand and push footer to absolute bottom -->
     <main class="flex-grow-1">
         <section class="text-center py-3 my-5">
             <div class="container-fluid">
@@ -392,7 +370,7 @@ watch(
                     <template #default="{ uni, idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
-                        class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue">
+                        class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
                             <option value="">Choose a university</option>
                             <!-- <option v-for="uni in universities" :key="uni.id" :value="uni.id"
                             :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option> -->
@@ -540,9 +518,9 @@ watch(
                     <template #default="{ uni, idx }">
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center h-100 gap-3 pt-3">
                             <div class="text-break text-center text-md-start text-secondary fw-semibold">
-                                1 SGD = {{ ratesMap[uni.cost.currency] || '—'}} {{ uni.cost.currency }}
+                                1 SGD = {{ ratesMap[uni.cost.currency] || '-'}} {{ uni.cost.currency }}
                             </div>
-                            <div class="btn-group btn-group-sm">
+                            <div class="btn-group btn-group-sm w-md-down-100">
                                 <button class="btn" :class="uniCurrencies[idx] === 'home' ? 'btn-primary' : 'btn-outline-primary'"
                                 @click="uniCurrencies[idx] = 'home'">{{ uni.cost.currency }}</button>
                                 <button class="btn" :class="uniCurrencies[idx] === 'SGD' ? 'btn-primary' : 'btn-outline-primary'"
@@ -650,7 +628,7 @@ watch(
                 <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni, idx }">
                         <div class="text-break fw-bold fs-4">
-                            {{  uni.academic.modulesOffered }}
+                            {{  uni.academic.mappedModules }}
                         </div>
                     </template>
                 </CompareRow>  
@@ -683,112 +661,105 @@ watch(
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
                     <template #default="{ uni, idx }">
-                        Exchange Programme
+                        Exchange
                     </template>
                 </CompareRowHeader>
-                <!-- TODO FIGURE OUT HOW TO DISPLAY DYNAMIC LIST OF PROGRAMME PER UNI -->
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-secondary small pt-3">
-                                Programme
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-break fw-bold fs-4">
-                                {{  uni.exchange.name }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-secondary small mt-3 pt-3 border-top">
-                                Exchange Period
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-break">
-                                {{ formatExchangeDate(uni.exchange.startDate) }} - {{ formatExchangeDate(uni.exchange.endDate) }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Climate -->
-                <CompareRowHeader :unis-to-compare="unisToCompare">
+                <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni, idx }">
-                        Climate
+                        <div v-if="uni && uni.exchange?.periods?.length > 0">
+                            <div class="d-flex w-100 pt-3 gap-1">
+                                <button v-for="(period, pIdx) in uni.exchange.periods" :key="pIdx"
+                                    @click="uniProgrammes[idx] = pIdx"
+                                    class="btn btn-sm flex-fill text-truncate px-1"
+                                    :class="uniProgrammes[idx] === pIdx ? 'btn-primary' : 'btn-outline-primary'">
+                                    {{ formatExchangeDate(period.startDate) }}
+                                </button>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <div class="pt-3">
+                                <button class="btn btn-sm btn-outline-secondary w-100 disabled text-truncate" style="opacity: 1;">
+                                    Not Available
+                                </button>
+                            </div>
+                        </div>
                     </template>
-                </CompareRowHeader>
+                </CompareRow>
 
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-secondary small pt-3">
-                                Temperature
-                            </div>
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0"
+                            class="text-secondary small pt-3">
+                            Programme
                         </div>
-                    </div>
-                </div> 
+                    </template>
+                </CompareRow>  
 
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-break fw-bold fs-4">
-                                {{ uni.climate.minTemp }} - {{ uni.climate.maxTemp }} °C
-                            </div>
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0" 
+                            class="text-break fw-bold fs-4">
+                            {{ uni.exchange.periods[uniProgrammes[idx]].periodName }}
                         </div>
-                    </div>
-                </div>
+                    </template>
+                </CompareRow>  
 
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-secondary small mt-3 pt-3 border-top">
-                                Overview
-                            </div>
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0" 
+                            class="text-secondary small mt-3 pt-3 border-top">
+                            Exchange Period
                         </div>
-                    </div>
-                </div>
+                    </template>
+                </CompareRow>  
 
-                <div class="row justify-content-center">
-                    <div v-for="(uni, idx) in unisToCompare" :key="idx" 
-                    class="col-6 col-lg-4" 
-                    :class="{'d-none d-lg-block': idx === 2}">
-                        <div v-if="uni">
-                            <div class="text-break">
-                                {{ uni.climate.description }}
-                            </div>
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0" 
+                            class="text-break">
+                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} - 
+                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
                         </div>
-                    </div>
-                </div>
+                    </template>
+                </CompareRow>
+                
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0"  
+                            class="text-secondary small mt-3 pt-3 border-top">
+                            Temperature
+                        </div>
+                    </template>
+                </CompareRow>  
+
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0"  
+                            class="text-break">
+                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }} - 
+                            {{ uni.exchange.periods[uniProgrammes[idx]].maxTemp }} °C
+                        </div>
+                    </template>
+                </CompareRow>
+
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0"  
+                            class="text-secondary small mt-3 pt-3 border-top">
+                            Overview
+                        </div>
+                    </template>
+                </CompareRow>  
+
+                <CompareRow :unis-to-compare="unisToCompare">
+                    <template #default="{ uni, idx }">
+                        <div v-if="uni && uni.exchange?.periods?.length > 0"  
+                            class="text-break">
+                            {{ uni.exchange.periods[uniProgrammes[idx]].description }}
+                        </div>
+                    </template>
+                </CompareRow>
 
         </section>
     </main>
@@ -836,9 +807,6 @@ header, footer {
     padding-bottom: 12px;
 }
 .custom-select-blue {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%230d6efd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 /* md breakpoint - tablet */
@@ -897,6 +865,11 @@ header, footer {
     .sticky-uni-selector {
         padding-top: 4px !important;
         padding-bottom: 4px !important;
+    }
+
+    .w-md-down-100 {
+        display: flex !important;
+        width: 100% !important;
     }
 }
 /* xs breakpoint - mobile */
