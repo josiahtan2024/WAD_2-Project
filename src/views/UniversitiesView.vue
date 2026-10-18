@@ -82,7 +82,11 @@ onMounted(async () => {
     <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No universities match your search.</p>
     <div v-else class="row g-3" data-testid="universities-grid">
       <div v-for="u in results" :key="u.id" class="col-6 col-lg-4">
-        <UniversityCard :university="u" :shortlisted="isShortlisted(u.id)" @toggle-shortlist="toggle" />
+        <UniversityCard 
+        :university="u" 
+        :shortlisted="isShortlisted(u.id)" 
+        :selected-region="uni.filters.region" 
+        @toggle-shortlist="toggle" />
       </div>
     </div>
   </section>
