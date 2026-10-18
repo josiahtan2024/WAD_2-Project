@@ -367,7 +367,7 @@ watch(
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
                         class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
@@ -390,7 +390,7 @@ watch(
                 <!-- Uni Info -->
                 <CompareRow :unis-to-compare="unisToCompare" special-vfor-class="text-center d-flex flex-column"
                 special-vif-class="d-flex flex-column flex-grow-1">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="uni-logo d-flex align-items-center justify-content-center overflow-hidden">
                             <img :src="uni.logo" class="img-fluid">
                         </div>
@@ -406,7 +406,7 @@ watch(
 
                 <CompareRow :unis-to-compare="unisToCompare" special-vfor-class="text-center d-flex flex-column"
                 special-vif-class="d-flex flex-column flex-grow-1">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-secondary my-3 d-flex align-items-center justify-content-center h-100 text-break">
                             {{ uni.location.country }}
                         </div>
@@ -416,7 +416,7 @@ watch(
 
                 <CompareRow :unis-to-compare="unisToCompare" special-vfor-class="text-center d-flex flex-column"
                 special-vif-class="d-flex flex-column flex-grow-1">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="border-top pt-3">
                             <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" @click="toggleShortlist(uni.id)">
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
@@ -431,20 +431,20 @@ watch(
 
                 <!-- Location -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         Location
                     </template>
                 </CompareRowHeader>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ idx }">
                         <div :ref="el => mapElements[idx] = el" class="uni-map mt-3">
                         </div>
                     </template>
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small pt-3">
                             Location
                         </div>
@@ -452,7 +452,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break">
                             {{ formatLocation(uni.location) }}
                         </div>
@@ -460,7 +460,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Region
                         </div>
@@ -468,7 +468,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break">
                             {{ uni.location.region }}
                         </div>
@@ -476,7 +476,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Timezone
                         </div>
@@ -484,7 +484,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break">
                             {{ uni.location.timezone }}
                         </div>
@@ -492,7 +492,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Distance from SG
                         </div>
@@ -500,7 +500,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break">
                             {{ distanceFromSMU(uni.location.coordinates) }} km
                         </div>
@@ -509,7 +509,7 @@ watch(
 
                 <!-- Cost -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         Cost
                     </template>
                 </CompareRowHeader>
@@ -531,7 +531,7 @@ watch(
                 </CompareRow>                
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small pt-3">
                             Estimated Monthly Total
                         </div>
@@ -547,7 +547,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Accommodation
                         </div>
@@ -563,7 +563,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Food
                         </div>
@@ -579,7 +579,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Transport
                         </div>
@@ -595,7 +595,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Personal Expenses
                         </div>
@@ -612,13 +612,13 @@ watch(
 
                 <!-- Academics -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         Academics
                     </template>
                 </CompareRowHeader>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small pt-3">
                             Mapped Modules
                         </div>
@@ -626,7 +626,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break fw-bold fs-4">
                             {{  uni.academic.mappedModules }}
                         </div>
@@ -634,7 +634,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Language
                         </div>
@@ -642,7 +642,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="text-break">
                             {{ uni.academic.language }}
                         </div>
@@ -650,7 +650,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div class="mt-3 pt-3 border-top">
                             <a :href="uni.academic.modulesURL" class="link-primary text-decoration-none custom-hover-link" 
                                 target="_blank" rel="noopener noreferrer">View Course Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></a>
@@ -660,7 +660,7 @@ watch(
                 
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ }">
                         Exchange
                     </template>
                 </CompareRowHeader>
@@ -688,7 +688,7 @@ watch(
                 </CompareRow>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"
                             class="text-secondary small pt-3">
                             Programme
@@ -706,7 +706,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-secondary small mt-3 pt-3 border-top">
                             Exchange Period
@@ -725,7 +725,7 @@ watch(
                 </CompareRow>
                 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"  
                             class="text-secondary small mt-3 pt-3 border-top">
                             Temperature
@@ -744,7 +744,7 @@ watch(
                 </CompareRow>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ uni, idx }">
+                    <template #default="{ uni }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"  
                             class="text-secondary small mt-3 pt-3 border-top">
                             Overview

@@ -27,7 +27,7 @@ const props = defineProps({
     <div class="row justify-content-center" :class="props.specialRowClass">
         <div v-for="(uni, idx) in props.unisToCompare" :key="idx" 
         class="col-6 col-lg-4"
-        :class="{'d-none d-lg-block': idx === 2}, props.specialVforClass">
+        :class="[{'d-none d-lg-block': idx === 2}, props.specialVforClass]">
             <div v-if="uni || props.renderDropdown" :class="props.specialVifClass">
                 <slot :uni="uni" :idx="idx"></slot>
             </div>
