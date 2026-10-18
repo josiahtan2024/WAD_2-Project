@@ -82,18 +82,22 @@ async function logout() {
 
         <div class="d-flex gap-2">
           <template v-if="auth.user">
+
+
             <button
-              class="btn btn-outline-secondary btn-sm"
+              class="btn btn-outline-light btn-sm"
               @click="logout"
               data-testid="nav-logout-btn"
             >
               Log out
             </button>
+
           </template>
 
           <template v-else>
+
             <RouterLink
-              class="btn btn-outline-primary btn-sm"
+              class="btn btn-outline-light btn-sm"
               to="/login"
               data-testid="nav-login-link"
             >
@@ -101,7 +105,7 @@ async function logout() {
             </RouterLink>
 
             <RouterLink
-              class="btn btn-primary btn-sm"
+              class="btn btn-light btn-sm nav-signup"
               to="/signup"
               data-testid="nav-signup-link"
             >
