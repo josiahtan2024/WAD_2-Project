@@ -6,7 +6,9 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
 import FilterBar from '@/components/FilterBar.vue'
 import UniversityCard from '@/components/UniversityCard.vue'
+import { useExchangeRatesStore } from '@/stores/exchangeRates'
 
+const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()
 const shortlist = useShortlistStore()
 const auth = useAuthStore()
@@ -56,6 +58,7 @@ async function toggle(u) {
 }
 
 onMounted(async () => {
+  exchangeRates.load()
   try {
     await uni.load()
   } catch (e) {
@@ -72,6 +75,15 @@ onMounted(async () => {
 </script>
 
 <template>
+  <div v-if="exchangeRates.error" class="alert alert-warning">
+  Unable to load SGD exchange rates.
+    <button
+      class="btn btn-link btn-sm"
+      @click="exchangeRates.load()"
+    >
+      Retry
+    </button>
+</div>
   <section data-testid="universities-page">
     <h1 class="h3 mb-3">Universities</h1>
     <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" />

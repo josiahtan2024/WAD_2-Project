@@ -19,7 +19,18 @@ async load() {
   this.error = null
 
   try{
-    const { data, error } = await supabase.from('universities').select('*')
+    const { data, error } = await supabase
+  .from('universities')
+  .select(`
+    *,
+    university_costs (
+      currency_code,
+      accommodation,
+      food,
+      transport,
+      personal_expenses
+    )
+  `)
     if (error) throw error
     this.items = data ?? []
   } catch (error) {
