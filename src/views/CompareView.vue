@@ -388,9 +388,11 @@ function formatExchangeDate(dateStr) {
 
 // Lifecycle
 onMounted(async () => {
-    fetchShortlist()
-    fetchUniversities()
-    fetchCurrencyRates()
+    await Promise.all([
+        fetchCurrencyRates(),
+        fetchShortlist(),
+        fetchUniversities()
+    ])
     unisToCompare.value.forEach((uni, idx) => createMap(idx))
 })
 
