@@ -42,7 +42,9 @@ onMounted(async () => {
         <div v-if="uni.loading" class="text-muted">Loading...</div>
         <ul v-else-if="mode === 'universities'" class="list-group" data-testid="home-university-list">
           <li v-if="!uni.items.length" class="list-group-item text-muted">No universities yet.</li>
-          <li v-for="u in uni.items":key="u.id"
+
+
+          <li v-for="u in uni.items" :key="u.id"
               class="list-group-item list-group-item-action university-list-item"
               :class="{ 'is-selected': selected?.id === u.id }"
               role="button"
