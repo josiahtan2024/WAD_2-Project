@@ -1,6 +1,7 @@
 <script setup>
+import { useExchangeRatesStore } from '@/stores/exchangeRates'
+const exchangeRates = useExchangeRatesStore()
 import { supabase } from '@/lib/supabase'
-
 function getLogoUrl(path) {
   const filePath = path.replace(/^university-logos\//, '')
 
@@ -8,13 +9,41 @@ function getLogoUrl(path) {
     .from('university-logos')
     .getPublicUrl(filePath).data.publicUrl
 }
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { calculateMonthlyCost } from '@/lib/universityCost'
 const isHovered = ref(false)
 
-defineProps({
+const props = defineProps({
   university: { type: Object, required: true },
   shortlisted: { type: Boolean, default: false },
   selectedRegion: { type: String, default: null },
+})
+
+const estimatedMonthlyCost = computed(() => {
+  const cost = props.university.university_costs
+  const total = calculateMonthlyCost(cost)
+  const currency = cost?.currency_code?.trim().toUpperCase()
+
+  if (total === null || !Number.isFinite(total) || !currency) {
+    return 'Not available'
+  }
+
+  const rate = exchangeRates.rates[currency]
+
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return exchangeRates.loading
+      ? 'Loading...'
+      : 'SGD estimate unavailable'
+  }
+
+  const totalSGD = total / rate
+
+  return new Intl.NumberFormat('en-SG', {
+    style: 'currency',
+    currency: 'SGD',
+    currencyDisplay: 'code',
+    maximumFractionDigits: 0,
+  }).format(totalSGD)
 })
 defineEmits(['toggle-shortlist'])
 </script>
@@ -107,11 +136,8 @@ defineEmits(['toggle-shortlist'])
           </p>
 
           <p class="small text-muted mb-0">
-            Estimated cost:
-            {{ university.region_band_min == null
-              ? 'Not available'
-              : `SGD ${Number(university.region_band_min).toLocaleString()}` }}
-          </p>
+  Estimated monthly cost: {{ estimatedMonthlyCost }}
+</p>
         </div>
       </div>
 

@@ -6,6 +6,14 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
+import { calculateMonthlyCost } from '@/lib/universityCost'
+import { useRouter } from 'vue-router'
+import { useShortlistStore } from '@/stores/shortlist'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const shortlist = useShortlistStore()
+const auth = useAuthStore()
 // TODO TO-DO FIX SCALING AND RESPONSIVE UI
 const universities = ref([])
 const isLoading = ref(true)
@@ -34,7 +42,7 @@ async function fetchUniversities() {
             const food = Number(cost.food || 0)
             const transport = Number(cost.transport || 0)
             const personal = Number(cost.personal_expenses || 0)
-            const total = accom + food + transport + personal
+            const total = calculateMonthlyCost(uni.university_costs)
 
             const periods = (uni.exchange_periods || []).map(period => ({
                 id: period.id,
@@ -97,39 +105,33 @@ async function fetchUniversities() {
     }
 }
 
-// SessionStorage Shortlist state initialization (Default to [3, 6] if empty)
-const SESSION_STORAGE_KEY = 'smu_geo_shortlisted_unis'
+const shortlistedIds = computed(() =>
+    shortlist.items.map(item => item.university_id)
+)
 
-const getStoredShortlists = () => {
-    const data = sessionStorage.getItem(SESSION_STORAGE_KEY)
-    if (data) {
-        try {
-            return JSON.parse(data)
-        } catch (e) {
-            console.error('Failed to parse sessionstorage shortlist', e)
-        }
-    }
-    // Default initial state
-    const initial = [3, 6]
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(initial))
-    return initial
-}
-
-const shortlistedIds = ref(getStoredShortlists())
-
-// Helper to check if a uni is shortlisted
 const isShortlisted = (uniId) => {
     return shortlistedIds.value.includes(uniId)
 }
 
-// Toggle shortlist add/remove
-const toggleShortlist = (uniId) => {
-    if (isShortlisted(uniId)) {
-        shortlistedIds.value = shortlistedIds.value.filter(id => id !== uniId)
-    } else {
-        shortlistedIds.value.push(uniId)
+async function toggleShortlist(uniId) {
+    if (!auth.user) {
+        return router.push({
+            name: 'login',
+            query: { redirect: '/compare' }
+        })
     }
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(shortlistedIds.value))
+
+    if (shortlist.loading || shortlist.saving) return
+
+    try {
+        if (isShortlisted(uniId)) {
+            await shortlist.remove(uniId)
+        } else {
+            await shortlist.add(uniId)
+        }
+    } catch (error) {
+        shortlist.error = error.message
+    }
 }
 // Lines 11-45 to be removed - temp solution for shortlisting demo
 
@@ -142,7 +144,50 @@ const remainingUnis = computed(() => {
 })
 
 // TO-DO: Slot1 from Query(or pass in hidden payload)
-const uniSlots = ref([null, null, null])
+const COMPARE_STORAGE_KEY = 'smu_geo_compare_slots'
+
+function getStoredCompareSlots() {
+    try {
+        const raw = sessionStorage.getItem(COMPARE_STORAGE_KEY)
+        if (!raw) return [null, null, null]
+
+        const slots = JSON.parse(raw)
+
+        // 只接受三个位置，每个位置为学校 ID 或 null
+        if (
+            Array.isArray(slots) &&
+            slots.length === 3 &&
+            slots.every(id =>
+                id === null || (Number.isSafeInteger(id) && id > 0)
+            ) &&
+            new Set(slots.filter(id => id !== null)).size ===
+                slots.filter(id => id !== null).length
+        ) {
+            return slots
+        }
+    } catch (error) {
+        console.error('Failed to restore compare selection:', error)
+    }
+
+    return [null, null, null]
+}
+
+const uniSlots = ref(getStoredCompareSlots())
+
+watch(
+    () => [...uniSlots.value],
+    (slots) => {
+        try {
+            sessionStorage.setItem(
+                COMPARE_STORAGE_KEY,
+                JSON.stringify(slots)
+            )
+        } catch (error) {
+            console.error('Failed to save compare selection:', error)
+        }
+    }
+)
+
 const uniCurrencies = ref(['home', 'home', 'home'])
 const uniProgrammes = ref([0, 0, 0])
 
@@ -331,11 +376,24 @@ const ratesMap = computed(() => {
 
 // Lifecycle
 onMounted(async () => {
-    await fetchUniversities()
+    const loadShortlist = async () => {
+        if (!auth.user) return
+
+        try {
+            await shortlist.load()
+        } catch (error) {
+            shortlist.error = error.message
+        }
+    }
+
+    await Promise.all([
+        fetchUniversities(),
+        loadShortlist()
+    ])
+
     unisToCompare.value.forEach((uni, idx) => createMap(idx))
     fetchCurrencyRates()
 })
-
 watch(
     () => [...uniSlots.value],
     (newSlots, oldSlots) => {
@@ -363,6 +421,8 @@ watch(
         </section>
 
         <section class="container pb-5 mb-5">
+            <div v-if="shortlist.error" class="alert alert-warning" role="alert">{{ shortlist.error }}</div>
+            <div v-if="shortlist.loading" class="text-muted mb-3">Loading shortlist...</div>
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
@@ -418,7 +478,9 @@ watch(
                 special-vif-class="d-flex flex-column flex-grow-1">
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
-                            <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" @click="toggleShortlist(uni.id)">
+                            <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
+                            :disabled="shortlist.loading || shortlist.saving" 
+                            @click="toggleShortlist(uni.id)">
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
