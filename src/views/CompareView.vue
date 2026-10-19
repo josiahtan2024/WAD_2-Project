@@ -153,7 +153,6 @@ function getStoredCompareSlots() {
 
         const slots = JSON.parse(raw)
 
-        // 只接受三个位置，每个位置为学校 ID 或 null
         if (
             Array.isArray(slots) &&
             slots.length === 3 &&

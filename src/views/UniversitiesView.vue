@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import FilterBar from '@/components/FilterBar.vue'
 import UniversityCard from '@/components/UniversityCard.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
+import { calculateMonthlyCost } from '@/lib/universityCost'
 
 const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()
@@ -15,6 +16,24 @@ const auth = useAuthStore()
 const router = useRouter()
 
 // Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
+function getMonthlyCostSGD(university) {
+  const cost = university.university_costs
+  const total = calculateMonthlyCost(cost)
+  const currency = cost?.currency_code?.trim().toUpperCase()
+  const rate = exchangeRates.rates[currency]
+
+  if (
+    total === null ||
+    !Number.isFinite(total) ||
+    !currency ||
+    !Number.isFinite(rate) ||
+    rate <= 0
+  ) {
+    return Infinity
+  }
+
+  return total / rate
+}
 const results = computed(() => {
   const keyword = uni.query.trim().toLowerCase()
   const filtered = uni.items.filter((university) => {
@@ -32,16 +51,24 @@ const results = computed(() => {
   })
 
   return filtered.sort((a, b) => {
-    if (uni.sortBy === 'country') return a.country.localeCompare(b.country)
-    if (uni.sortBy === 'cost') {
-      const costA = a.region_band_min == null ? Infinity : Number(a.region_band_min)
-      const costB = b.region_band_min == null ? Infinity : Number(b.region_band_min)
+  if (uni.sortBy === 'country') {
+    const countryOrder = (a.country ?? '').localeCompare(
+      b.country ?? ''
+    )
 
-      if(costA < costB) return -1
-      if(costA > costB) return 1
-    }
-    return a.name.localeCompare(b.name)
-  })
+    if (countryOrder !== 0) return countryOrder
+  }
+
+  if (uni.sortBy === 'cost') {
+    const costA = getMonthlyCostSGD(a)
+    const costB = getMonthlyCostSGD(b)
+
+    if (costA < costB) return -1
+    if (costA > costB) return 1
+  }
+
+  return a.name.localeCompare(b.name)
+})
 
 })
 const regions = computed(() => Array.from(new Set(uni.items.map((u) => u.region))).sort())

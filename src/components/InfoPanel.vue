@@ -1,15 +1,169 @@
 <script setup>
-defineProps({ university: { type: Object, default: null } })
+import { computed, ref, watch } from 'vue'
+import { supabase } from '@/lib/supabase'
+import { calculateMonthlyCost } from '@/lib/universityCost'
+import { useExchangeRatesStore } from '@/stores/exchangeRates'
+
+const props = defineProps({
+  university: { type: Object, default: null },
+})
+
+const infoText = ref(null)
+const logoSize = ref(72)
+
+const logoUrl = computed(() => {
+  const path = props.university?.logo_url
+  if (!path) return ''
+
+  if (/^https?:\/\//i.test(path)) return path
+
+  const filePath = path.replace(/^\/?university-logos\//, '')
+
+  return supabase.storage
+    .from('university-logos')
+    .getPublicUrl(filePath).data.publicUrl
+})
+
+watch(
+  infoText,
+  (element, oldElement, onCleanup) => {
+    if (!element) return
+
+    const updateSize = () => {
+      logoSize.value = Math.ceil(
+        element.getBoundingClientRect().height
+      )
+    }
+
+    updateSize()
+
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(element)
+
+    onCleanup(() => {
+      observer.disconnect()
+    })
+  },
+  { flush: 'post' }
+)
+
+
+const exchangeRates = useExchangeRatesStore()
+
+const estimatedMonthlyCost = computed(() => {
+  const cost = props.university?.university_costs
+  const total = calculateMonthlyCost(cost)
+  const currency = cost?.currency_code?.trim().toUpperCase()
+
+  if (total === null || !Number.isFinite(total) || !currency) {
+    return 'Not available'
+  }
+
+  const rate = exchangeRates.rates[currency]
+
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return exchangeRates.loading
+      ? 'Loading...'
+      : 'SGD estimate unavailable'
+  }
+
+  return new Intl.NumberFormat('en-SG', {
+    style: 'currency',
+    currency: 'SGD',
+    currencyDisplay: 'code',
+    maximumFractionDigits: 0,
+  }).format(total / rate)
+})
 </script>
 
 <template>
   <div class="card card-body" data-testid="info-panel">
-    <p v-if="!university" class="text-muted mb-0" data-testid="info-empty">Click a pin to see details.</p>
+    <p
+      v-if="!university"
+      class="text-muted mb-0"
+      data-testid="info-empty"
+    >
+      Click a pin to see details.
+    </p>
+
     <template v-else>
-      <h2 class="h5" data-testid="info-name">{{ university.name }}</h2>
-      <p class="text-muted mb-2">{{ university.city }}, {{ university.country }}</p>
-      <p class="mb-3">Cost band: {{ university.region_band_min?.toLocaleString() }} to {{ university.region_band_max?.toLocaleString() }} SGD</p>
-      <RouterLink :to="`/universities/${university.id}`" class="btn btn-primary btn-sm" data-testid="info-details-link">View details</RouterLink>
+      <div class="info-header mb-3">
+        <div
+          class="info-logo-box"
+          :style="{
+            width: `${logoSize}px`,
+            height: `${logoSize}px`
+          }"
+        >
+          <img
+            v-if="logoUrl"
+            :key="logoUrl"
+            :src="logoUrl"
+            :alt="`${university.name} logo`"
+            class="info-logo"
+          />
+          <i
+            v-else
+            class="bi bi-mortarboard fs-3 text-muted"
+            aria-hidden="true"
+          ></i>
+        </div>
+
+        <div ref="infoText" class="info-text">
+          <h2 class="h5 mb-2" data-testid="info-name">
+            {{ university.name }}
+          </h2>
+          <p class="text-muted mb-0">
+            {{ university.city }}, {{ university.country }}
+          </p>
+        </div>
+      </div>
+
+      <p class="mb-3">
+        Estimated monthly cost: {{ estimatedMonthlyCost }}
+      </p>
+
+      <RouterLink
+        :to="`/universities/${university.id}`"
+        class="btn btn-primary btn-sm"
+        data-testid="info-details-link"
+      >
+        View details
+      </RouterLink>
     </template>
   </div>
 </template>
+
+<style scoped>
+.info-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color:rgb(1, 1, 110)
+}
+
+.info-logo-box {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.info-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.info-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin-top: 0;
+}
+</style>
