@@ -4,25 +4,95 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-const props = defineProps({ universities: { type: Array, default: () => [] } })
+const props = defineProps({
+  universities: {
+    type: Array,
+    default: () => [],
+  },
+  selectedId: {
+    type: [Number, String],
+    default: null,
+  },
+})
 const emit = defineEmits(['select'])
 
 const el = ref(null)
 let map
 let layer
 
-function draw() {
-  if (!map) return
-  layer.clearLayers()
-  props.universities
-    .filter((u) => u.lat != null && u.lng != null)
-    .forEach((u) => {
-      // circleMarker avoids Leaflet's default icon image path problem under Vite
-      L.circleMarker([u.lat, u.lng], { radius: 9, color: '#1f4e9c', fillOpacity: 0.8 })
-        .on('click', () => emit('select', u))
-        .bindTooltip(u.name)
-        .addTo(layer)
+const markers = new Map()
+
+function updateSelectedMarker() {
+  markers.forEach((marker, id) => {
+    const isSelected = id === props.selectedId
+
+    marker.setStyle({
+      color: isSelected ? '#ffffff' : '#1f4e9c',
+      weight: isSelected ? 3 : 2,
+      opacity: 1,
+      fillColor: isSelected ? '#7dd3fc' : '#1f4e9c',
+      fillOpacity: isSelected ? 1 : 0.8,
     })
+
+    marker.setRadius(isSelected ? 11 : 9)
+  })
+  markers.get(props.selectedId)?.bringToFront()
+}
+
+function focusSelectedUniversity() {
+  if (!map || props.selectedId == null) return
+
+  const marker = markers.get(props.selectedId)
+  if (!marker) return
+
+  map.flyTo(marker.getLatLng(), 15, {
+    animate: true,
+    duration: 1.5,
+  })
+}
+
+function draw() {
+  if (!map || !layer) return
+
+  layer.clearLayers()
+  markers.clear()
+
+  props.universities.forEach((u) => {
+    if (
+      u.lat == null || u.long == null ||
+      String(u.lat).trim() === '' ||
+      String(u.long).trim() === ''
+    ) return
+
+    const lat = Number(u.lat)
+    const lng = Number(u.long)
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 || lat > 90 ||
+      lng < -180 || lng > 180
+    ) return
+
+    const tooltip = document.createElement('span')
+    tooltip.textContent = u.name ?? ''
+
+    const marker = L.circleMarker([lat, lng], {
+  radius: 9,
+  color: '#1f4e9c',
+  weight: 2,
+  fillColor: '#1f4e9c',
+  fillOpacity: 0.8,
+})
+  .on('click', () => emit('select', u))
+  .bindTooltip(tooltip)
+  .addTo(layer)
+
+markers.set(u.id, marker)
+
+  })
+
+  updateSelectedMarker()
 }
 
 onMounted(() => {
@@ -34,6 +104,13 @@ onMounted(() => {
   draw()
 })
 watch(() => props.universities, draw)
+watch(
+  () => props.selectedId,
+  () => {
+    updateSelectedMarker()
+    focusSelectedUniversity()
+  }
+)
 onBeforeUnmount(() => map?.remove())
 </script>
 
