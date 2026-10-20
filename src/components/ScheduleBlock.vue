@@ -11,9 +11,9 @@ const props = defineProps({'modules':Array,
 const selectedDay = ref('');
 const startTime = ref(0);
 const endTime = ref(0);
-const currentSchedule = ref({});
+const curSchedule = ref({});
 const noModuleError = ref(false);
-onMounted(()=> currentSchedule.value = props.currentSchedule || {})
+onMounted(()=> curSchedule.value = props.currentSchedule || {})
 
 
 const startSlot = computed(() =>{ // start of window
@@ -76,7 +76,7 @@ function clearSelection(){
 }
 
 function saveSelection(day,start,end,module){
-  currentSchedule.value[day].push({
+  curSchedule.value[day].push({
       module,
       start,
       end
@@ -87,8 +87,8 @@ function saveSelection(day,start,end,module){
 }
 function isBlocked(day,time){
   
-  if(day in currentSchedule.value){
-    for (let slot of currentSchedule.value[day]){
+  if(day in curSchedule.value){
+    for (let slot of curSchedule.value[day]){
       if (time >= slot.start && time<=slot.end){
         return {blocked:true,mod:(time==slot.start?slot.module:"")}
       }      
