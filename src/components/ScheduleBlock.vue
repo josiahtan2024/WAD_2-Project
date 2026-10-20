@@ -133,7 +133,7 @@ function isBlocked(day,time){
             <tr class="text-center">
               <th class="px-3">&nbsp;</th>
               
-              <template v-for="day in props.weekDays">
+              <template v-for="day in props.weekDays" :key="day">
                 <th class="px-3">{{ day }}</th>
               </template>
             </tr>
