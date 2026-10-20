@@ -131,7 +131,7 @@ onMounted(async () => {
           <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
           
           
-          <input type="radio" class="btn-check" id="edit"autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
+          <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
           <label class="btn btn-outline-dark w-20 " for="edit">Edit Schedule</label>
           
           
@@ -158,7 +158,7 @@ onMounted(async () => {
         <template v-slot:form>
           <div class="row justify-content-center">
             
-              <template v-for="mod in m">
+              <template v-for="mod in m" :key="mod">
                 <div class="col-6 col-sm-2 col-lg-1  m-1">
                   
                   <input type="radio" :value="mod" class = 'btn-check' :id="`${mod}-2`" v-model="selectedModule">
@@ -180,7 +180,7 @@ onMounted(async () => {
           <div class="row justify-content-center mb-1">
             
 
-              <template v-for="mod in m">
+              <template v-for="mod in m" :key="mod">
                 <div class="m-2 m-md-0 col-sm-2 text-center">
                   <input type="checkbox" :value="mod" class="form-check-input" :id="`${mod}-1`" v-model="deleteModules" :disabled="!checkScheduleModule(mod)">
                   <label class= 'px-1 form-check-label' :for="`${mod}-1`"  >{{ mod }}</label>
@@ -200,7 +200,7 @@ onMounted(async () => {
           <template v-slot:form>
             <div class="row justify-content-center">
               
-                <template v-for="mod in m">
+                <template v-for="mod in m" :key="mod">
                   <div class="col-6 col-sm-2 col-lg-1  m-1">
                     
                     <input type="radio" :value="mod" class = 'btn-check' :id="`${mod}-2`" v-model="selectedModule">
