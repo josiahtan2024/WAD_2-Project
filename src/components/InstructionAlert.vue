@@ -28,7 +28,7 @@ const collapsed = ref(props.action!='Insert'); // LEAVE IT OPEN BY DEFAULT IF US
         </div>
       </div>
       <div class="flex-column mx-xs-auto mx-sm-0" :class="{'d-flex':!collapsed,'d-none':collapsed}">
-        <template v-for="(ins,i) in props.instructions">
+        <template v-for="(ins,i) in props.instructions" :key="i">
             <div class="d-flex flex-row align-items-center mb-2">
                 <div class="rounded p-2 border border-dark-subtle me-2 fw-bold">{{ i+1 }}</div>
                 <div>{{ins}}</div>
