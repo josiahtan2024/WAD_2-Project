@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { calculateMonthlyCost } from '@/lib/universityCost'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
@@ -7,9 +7,6 @@ import { useExchangeRatesStore } from '@/stores/exchangeRates'
 const props = defineProps({
   university: { type: Object, default: null },
 })
-
-const infoText = ref(null)
-const logoSize = ref(72)
 
 const logoUrl = computed(() => {
   const path = props.university?.logo_url
@@ -24,28 +21,6 @@ const logoUrl = computed(() => {
     .getPublicUrl(filePath).data.publicUrl
 })
 
-watch(
-  infoText,
-  (element, oldElement, onCleanup) => {
-    if (!element) return
-
-    const updateSize = () => {
-      logoSize.value = Math.ceil(
-        element.getBoundingClientRect().height
-      )
-    }
-
-    updateSize()
-
-    const observer = new ResizeObserver(updateSize)
-    observer.observe(element)
-
-    onCleanup(() => {
-      observer.disconnect()
-    })
-  },
-  { flush: 'post' }
-)
 
 
 const exchangeRates = useExchangeRatesStore()
@@ -88,34 +63,22 @@ const estimatedMonthlyCost = computed(() => {
 
     <template v-else>
       <div class="info-header mb-3">
-        <div
-          class="info-logo-box"
-          :style="{
-            width: `${logoSize}px`,
-            height: `${logoSize}px`
-          }"
-        >
-          <img
-            v-if="logoUrl"
-            :key="logoUrl"
-            :src="logoUrl"
-            :alt="`${university.name} logo`"
-            class="info-logo"
-          />
+        <div class="info-logo-box">
+        <img
+          v-if="logoUrl"
+          :key="logoUrl"
+          :src="logoUrl"
+          :alt="`${university.name} logo`"
+          class="info-logo"/>
           <i
-            v-else
-            class="bi bi-mortarboard fs-3 text-muted"
-            aria-hidden="true"
-          ></i>
+          v-else
+          class="bi bi-mortarboard fs-3 text-muted"
+          aria-hidden="true"></i>
         </div>
 
-        <div ref="infoText" class="info-text">
-          <h2 class="h5 mb-2" data-testid="info-name">
-            {{ university.name }}
-          </h2>
-          <p class="text-muted mb-0">
-            {{ university.city }}, {{ university.country }}
-          </p>
+        <div class="info-text">
+          <h2 class="h5 mb-2" data-testid="info-name">{{ university.name }}</h2>
+          <p class="text-muted mb-0">{{ university.city }}, {{ university.country }}</p>
         </div>
       </div>
 
@@ -143,6 +106,8 @@ const estimatedMonthlyCost = computed(() => {
 }
 
 .info-logo-box {
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -164,6 +129,5 @@ const estimatedMonthlyCost = computed(() => {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
-  margin-top: 0;
 }
 </style>
