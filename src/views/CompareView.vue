@@ -1,25 +1,23 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
-import { calculateMonthlyCost } from '@/lib/universityCost'
-import { useRouter } from 'vue-router'
-import { useShortlistStore } from '@/stores/shortlist'
-import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const shortlist = useShortlistStore()
 const auth = useAuthStore()
 
+// TODO TO-DO FIX SCALING AND RESPONSIVE UI
+// Universities
 const universities = ref([])
-const isLoading = ref(true)
-
+const uniIsLoading = ref(true)
 async function fetchUniversities() {
-    isLoading.value = true
+    uniIsLoading.value = true
     try {
         const { data, error } = await supabase
             .from('universities')
@@ -42,7 +40,7 @@ async function fetchUniversities() {
             const food = Number(cost.food || 0)
             const transport = Number(cost.transport || 0)
             const personal = Number(cost.personal_expenses || 0)
-            const total = calculateMonthlyCost(uni.university_costs)
+            const total = accom + food + transport + personal
 
             const periods = (uni.exchange_periods || []).map(period => ({
                 id: period.id,
@@ -97,43 +95,41 @@ async function fetchUniversities() {
                     periods: periods
                 }
             }
-        })
+        }).sort((a, b) => a.name.localeCompare(b.name))
     } catch (error) {
         console.error('Error fetching universities from Supabase:', error.message)
     } finally {
-        isLoading.value = false
+        uniIsLoading.value = false
     }
 }
 
-const shortlistedIds = computed(() =>
-    shortlist.items.map(item => item.university_id)
-)
-
-const isShortlisted = (uniId) => {
-    return shortlistedIds.value.includes(uniId)
-}
-
-async function toggleShortlist(uniId) {
-    if (!auth.user) {
-        return router.push({
-            name: 'login',
-            query: { redirect: '/compare' }
-        })
-    }
-
-    if (shortlist.loading || shortlist.saving) return
+// Shortlist
+const shortlist = ref([])
+const shortlistIsLoading = ref(true)
+async function fetchShortlist() {
+    shortlistIsLoading.value = true
+    if (!auth.user) return
 
     try {
-        if (isShortlisted(uniId)) {
-            await shortlist.remove(uniId)
-        } else {
-            await shortlist.add(uniId)
-        }
+        const { data, error } = await supabase
+            .from('shortlists')
+            .select('*')
+            .eq('user_id', auth.user.id)
+            .order('id', { ascending: false })
+
+        if (error) throw error
+
+        shortlist.value = data
     } catch (error) {
-        shortlist.error = error.message
+        console.error('Error fetching shortlist from Supabase:', error.message)
+    } finally {
+        shortlistIsLoading.value = false
     }
 }
-// Lines 11-45 to be removed - temp solution for shortlisting demo
+
+const shortlistedIds = computed(() => {
+    return shortlist.value.map(item => item.university_id)
+})
 
 const shortlistedUnis = computed(() => {
     return universities.value.filter(uni => shortlistedIds.value.includes(uni.id))
@@ -143,71 +139,77 @@ const remainingUnis = computed(() => {
     return universities.value.filter(uni => !shortlistedIds.value.includes(uni.id))
 })
 
-// TO-DO: Slot1 from Query(or pass in hidden payload)
-const COMPARE_STORAGE_KEY = 'smu_geo_compare_slots'
+const isShortlisted = (uniId) => {
+    return shortlistedIds.value.includes(uniId)
+}
 
+async function toggleShortlist(uniId) {
+    shortlistIsLoading.value = true
+    if (!auth.user) {
+        return router.push({
+            name: 'login',
+            query: { redirect: '/compare' }
+        })
+    }
+
+    try {
+        if (isShortlisted(uniId)) {
+            const { error } = await supabase
+                .from('shortlists')
+                .delete()
+                .eq('user_id', auth.user.id)
+                .eq('university_id', uniId)
+
+            if (error) throw error
+            shortlist.value = shortlist.value.filter(item => item.university_id !== uniId)
+        } else {
+            const { data, error } = await supabase
+                .from('shortlists')
+                .insert({
+                    user_id: auth.user.id,
+                    university_id: uniId
+                })
+                .select()
+                .single()
+
+            if (error) throw error
+            if (data) shortlist.value.push(data)
+        }
+    } catch (error) {
+        console.error(error.message)
+    } finally {
+        shortlistIsLoading.value = false
+    }
+}
+
+// Compare
+const COMPARE_STORAGE_KEY = 'SMUXchange_compare_slots'
 function getStoredCompareSlots() {
     try {
         const raw = sessionStorage.getItem(COMPARE_STORAGE_KEY)
         if (!raw) return [null, null, null]
-
+        
         const slots = JSON.parse(raw)
 
-        if (
-            Array.isArray(slots) &&
-            slots.length === 3 &&
-            slots.every(id =>
-                id === null || (Number.isSafeInteger(id) && id > 0)
-            ) &&
-            new Set(slots.filter(id => id !== null)).size ===
-                slots.filter(id => id !== null).length
-        ) {
+        if (Array.isArray(slots) && slots.length === 3
+            && slots.every(id => id === null || (Number.isSafeInteger(id) && id > 0)) 
+            && new Set(slots.filter(id => id !== null)).size === slots.filter(id => id !== null).length) {
             return slots
         }
     } catch (error) {
-        console.error('Failed to restore compare selection:', error)
+        console.error(`Failed to restore compare selection: `, error)
     }
-
     return [null, null, null]
 }
 
 const uniSlots = ref(getStoredCompareSlots())
-
-watch(
-    () => [...uniSlots.value],
-    (slots) => {
-        try {
-            sessionStorage.setItem(
-                COMPARE_STORAGE_KEY,
-                JSON.stringify(slots)
-            )
-        } catch (error) {
-            console.error('Failed to save compare selection:', error)
-        }
-    }
-)
-
 const uniCurrencies = ref(['home', 'home', 'home'])
 const uniProgrammes = ref([0, 0, 0])
 
-// Comparision Data
 const unisToCompare = computed (() => {
     return uniSlots.value.map(id => {
         return universities.value.find(uni => uni.id === id) || null })
 })
-
-const selectRefs = ref([]);
-const openDropdown = (idx) => {
-    const selectEl = selectRefs.value[idx];
-    if (selectEl) {
-        // showPicker() opens the dropdown immediately on click
-        if (typeof selectEl.showPicker === 'function') {
-            selectEl.showPicker();
-        } else {
-            selectEl.focus();
-        }
-    }
-};
 
 // Uni Selection Helper
 function selectUniversity(slotIndex, uniId) {
@@ -249,67 +251,17 @@ function selectUniversity(slotIndex, uniId) {
     }
 }
 
-// Location Helper
-function formatLocation(location) {
-    if (!location) return ''
-    const { city, state, country } = location
-    if (city === state && state === country) return country
-    if (city === state || state === country) return `${city}, ${country}`
-    return `${city}, ${state}, ${country}`
-}
-
-function distanceFromSMU(coordinates) {
-    if (!coordinates?.lat || !coordinates?.lon) return '-'
-    // Haversine Formula
-    const lat1 = 1.29627
-    const lon1 = 103.85185
-    const lat2 = coordinates.lat
-    const lon2 = coordinates.lon
-    const R = 6371
-    const dLat = (lat2 - lat1) * Math.PI / 180
-    const dLon = (lon2 - lon1) * Math.PI / 180
-
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return Math.round(R * c)
-}
-
-// Cost/Currency Helpers
-function formatCurrency(value, currency) {
-    if (value === null || value === undefined) return '-'
-    return value.toLocaleString('en-SG', {
-        style: 'currency',
-        currency: currency,
-        maximumFractionDigits: 0
-    })
-}
-
-function formatCost(value, homeCurrency, idx) {
-    if (value === null || value === undefined) return '-'
-    // Check if user selected SGD
-    const showSGD = uniCurrencies.value[idx] === 'SGD'
-    if (showSGD && homeCurrency !== 'SGD') {
-        const rate = ratesMap.value[homeCurrency]
-        // Convert to SGD if rate exists, otherwise default to home currency
-        return rate ? formatCurrency(value / rate, 'SGD') : formatCurrency(value, homeCurrency)
+const selectRefs = ref([]);
+function openDropdown(idx) {
+    const selectEl = selectRefs.value[idx];
+    if (selectEl) {
+        if (typeof selectEl.showPicker === 'function') {
+            selectEl.showPicker();
+        } else {
+            selectEl.focus();
+        }
     }
-    return formatCurrency(value, homeCurrency)
-}
-
-//  Exchange Helper
-function formatExchangeDate(dateStr) {
-    if (dateStr === null || dateStr === 'N/A') return 'N/A'
-    const [year, month, day] = dateStr.split('-')
-    if (!year || !month || !day) return dateStr
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric'
-    }) // Output: "Jan 2027"
-}
+};
 
 // Maps - Leaflet API
 // TO-DO: Implement Google Maps API for better visuals
@@ -353,6 +305,33 @@ async function createMap(idx) {
     })
 }
 
+// Location Helper
+function formatLocation(location) {
+    if (!location) return ''
+    const { city, state, country } = location
+    if (city === state && state === country) return country
+    if (city === state || state === country) return `${city}, ${country}`
+    return `${city}, ${state}, ${country}`
+}
+
+function distanceFromSMU(coordinates) {
+    if (!coordinates?.lat || !coordinates?.lon) return '-'
+    const lat1 = 1.29627
+    const lon1 = 103.85185
+    const lat2 = coordinates.lat
+    const lon2 = coordinates.lon
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return Math.round(R * c)
+}
+
 // FX Rates - Frankfurter API
 const currencyRates = ref([])
 async function fetchCurrencyRates() {
@@ -373,29 +352,54 @@ const ratesMap = computed(() => {
     }, {})
 })
 
+// Cost/Currency Helpers
+function formatCurrency(value, currency) {
+    if (value === null || value === undefined) return '-'
+    return value.toLocaleString('en-SG', {
+        style: 'currency',
+        currency: currency,
+        maximumFractionDigits: 0
+    })
+}
+
+function formatCost(value, homeCurrency, idx) {
+    if (value === null || value === undefined) return '-'
+    // Check if user selected SGD
+    const showSGD = uniCurrencies.value[idx] === 'SGD'
+    if (showSGD && homeCurrency !== 'SGD') {
+        const rate = ratesMap.value[homeCurrency]
+        // Convert to SGD if rate exists, otherwise default to home currency
+        return rate ? formatCurrency(value / rate, 'SGD') : formatCurrency(value, homeCurrency)
+    }
+    return formatCurrency(value, homeCurrency)
+}
+
+//  Exchange Helper
+function formatExchangeDate(dateStr) {
+    if (dateStr === null || dateStr === 'N/A') return 'N/A'
+    const [year, month, day] = dateStr.split('-')
+    if (!year || !month || !day) return dateStr
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
+    }) // Output: "Jan 2027"
+}
+
 // Lifecycle
 onMounted(async () => {
-    const loadShortlist = async () => {
-        if (!auth.user) return
-
-        try {
-            await shortlist.load()
-        } catch (error) {
-            shortlist.error = error.message
-        }
-    }
-
     await Promise.all([
-        fetchUniversities(),
-        loadShortlist()
+        fetchCurrencyRates(),
+        fetchShortlist(),
+        fetchUniversities()
     ])
-
     unisToCompare.value.forEach((uni, idx) => createMap(idx))
-    fetchCurrencyRates()
 })
+
 watch(
     () => [...uniSlots.value],
     (newSlots, oldSlots) => {
+        sessionStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(newSlots))
         newSlots.forEach((slot, idx) => {
             if (slot !== oldSlots[idx]) {
                 uniCurrencies.value[idx] = 'home'
@@ -420,8 +424,6 @@ watch(
         </section>
 
         <section class="container pb-5 mb-5">
-            <div v-if="shortlist.error" class="alert alert-warning" role="alert">{{ shortlist.error }}</div>
-            <div v-if="shortlist.loading" class="text-muted mb-3">Loading shortlist...</div>
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
@@ -431,9 +433,6 @@ watch(
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
                         class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
                             <option value="">Choose a university</option>
-                            <!-- <option v-for="uni in universities" :key="uni.id" :value="uni.id"
-                            :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option> -->
-                            <!-- TO-DO: Grouping TODO -->
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
@@ -478,8 +477,7 @@ watch(
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
                             <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
-                            :disabled="shortlist.loading || shortlist.saving" 
-                            @click="toggleShortlist(uni.id)">
+                            :disabled="shortlistIsLoading" @click="toggleShortlist(uni.id)">
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
