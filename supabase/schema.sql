@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS shortlists (
 
 CREATE TABLE IF NOT EXISTS user_budgets (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL
+    user_id UUID NOT NULL
         REFERENCES auth.users(id) ON DELETE CASCADE,
     university_id BIGINT NOT NULL
         REFERENCES universities(id) ON DELETE CASCADE,
@@ -122,6 +122,9 @@ CREATE TABLE IF NOT EXISTS user_budgets (
     transport_budget NUMERIC CHECK (transport_budget >= 0),
     personal_budget NUMERIC CHECK (personal_budget >= 0),
     other_budget NUMERIC CHECK (other_budget >= 0),
+
+    -- One budget per user per university
+    UNIQUE (user_id, university_id),
 
     FOREIGN KEY (exchange_period_id, university_id)
         REFERENCES exchange_periods(id, university_id)
@@ -145,12 +148,14 @@ CREATE TABLE IF NOT EXISTS university_reviews (
 
 CREATE TABLE IF NOT EXISTS timetables (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL
+    user_id UUID NOT NULL
         REFERENCES auth.users(id) ON DELETE CASCADE,
     university_id BIGINT NOT NULL
         REFERENCES universities(id) ON DELETE CASCADE,
     exchange_period_id BIGINT NOT NULL,
 
+    -- One timetable per user per university
+    UNIQUE (user_id, university_id),
     UNIQUE (id, university_id, exchange_period_id),
 
     FOREIGN KEY (exchange_period_id, university_id)
