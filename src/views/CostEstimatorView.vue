@@ -6,6 +6,7 @@ import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
 import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
 import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'
 import BudgetPlannerForm from '@/components/BudgetPlannerForm.vue'
+import BudgetDetailsDialog from '@/components/BudgetDetailsDialog.vue'
 
 const universities = ref([])
 const exchangePeriods = ref([])
@@ -38,6 +39,7 @@ const budgetSortBy = ref('recent')
 const editingBudgetId = ref(null)
 const deletingBudgetId = ref(null)
 const budgetToDelete = ref(null)
+const budgetToRead = ref(null)
 
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -625,6 +627,14 @@ function deleteBudget(budget) {
   budgetToDelete.value = budget
 }
 
+function readBudget(budget) {
+  budgetToRead.value = budget
+}
+
+function closeBudgetDetails() {
+  budgetToRead.value = null
+}
+
 function cancelDeleteBudget() {
   if (deletingBudgetId.value !== null) return
   budgetToDelete.value = null
@@ -776,6 +786,12 @@ onMounted(async () => {
         @confirm="confirmDeleteBudget"
       />
 
+      <BudgetDetailsDialog
+        :budget="budgetToRead"
+        :format-money="formatMoney"
+        @close="closeBudgetDetails"
+      />
+
       <SavedBudgetsPanel
         v-if="currentView === 'list'"
         v-model:search-query="budgetSearchQuery"
@@ -788,6 +804,7 @@ onMounted(async () => {
         :deleting-budget-id="deletingBudgetId"
         :format-money="formatMoney"
         @create="createNewBudget"
+        @read="readBudget"
         @edit="editBudget"
         @delete="deleteBudget"
       />
