@@ -12,7 +12,7 @@ const searchQuery = defineModel('searchQuery', { type: String, default: '' })
 const regionFilter = defineModel('regionFilter', { type: String, default: '' })
 const sortBy = defineModel('sortBy', { type: String, default: 'recent' })
 
-const emit = defineEmits(['create', 'edit', 'delete'])
+const emit = defineEmits(['create', 'read', 'edit', 'delete'])
 
 function resetFilters() {
   searchQuery.value = ''
@@ -86,12 +86,18 @@ function resetFilters() {
             <thead><tr><th>University</th><th>Exchange period</th><th>Duration</th><th>Total budget</th><th class="text-end">Actions</th></tr></thead>
             <tbody>
               <tr v-for="budget in props.filteredBudgets" :key="budget.id">
-                <td data-label="University"><div class="fw-semibold">{{ budget.university_name }}</div><div class="small text-secondary">{{ budget.university_country }}</div></td>
+                <td data-label="University">
+                  <div>
+                    <div class="fw-semibold">{{ budget.university_name }}</div>
+                    <div class="small text-secondary">{{ budget.university_country }}</div>
+                  </div>
+                </td>
                 <td data-label="Exchange period">{{ budget.period_name || 'Not specified' }}</td>
                 <td data-label="Duration">{{ budget.duration_months }} month<span v-if="Number(budget.duration_months) !== 1">s</span></td>
                 <td data-label="Total budget" class="fw-semibold text-nowrap">{{ props.formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}</td>
                 <td data-label="Actions">
                   <div class="d-flex justify-content-end gap-2 budget-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="emit('read', budget)">Read</button>
                     <button type="button" class="btn btn-sm btn-outline-primary" @click="emit('edit', budget)">Edit</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" :disabled="props.deletingBudgetId === budget.id" @click="emit('delete', budget)">{{ props.deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}</button>
                   </div>
