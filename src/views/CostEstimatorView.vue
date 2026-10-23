@@ -1,6 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
+import BudgetNotice from '@/components/BudgetNotice.vue'
+import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
+import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
+import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'
+import BudgetPlannerForm from '@/components/BudgetPlannerForm.vue'
 
 const universities = ref([])
 const exchangePeriods = ref([])
@@ -757,203 +762,35 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <!-- Floating notification cards stay visible at the top of the page,
-           including after the app switches between the list and planner views. -->
-      <Transition name="notice">
-        <div
-          v-if="errorMessage || successMessage"
-          class="budget-notice-wrap"
-          aria-live="polite"
-        >
-          <div
-            v-if="errorMessage"
-            class="budget-notice budget-notice-error card border-0 shadow-lg"
-            role="alert"
-          >
-            <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
-              <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
-              <div class="flex-grow-1">
-                <h2 class="h6 fw-bold mb-1">Something went wrong</h2>
-                <p class="mb-0">{{ errorMessage }}</p>
-              </div>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="Dismiss error message"
-                @click="errorMessage = ''"
-              ></button>
-            </div>
-          </div>
+      <BudgetNotice
+        :error-message="errorMessage"
+        :success-message="successMessage"
+        @dismiss-error="errorMessage = ''"
+        @dismiss-success="successMessage = ''"
+      />
 
-          <div
-            v-else-if="successMessage"
-            class="budget-notice budget-notice-success card border-0 shadow-lg"
-            role="status"
-          >
-            <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
-              <div class="notice-icon notice-icon-success" aria-hidden="true">✓</div>
-              <div class="flex-grow-1">
-                <h2 class="h6 fw-bold mb-1">Successfully completed</h2>
-                <p class="mb-0">{{ successMessage }}</p>
-              </div>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="Dismiss success message"
-                @click="successMessage = ''"
-              ></button>
-            </div>
-          </div>
-        </div>
-      </Transition>
+      <DeleteBudgetDialog
+        :budget="budgetToDelete"
+        :deleting="deletingBudgetId !== null"
+        @cancel="cancelDeleteBudget"
+        @confirm="confirmDeleteBudget"
+      />
 
-      <!-- In-app delete confirmation card, styled consistently with notifications. -->
-      <Transition name="delete-modal">
-        <div
-          v-if="budgetToDelete"
-          class="delete-confirm-backdrop"
-          role="presentation"
-          @click.self="cancelDeleteBudget"
-        >
-          <section
-            class="delete-confirm-card card border-0 shadow-lg"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-confirm-title"
-            aria-describedby="delete-confirm-description"
-          >
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start gap-3 mb-3">
-                <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
-                <div class="flex-grow-1">
-                  <h2 id="delete-confirm-title" class="h5 fw-bold mb-1">Delete this budget?</h2>
-                  <p id="delete-confirm-description" class="text-secondary mb-0">
-                    Are you sure you want to delete the budget for
-                    <strong>{{ budgetToDelete.university_name }}</strong>?
-                    This action cannot be undone.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="btn-close"
-                  aria-label="Cancel deletion"
-                  :disabled="deletingBudgetId !== null"
-                  @click="cancelDeleteBudget"
-                ></button>
-              </div>
-              <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4">
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  :disabled="deletingBudgetId !== null"
-                  @click="cancelDeleteBudget"
-                >Cancel</button>
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  :disabled="deletingBudgetId !== null"
-                  @click="confirmDeleteBudget"
-                >
-                  <span
-                    v-if="deletingBudgetId === budgetToDelete.id"
-                    class="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-                  {{ deletingBudgetId === budgetToDelete.id ? 'Deleting…' : 'Delete Budget' }}
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      </Transition>
-
-      <section v-if="currentView === 'list'" class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3 p-md-4">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-            <div>
-              <h2 class="h4 fw-bold mb-1">My Budgets</h2>
-              <p class="text-secondary mb-0">View and manage your saved exchange budgets.</p>
-            </div>
-            <button type="button" class="btn btn-primary" @click="createNewBudget">＋ Create New Budget</button>
-          </div>
-          <div v-if="budgetsLoading" class="text-center py-5">
-            <div class="spinner-border text-primary mb-3" role="status"><span class="visually-hidden">Loading...</span></div>
-            <p class="text-secondary mb-0">Loading your budgets...</p>
-          </div>
-          <div v-else-if="savedBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-            <div class="display-6 mb-3">🧳</div>
-            <h3 class="h5 fw-bold">No budgets yet</h3>
-            <p class="text-secondary mb-3">Create your first exchange budget to start planning your expenses.</p>
-            <button type="button" class="btn btn-primary" @click="createNewBudget">Create Your First Budget</button>
-          </div>
-          <div v-else>
-            <div v-if="savedBudgets.length" class="budget-filters rounded-4 p-3 p-md-4 mb-4">
-              <div class="row g-3 align-items-end">
-                <div class="col-12 col-lg-5">
-                  <label for="budgetSearch" class="form-label fw-semibold">Search budgets</label>
-                  <input
-                    id="budgetSearch"
-                    v-model="budgetSearchQuery"
-                    type="search"
-                    class="form-control"
-                    placeholder="Search university, country, region or period"
-                  />
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                  <label for="budgetRegion" class="form-label fw-semibold">Filter by region</label>
-                  <select id="budgetRegion" v-model="selectedRegionFilter" class="form-select">
-                    <option value="">All regions</option>
-                    <option v-for="region in availableBudgetRegions" :key="region" :value="region">{{ region }}</option>
-                  </select>
-                </div>
-                <div class="col-12 col-sm-6 col-lg-4">
-                  <label for="budgetSort" class="form-label fw-semibold">Sort by</label>
-                  <select id="budgetSort" v-model="budgetSortBy" class="form-select">
-                    <option value="recent">Recently added</option>
-                    <option value="name">University name (A–Z)</option>
-                    <option value="country">Country (A–Z)</option>
-                    <option value="cost">Total cost (low to high)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-                <span class="small text-secondary">Showing {{ filteredBudgets.length }} of {{ savedBudgets.length }} budget<span v-if="savedBudgets.length !== 1">s</span></span>
-                <button
-                  v-if="budgetSearchQuery || selectedRegionFilter || budgetSortBy !== 'recent'"
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  @click="budgetSearchQuery = ''; selectedRegionFilter = ''; budgetSortBy = 'recent'"
-                >Reset search and filters</button>
-              </div>
-            </div>
-
-            <div v-if="filteredBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-              <div class="display-6 mb-3">🔎</div>
-              <h3 class="h5 fw-bold">No matching budgets</h3>
-              <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
-              <button type="button" class="btn btn-outline-primary" @click="budgetSearchQuery = ''; selectedRegionFilter = ''; budgetSortBy = 'recent'">Clear filters</button>
-            </div>
-            <div v-else class="table-responsive">
-            <table class="table align-middle budget-table mb-0">
-              <thead><tr><th>University</th><th>Exchange period</th><th>Duration</th><th>Total budget</th><th class="text-end">Actions</th></tr></thead>
-              <tbody>
-                <tr v-for="budget in filteredBudgets" :key="budget.id">
-                  <td data-label="University"><div class="fw-semibold">{{ budget.university_name }}</div><div class="small text-secondary">{{ budget.university_country }}</div></td>
-                  <td data-label="Exchange period">{{ budget.period_name || 'Not specified' }}</td>
-                  <td data-label="Duration">{{ budget.duration_months }} month<span v-if="Number(budget.duration_months) !== 1">s</span></td>
-                  <td data-label="Total budget" class="fw-semibold text-nowrap">{{ formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}</td>
-                  <td data-label="Actions"><div class="d-flex justify-content-end gap-2 budget-actions">
-                    <button type="button" class="btn btn-sm btn-outline-primary" @click="editBudget(budget)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" :disabled="deletingBudgetId === budget.id" @click="deleteBudget(budget)">{{ deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}</button>
-                  </div></td>
-                </tr>
-              </tbody>
-            </table>
-            </div>
-          </div>
-          <p v-if="savedBudgets.length" class="small text-secondary mt-3 mb-0">{{ savedBudgets.length }} saved budget<span v-if="savedBudgets.length !== 1">s</span> in total</p>
-        </div>
-      </section>
+      <SavedBudgetsPanel
+        v-if="currentView === 'list'"
+        v-model:search-query="budgetSearchQuery"
+        v-model:region-filter="selectedRegionFilter"
+        v-model:sort-by="budgetSortBy"
+        :budgets="savedBudgets"
+        :filtered-budgets="filteredBudgets"
+        :regions="availableBudgetRegions"
+        :loading="budgetsLoading"
+        :deleting-budget-id="deletingBudgetId"
+        :format-money="formatMoney"
+        @create="createNewBudget"
+        @edit="editBudget"
+        @delete="deleteBudget"
+      />
 
       <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
         No universities are available yet. Please add universities
@@ -965,611 +802,60 @@ onMounted(async () => {
       </div>
 
       <div v-if="currentView === 'planner' && universities.length > 0" class="row g-4 align-items-start">
-        <section class="col-12 col-lg-5">
-          <div class="summary-column">
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-              <div class="card-body p-4">
-                <p class="text-secondary small mb-1">
-                  Your estimated exchange budget
-                </p>
-
-                <h2 class="display-6 fw-bold mb-1">
-                  {{ formatMoney(totalExchangeBudget) }}
-                </h2>
-
-                <p class="text-secondary small mb-0">
-                  For {{ durationMonths }} month<span
-                    v-if="Number(durationMonths) !== 1"
-                  >s</span>
-                </p>
-
-                <hr />
-
-                <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Monthly budget</span>
-                  <strong>{{ formatMoney(monthlyBudget) }}</strong>
-                </div>
-
-                <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Exchange duration</span>
-                  <strong>
-                    {{ durationMonths }}
-                    month<span v-if="Number(durationMonths) !== 1">s</span>
-                  </strong>
-                </div>
-
-                <div class="d-flex justify-content-between gap-3">
-                  <span class="text-secondary">Estimated in SGD</span>
-                  <strong>
-                    {{
-                      totalBudgetSGD === null
-                        ? 'Not available'
-                        : formatMoney(totalBudgetSGD, 'SGD')
-                    }}
-                  </strong>
-                </div>
-
-                <p
-                  v-if="rateLoading"
-                  class="small text-secondary mt-3 mb-0"
-                >
-                  Updating currency conversion...
-                </p>
-
-                <p
-                  v-else-if="currencyCode !== 'SGD' && exchangeRate === 1"
-                  class="small text-warning mt-3 mb-0"
-                >
-                  SGD conversion may be unavailable. Check the exchange rate
-                  before relying on the converted amount.
-                </p>
-
-                <p
-                  v-else-if="currencyCode !== 'SGD'"
-                  class="small text-secondary mt-3 mb-0"
-                >
-                  Indicative conversion using the latest available
-                  Frankfurter rate. Your bank may use a different rate.
-                </p>
-              </div>
-            </div>
-
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-              <div class="card-body p-4">
-                <div
-                  class="d-flex justify-content-between align-items-start gap-2 mb-3"
-                >
-                  <div>
-                    <h2 class="h5 fw-bold mb-1">
-                      Estimated university costs
-                    </h2>
-
-                    <p class="small text-secondary mb-0">
-                      {{ selectedUniversity?.name || 'Select a university to view costs' }}
-                    </p>
-                  </div>
-
-                  <span class="badge text-bg-light border">
-                    Published estimate
-                  </span>
-                </div>
-
-                <div v-if="!selectedUniversityId">
-                  <p class="text-secondary mb-0">
-                    Choose a destination university on the right to view
-                    its available cost estimates.
-                  </p>
-                </div>
-
-                <div v-else-if="!publishedCost">
-                  <p class="text-secondary mb-0">
-                    No published cost estimate is available for this
-                    university yet.
-                  </p>
-                </div>
-
-                <div v-else>
-                  <div
-                    v-for="item in [
-                      { label: 'Accommodation', value: publishedCost.accommodation },
-                      { label: 'Food', value: publishedCost.food },
-                      { label: 'Transport', value: publishedCost.transport },
-                      { label: 'Personal expenses', value: publishedCost.personal_expenses },
-                      { label: 'Other expenses', value: publishedCost.other_expenses }
-                    ]"
-                    :key="item.label"
-                    class="d-flex justify-content-between gap-3 mb-3"
-                  >
-                    <span class="text-secondary">{{ item.label }}</span>
-
-                    <span class="fw-semibold text-end">
-                      {{
-                        item.value === null || item.value === undefined
-                          ? '—'
-                          : formatMoney(item.value)
-                      }}
-                    </span>
-                  </div>
-
-                  <hr />
-
-                  <div class="d-flex justify-content-between gap-3 mb-2">
-                    <span class="fw-semibold">Estimated monthly total</span>
-                    <strong>
-                      {{
-                        publishedMonthlyCost === null
-                          ? 'Not available'
-                          : formatMoney(publishedMonthlyCost)
-                      }}
-                    </strong>
-                  </div>
-
-                  <div class="d-flex justify-content-between gap-3">
-                    <span class="fw-semibold">
-                      Estimated total for your period
-                    </span>
-
-                    <strong class="text-primary text-end">
-                      {{
-                        publishedTotalCost === null
-                          ? 'Not available'
-                          : formatMoney(publishedTotalCost)
-                      }}
-                    </strong>
-                  </div>
-
-                  <div
-                    v-if="publishedTotalSGD !== null && currencyCode !== 'SGD'"
-                    class="d-flex justify-content-between gap-3 mt-2"
-                  >
-                    <span class="small text-secondary">
-                      Approximate SGD total
-                    </span>
-
-                    <span class="small fw-semibold">
-                      {{ formatMoney(publishedTotalSGD, 'SGD') }}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary w-100 mt-4"
-                    @click="usePublishedEstimates"
-                  >
-                    Use Published Estimates
-                  </button>
-
-                  <p class="small text-secondary mt-3 mb-0">
-                    Check the original source and reporting period before
-                    using these estimates. They may not reflect current prices.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-if="publishedTotalCost !== null"
-              class="card border-0 shadow-sm rounded-4"
-            >
-              <div class="card-body p-4">
-                <h2 class="h5 fw-bold mb-3">Budget comparison</h2>
-
-                <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Your budget</span>
-                  <strong class="text-end">
-                    {{ formatMoney(totalExchangeBudget) }}
-                  </strong>
-                </div>
-
-                <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Published estimate</span>
-                  <strong class="text-end">
-                    {{ formatMoney(publishedTotalCost) }}
-                  </strong>
-                </div>
-
-                <div
-                  class="rounded-3 p-3"
-                  :class="{
-                    'comparison-below': budgetStatus === 'below',
-                    'comparison-above': budgetStatus === 'above',
-                    'comparison-equal': budgetStatus === 'equal'
-                  }"
-                >
-                  <p class="small mb-1">
-                    {{
-                      budgetStatus === 'below'
-                        ? 'Your budget is below the published estimate by'
-                        : budgetStatus === 'above'
-                          ? 'Your budget is above the published estimate by'
-                          : 'Your budget matches the published estimate'
-                    }}
-                  </p>
-
-                  <strong>
-                    {{ formatMoney(Math.abs(remainingBudget)) }}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <BudgetSummaryPanel
+          :selected-university="selectedUniversity"
+          :selected-university-id="selectedUniversityId"
+          :duration-months="durationMonths"
+          :total-exchange-budget="totalExchangeBudget"
+          :monthly-budget="monthlyBudget"
+          :total-budget-s-g-d="totalBudgetSGD"
+          :rate-loading="rateLoading"
+          :currency-code="currencyCode"
+          :exchange-rate="exchangeRate"
+          :published-cost="publishedCost"
+          :published-monthly-cost="publishedMonthlyCost"
+          :published-total-cost="publishedTotalCost"
+          :published-total-s-g-d="publishedTotalSGD"
+          :remaining-budget="remainingBudget"
+          :budget-status="budgetStatus"
+          :format-money="formatMoney"
+          @use-published-estimates="usePublishedEstimates"
+        />
 
         <section class="col-12 col-lg-7">
-          <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4 p-md-5">
-              <div class="mb-4">
-                <h2 class="h4 fw-bold mb-2">{{ editingBudgetId ? "Edit your budget" : "Plan your expenses" }}</h2>
-
-                <p class="text-secondary mb-0">
-                  Select your destination and exchange period, then
-                  customise your monthly expenses. Preferences are optional.
-                </p>
-              </div>
-
-              <form @submit.prevent="saveBudget">
-                <div class="mb-4">
-                  <label for="university" class="form-label fw-semibold">
-                    Destination university
-                  </label>
-
-                  <select
-                    id="university"
-                    v-model="selectedUniversityId"
-                    class="form-select form-select-lg"
-                  >
-                    <option value="">Select a university</option>
-
-                    <option
-                      v-for="university in universities"
-                      :key="university.id"
-                      :value="String(university.id)"
-                    >
-                      {{ university.name }} — {{ university.country }}
-                    </option>
-                  </select>
-
-                  <div
-                    v-if="selectedUniversity"
-                    class="small text-secondary mt-2"
-                  >
-                    <span v-if="selectedUniversity.city">
-                      {{ selectedUniversity.city }},
-                    </span>
-
-                    {{ selectedUniversity.country }}
-
-                    <span v-if="selectedUniversity.region">
-                      · {{ selectedUniversity.region }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="mb-4">
-                  <label for="exchangePeriod" class="form-label fw-semibold">
-                    Exchange period
-                    <span class="optional-label">(optional)</span>
-                  </label>
-
-                  <select
-                    id="exchangePeriod"
-                    v-model="selectedPeriodId"
-                    class="form-select form-select-lg"
-                    :disabled="!selectedUniversityId || exchangePeriods.length === 0"
-                  >
-                    <option value="">Select a period (optional)</option>
-
-                    <option
-                      v-for="period in exchangePeriods"
-                      :key="period.id"
-                      :value="String(period.id)"
-                    >
-                      {{ period.period_name }}
-                      <template v-if="period.term">
-                        — {{ period.term }}
-                      </template>
-                      <template v-if="period.academic_year">
-                        ({{ period.academic_year }})
-                      </template>
-                    </option>
-                  </select>
-
-                  <div
-                    v-if="selectedPeriod"
-                    class="period-details rounded-3 p-3 mt-3"
-                  >
-                    <div class="mb-3">
-                      <div class="small text-secondary">Exchange dates</div>
-                      <div class="fw-semibold">
-                        {{ formatDate(selectedPeriod.start_date) }}
-                        –
-                        {{ formatDate(selectedPeriod.end_date) }}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div class="small text-secondary">
-                        Calculated duration
-                      </div>
-                      <div class="fw-semibold">
-                        {{ durationMonths }}
-                        month<span v-if="Number(durationMonths) !== 1">s</span>
-                      </div>
-                    </div>
-
-                    <p class="small text-secondary mt-2 mb-0">
-                      Duration updates automatically from the selected dates.
-                      You can adjust it below.
-                    </p>
-                  </div>
-
-                  <p
-                    v-else-if="selectedUniversityId && exchangePeriods.length === 0"
-                    class="form-text"
-                  >
-                    No exchange periods are available for this university.
-                    You can enter the duration manually.
-                  </p>
-                </div>
-
-                <div class="mb-4">
-                  <label for="duration" class="form-label fw-semibold">
-                    Exchange duration (months)
-                  </label>
-
-                  <input
-                    id="duration"
-                    v-model.number="durationMonths"
-                    type="number"
-                    class="form-control form-control-lg"
-                    min="1"
-                    max="12"
-                    step="1"
-                    required
-                  />
-
-                  <div class="form-text">
-                    Choose an exchange period to calculate the duration
-                    automatically, or enter the duration yourself.
-                  </div>
-                </div>
-
-                <hr class="my-4" />
-
-                <div class="mb-4">
-                  <h3 class="h5 fw-bold mb-1">Monthly expenses</h3>
-
-                  <p class="small text-secondary mb-0">
-                    All lifestyle dropdowns are optional. Leave them blank
-                    and enter your own amounts if you prefer.
-                  </p>
-                </div>
-
-                <div class="mb-3">
-                  <label for="housingType" class="form-label fw-semibold">
-                    Accommodation type
-                    <span class="optional-label">(optional)</span>
-                  </label>
-
-                  <select
-                    id="housingType"
-                    v-model="housingType"
-                    class="form-select form-select-lg"
-                    @change="updateAccommodationPrice"
-                  >
-                    <option value="">Select accommodation (optional)</option>
-
-                    <option
-                      v-for="option in housingOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="mb-4">
-                  <label for="accommodation" class="form-label">
-                    Monthly accommodation cost
-                  </label>
-
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
-
-                    <input
-                      id="accommodation"
-                      v-model.number="accommodation"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-
-                </div>
-
-                <div class="mb-3">
-                  <label for="foodOption" class="form-label fw-semibold">
-                    Food preference
-                    <span class="optional-label">(optional)</span>
-                  </label>
-
-                  <select
-                    id="foodOption"
-                    v-model="foodOption"
-                    class="form-select form-select-lg"
-                    @change="updateFoodPrice"
-                  >
-                    <option value="">Select food preference (optional)</option>
-
-                    <option
-                      v-for="option in foodOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="mb-4">
-                  <label for="food" class="form-label">
-                    Monthly food and groceries cost
-                  </label>
-
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
-
-                    <input
-                      id="food"
-                      v-model.number="food"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="transportOption" class="form-label fw-semibold">
-                    Transport method
-                    <span class="optional-label">(optional)</span>
-                  </label>
-
-                  <select
-                    id="transportOption"
-                    v-model="transportOption"
-                    class="form-select form-select-lg"
-                    @change="updateTransportPrice"
-                  >
-                    <option value="">Select transport (optional)</option>
-
-                    <option
-                      v-for="option in transportOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="mb-4">
-                  <label for="transport" class="form-label">
-                    Monthly transport cost
-                  </label>
-
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
-
-                    <input
-                      id="transport"
-                      v-model.number="transport"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="personalExpenses" class="form-label">
-                    Personal expenses
-                  </label>
-
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
-
-                    <input
-                      id="personalExpenses"
-                      v-model.number="personalExpenses"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class="mb-4">
-                  <label for="otherExpenses" class="form-label">
-                    Other expenses
-                  </label>
-
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
-
-                    <input
-                      id="otherExpenses"
-                      v-model.number="otherExpenses"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div class="form-total rounded-3 p-3 mb-4">
-                  <div
-                    class="d-flex justify-content-between align-items-center gap-3 mb-2"
-                  >
-                    <span class="text-secondary">Monthly total</span>
-                    <strong>{{ formatMoney(monthlyBudget) }}</strong>
-                  </div>
-
-                  <div
-                    class="d-flex justify-content-between align-items-center gap-3"
-                  >
-                    <span class="fw-semibold">Total for exchange</span>
-                    <strong class="fs-5 text-primary text-end">
-                      {{ formatMoney(totalExchangeBudget) }}
-                    </strong>
-                  </div>
-
-                  <div
-                    v-if="totalBudgetSGD !== null && currencyCode !== 'SGD'"
-                    class="d-flex justify-content-between align-items-center gap-3 mt-2"
-                  >
-                    <span class="small text-secondary">
-                      Approximate total in SGD
-                    </span>
-
-                    <strong class="small">
-                      {{ formatMoney(totalBudgetSGD, 'SGD') }}
-                    </strong>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  class="btn btn-primary btn-lg w-100"
-                  :disabled="saving || !validBudget"
-                >
-                  <span
-                    v-if="saving"
-                    class="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
-
-                  {{ saving ? 'Saving budget...' : (editingBudgetId ? 'Update Budget' : 'Create Budget') }}
-                </button>
-
-                <p class="small text-secondary text-center mt-3 mb-0">
-                  Choose a destination university before saving. Exchange
-                  period and lifestyle preferences can remain blank.
-                </p>
-              </form>
-            </div>
-          </div>
+        <BudgetPlannerForm
+          v-model:selected-university-id="selectedUniversityId"
+          v-model:selected-period-id="selectedPeriodId"
+          v-model:duration-months="durationMonths"
+          v-model:housing-type="housingType"
+          v-model:food-option="foodOption"
+          v-model:transport-option="transportOption"
+          v-model:accommodation="accommodation"
+          v-model:food="food"
+          v-model:transport="transport"
+          v-model:personal-expenses="personalExpenses"
+          v-model:other-expenses="otherExpenses"
+          :universities="universities"
+          :exchange-periods="exchangePeriods"
+          :selected-university="selectedUniversity"
+          :selected-period="selectedPeriod"
+          :currency-code="currencyCode"
+          :monthly-budget="monthlyBudget"
+          :total-exchange-budget="totalExchangeBudget"
+          :total-budget-s-g-d="totalBudgetSGD"
+          :saving="saving"
+          :editing-budget-id="editingBudgetId"
+          :valid-budget="validBudget"
+          :housing-options="housingOptions"
+          :food-options="foodOptions"
+          :transport-options="transportOptions"
+          :format-money="formatMoney"
+          :format-date="formatDate"
+          @submit="saveBudget"
+          @update-accommodation-price="updateAccommodationPrice"
+          @update-food-price="updateFoodPrice"
+          @update-transport-price="updateTransportPrice"
+        />
         </section>
       </div>
     </template>
@@ -1577,245 +863,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.budget-table thead th {
-  color: #6c757d;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border-bottom-color: #e8eaf0;
-}
- .budget-table td { padding-top: 1rem; padding-bottom: 1rem; }
-
-/* On phones, render each saved budget as a readable card instead of a cramped table. */
-@media (max-width: 767.98px) {
-  .budget-table,
-  .budget-table tbody,
-  .budget-table tr,
-  .budget-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .budget-table thead {
-    display: none;
-  }
-
-  .budget-table tbody tr {
-    margin-bottom: 1rem;
-    padding: 0.65rem 0.9rem;
-    border: 1px solid #e3e7ef;
-    border-radius: 0.9rem;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(25, 30, 40, 0.04);
-  }
-
-  .budget-table tbody tr:last-child {
-    margin-bottom: 0;
-  }
-
-  .budget-table td {
-    display: grid;
-    grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
-    align-items: start;
-    gap: 0.75rem;
-    padding: 0.75rem 0 !important;
-    border: 0;
-    border-bottom: 1px solid #edf0f5;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-  }
-
-  .budget-table td::before {
-    content: attr(data-label);
-    color: #6c757d;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-
-  .budget-table td:last-child {
-    border-bottom: 0;
-  }
-
-  .budget-table td[data-label="Actions"] {
-    display: block;
-    padding-top: 0.9rem !important;
-  }
-
-  .budget-table td[data-label="Actions"]::before {
-    display: block;
-    margin-bottom: 0.65rem;
-  }
-
-  .budget-actions {
-    justify-content: flex-start !important;
-  }
-
-  .budget-actions .btn {
-    flex: 1 1 0;
-  }
-}
-.empty-state { background: #f7f8fc; border: 1px dashed #d9deea; }
-.budget-filters { background: #f8f9fc; border: 1px solid #e8eaf0; }
-
-.summary-column {
-  position: sticky;
-  top: 1.5rem;
-}
-
-.optional-label {
-  font-size: 0.82rem;
-  font-weight: 400;
-  color: #6c757d;
-}
-
-.period-details,
-.form-total {
-  background: #f7f8fc;
-  border: 1px solid #e8eaf0;
-}
-
-.comparison-below {
-  background: #e8f6ee;
-  color: #17663a;
-}
-
-.comparison-above {
-  background: #fff0ed;
-  color: #a32e20;
-}
-
-.comparison-equal {
-  background: #edf2ff;
-  color: #2448a5;
-}
-
-.form-control,
-.form-select,
-.input-group-text {
-  min-width: 0;
-}
-
-.form-select:disabled {
-  background-color: #f5f6f8;
-  cursor: not-allowed;
-}
-
-@media (max-width: 991.98px) {
-  .summary-column {
-    position: static;
-  }
-}
-
-/* Card-style notification popup fixed at the top of the viewport. */
-.budget-notice-wrap {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min( min(42rem, calc(100vw - 2rem)), 100%);
-  z-index: 1085;
-  pointer-events: none;
-}
-
-.budget-notice {
-  pointer-events: auto;
-  border-radius: 1rem;
-  overflow: hidden;
-  animation: notice-enter 180ms ease-out;
-}
-
-.budget-notice .card-body {
-  background: #fff;
-}
-
-.budget-notice-error {
-  border-left: 5px solid #dc3545 !important;
-}
-
-.budget-notice-success {
-  border-left: 5px solid #198754 !important;
-}
-
-.notice-icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 2.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  font-weight: 800;
-}
-
-.notice-icon-error {
-  background: #fce8ea;
-  color: #b02a37;
-}
-
-.notice-icon-success {
-  background: #dff4e7;
-  color: #146c43;
-}
-
-.notice-enter-active,
-.notice-leave-active {
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.notice-enter-from,
-.notice-leave-to {
-  opacity: 0;
-  transform: translateY(-0.5rem);
-}
-
-@keyframes notice-enter {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Centered in-app delete confirmation popup. */
-.delete-confirm-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1090;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(25, 30, 40, 0.45);
-  backdrop-filter: blur(2px);
-}
-
-.delete-confirm-card {
-  width: min(100%, 31rem);
-  border-radius: 1rem;
-  overflow: hidden;
-  border-top: 5px solid #dc3545 !important;
-}
-
-.delete-modal-enter-active,
-.delete-modal-leave-active {
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.delete-modal-enter-from,
-.delete-modal-leave-to {
-  opacity: 0;
-}
-
-.delete-modal-enter-from .delete-confirm-card,
-.delete-modal-leave-to .delete-confirm-card {
-  transform: translateY(0.5rem) scale(0.98);
-}
-
-.delete-confirm-card {
-  transition: transform 180ms ease;
-}
-
 @media (max-width: 575.98px) {
   main.container {
     padding-left: 1rem;
@@ -1826,13 +873,5 @@ onMounted(async () => {
     font-size: 1.9rem;
   }
 
-  .card-body {
-    padding: 1.25rem !important;
-  }
-
-  .input-group-lg > .form-control,
-  .input-group-lg > .input-group-text {
-    font-size: 1rem;
-  }
 }
 </style>
