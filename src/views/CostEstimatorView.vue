@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 const universities = ref([])
@@ -24,9 +24,42 @@ const exchangeRate = ref(1)
 const rateLoading = ref(false)
 const loading = ref(true)
 const saving = ref(false)
+const currentView = ref('list')
+const savedBudgets = ref([])
+const budgetsLoading = ref(false)
+const budgetSearchQuery = ref('')
+const selectedRegionFilter = ref('')
+const budgetSortBy = ref('recent')
+const editingBudgetId = ref(null)
+const deletingBudgetId = ref(null)
+const budgetToDelete = ref(null)
 
 const errorMessage = ref('')
 const successMessage = ref('')
+
+// Automatically dismiss success/error notifications after five seconds.
+// Users can also close either notification immediately with its X button.
+let noticeTimeout = null
+watch([errorMessage, successMessage], ([error, success]) => {
+  if (noticeTimeout) {
+    clearTimeout(noticeTimeout)
+    noticeTimeout = null
+  }
+
+  if (!error && !success) return
+
+  const errorAtSchedule = error
+  const successAtSchedule = success
+  noticeTimeout = setTimeout(() => {
+    if (errorMessage.value === errorAtSchedule) errorMessage.value = ''
+    if (successMessage.value === successAtSchedule) successMessage.value = ''
+    noticeTimeout = null
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (noticeTimeout) clearTimeout(noticeTimeout)
+})
 
 const housingOptions = [
   { value: 'one-room', label: 'One room', multiplier: 1 },
@@ -66,6 +99,42 @@ const selectedPeriod = computed(() =>
     item => String(item.id) === String(selectedPeriodId.value),
   ),
 )
+
+const availableBudgetRegions = computed(() =>
+  [...new Set(savedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b)),
+)
+
+const filteredBudgets = computed(() => {
+  const query = budgetSearchQuery.value.trim().toLocaleLowerCase()
+  const filtered = savedBudgets.value.filter(budget => {
+    const matchesRegion =
+      !selectedRegionFilter.value || budget.university_region === selectedRegionFilter.value
+    const searchableText = [
+      budget.university_name,
+      budget.university_country,
+      budget.university_region,
+      budget.period_name,
+    ].filter(Boolean).join(' ').toLocaleLowerCase()
+    return matchesRegion && (!query || searchableText.includes(query))
+  })
+
+  return filtered.sort((a, b) => {
+    if (budgetSortBy.value === 'name') {
+      return a.university_name.localeCompare(b.university_name)
+    }
+    if (budgetSortBy.value === 'country') {
+      return a.university_country.localeCompare(b.university_country) ||
+        a.university_name.localeCompare(b.university_name)
+    }
+    if (budgetSortBy.value === 'cost') {
+      return Number(a.total_budget || 0) - Number(b.total_budget || 0)
+    }
+    // IDs are generated in insertion order, so descending IDs act as a
+    // recently-added fallback when the table has no created_at column.
+    return Number(b.id) - Number(a.id)
+  })
+})
 
 const currencyCode = computed(
   () => publishedCost.value?.currency_code || 'SGD',
@@ -362,52 +431,6 @@ function resetLifestyleSelections() {
   transportOption.value = ''
 }
 
-async function loadSavedBudget() {
-  const { data: userResult, error: userError } =
-    await supabase.auth.getUser()
-
-  if (userError) throw userError
-
-  const user = userResult?.user
-
-  if (!user || !selectedUniversityId.value) return
-
- const { data, error } = await supabase
-  .from('user_budgets')
-  .select(
-    'university_id, exchange_period_id, duration_months, accommodation_budget, food_budget, transport_budget, personal_budget, other_budget',
-  )
-  .eq('user_id', user.id)
-  .eq('university_id', selectedUniversityId.value)
-  .maybeSingle()
-
-  if (error) throw error
-
-  if (
-    !data ||
-    String(data.university_id) !== String(selectedUniversityId.value)
-  ) {
-    return
-  }
-
-  selectedPeriodId.value = data.exchange_period_id
-    ? String(data.exchange_period_id)
-    : ''
-
-  durationMonths.value = Math.min(
-    12,
-    Math.max(1, Number(data.duration_months) || 1),
-  )
-
-  accommodation.value = Number(data.accommodation_budget) || 0
-  food.value = Number(data.food_budget) || 0
-  transport.value = Number(data.transport_budget) || 0
-  personalExpenses.value = Number(data.personal_budget) || 0
-  otherExpenses.value = Number(data.other_budget) || 0
-
-  resetLifestyleSelections()
-}
-
 let loadVersion = 0
 
 async function loadSelectedUniversityData() {
@@ -431,10 +454,6 @@ async function loadSelectedUniversityData() {
       loadPublishedCost(),
       loadExchangePeriods(),
     ])
-
-    if (currentVersion !== loadVersion) return
-
-    await loadSavedBudget()
 
     if (currentVersion !== loadVersion) return
 
@@ -498,41 +517,162 @@ function usePublishedEstimates() {
     'Published estimates copied into your budget. Preferences and transport method have been reset. You can edit the amounts before saving.'
 }
 
-async function saveBudget() {
+async function getCurrentUser() {
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  if (!data?.user) throw new Error('Please log in to manage your budgets.')
+  return data.user
+}
+
+async function loadBudgets() {
+  budgetsLoading.value = true
+  try {
+    const user = await getCurrentUser()
+    const { data, error } = await supabase
+      .from('user_budgets')
+      .select('id, university_id, exchange_period_id, duration_months, currency_code, total_budget, accommodation_budget, food_budget, transport_budget, personal_budget, other_budget, housing_type, food_option, transport_option')
+      .eq('user_id', user.id)
+      .order('id', { ascending: false })
+    if (error) throw error
+
+    // The form's exchangePeriods list only contains periods for the currently
+    // selected university. Load all periods separately so the table can show
+    // the correct period for every saved budget, including different universities.
+    const { data: allPeriods, error: periodsError } = await supabase
+      .from('exchange_periods')
+      .select('id, university_id, period_name, term, academic_year, start_date, end_date')
+    if (periodsError) throw periodsError
+
+    const periodsById = new Map(
+      (allPeriods || []).map(period => [String(period.id), period]),
+    )
+
+    savedBudgets.value = (data || []).map(budget => {
+      const university = universities.value.find(item => String(item.id) === String(budget.university_id))
+      const period = periodsById.get(String(budget.exchange_period_id))
+      const monthly = ['accommodation_budget', 'food_budget', 'transport_budget', 'personal_budget', 'other_budget']
+        .reduce((sum, key) => sum + Number(budget[key] || 0), 0)
+      return {
+        ...budget,
+        university_name: university?.name || `University #${budget.university_id}`,
+        university_country: university?.country || '',
+        university_region: university?.region || '',
+        period_name: period
+          ? [
+              period.period_name,
+              period.term,
+              period.academic_year ? `(${period.academic_year})` : '',
+            ].filter(Boolean).join(' — ').replace(/ — \(/g, ' (')
+          : '',
+        total_budget: budget.total_budget == null ? monthly * (Number(budget.duration_months) || 1) : Number(budget.total_budget),
+      }
+    })
+  } catch (error) {
+    console.error('Unable to load saved budgets:', error)
+    errorMessage.value = error.message || 'Unable to load your saved budgets.'
+  } finally {
+    budgetsLoading.value = false
+  }
+}
+
+function resetBudgetForm() {
+  editingBudgetId.value = null
+  selectedUniversityId.value = ''
+  selectedPeriodId.value = ''
+  durationMonths.value = 1
+  clearBudgetInputs()
+  resetLifestyleSelections()
+  publishedCost.value = null
+  exchangePeriods.value = []
+  exchangeRate.value = 1
+  errorMessage.value = ''
+  successMessage.value = ''
+}
+
+function createNewBudget() {
+  resetBudgetForm()
+  currentView.value = 'planner'
+}
+
+async function editBudget(budget) {
+  errorMessage.value = ''
+  successMessage.value = ''
+  editingBudgetId.value = budget.id
+  currentView.value = 'planner'
+  selectedUniversityId.value = String(budget.university_id)
+  await loadSelectedUniversityData()
+
+  selectedPeriodId.value = budget.exchange_period_id ? String(budget.exchange_period_id) : ''
+  durationMonths.value = Math.min(12, Math.max(1, Number(budget.duration_months) || 1))
+  accommodation.value = Number(budget.accommodation_budget) || 0
+  food.value = Number(budget.food_budget) || 0
+  transport.value = Number(budget.transport_budget) || 0
+  personalExpenses.value = Number(budget.personal_budget) || 0
+  otherExpenses.value = Number(budget.other_budget) || 0
+  // Restore saved dropdown choices so editing preserves every form input.
+  housingType.value = budget.housing_type || ''
+  foodOption.value = budget.food_option || ''
+  transportOption.value = budget.transport_option || ''
+}
+
+function deleteBudget(budget) {
+  // Open the app's own confirmation card instead of the browser's confirm popup.
+  budgetToDelete.value = budget
+}
+
+function cancelDeleteBudget() {
+  if (deletingBudgetId.value !== null) return
+  budgetToDelete.value = null
+}
+
+async function confirmDeleteBudget() {
+  const budget = budgetToDelete.value
+  if (!budget) return
+
+  deletingBudgetId.value = budget.id
   errorMessage.value = ''
   successMessage.value = ''
 
+  try {
+    const user = await getCurrentUser()
+    const { error } = await supabase
+      .from('user_budgets')
+      .delete()
+      .eq('id', budget.id)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    savedBudgets.value = savedBudgets.value.filter(item => item.id !== budget.id)
+    budgetToDelete.value = null
+    successMessage.value = 'Budget deleted successfully.'
+  } catch (error) {
+    console.error('Unable to delete budget:', error)
+    errorMessage.value = error.message || 'Unable to delete this budget.'
+  } finally {
+    deletingBudgetId.value = null
+  }
+}
+
+async function saveBudget() {
+  errorMessage.value = ''
+  successMessage.value = ''
   if (!selectedUniversityId.value) {
     errorMessage.value = 'Please select a destination university before saving.'
     return
   }
-
   if (!validBudget.value) {
-    errorMessage.value =
-      'Please enter a valid duration from 1 to 12 months. Expenses cannot be negative.'
+    errorMessage.value = 'Please enter a valid duration from 1 to 12 months. Expenses cannot be negative.'
     return
   }
 
   saving.value = true
-
   try {
-    const { data: userResult, error: userError } =
-      await supabase.auth.getUser()
-
-    if (userError) throw userError
-
-    const user = userResult?.user
-
-    if (!user) {
-      throw new Error('Please log in before saving your budget.')
-    }
-
+    const user = await getCurrentUser()
     const payload = {
       user_id: user.id,
       university_id: Number(selectedUniversityId.value),
-      exchange_period_id: selectedPeriodId.value
-        ? Number(selectedPeriodId.value)
-        : null,
+      exchange_period_id: selectedPeriodId.value ? Number(selectedPeriodId.value) : null,
       duration_months: Number(durationMonths.value),
       currency_code: currencyCode.value,
       total_budget: totalExchangeBudget.value,
@@ -541,21 +681,34 @@ async function saveBudget() {
       transport_budget: Number(transport.value),
       personal_budget: Number(personalExpenses.value),
       other_budget: Number(otherExpenses.value),
+      // Save optional lifestyle selections alongside the expense amounts.
+      housing_type: housingType.value || null,
+      food_option: foodOption.value || null,
+      transport_option: transportOption.value || null,
     }
 
-    const { error } = await supabase
-  .from('user_budgets')
-  .upsert(payload, {
-    onConflict: 'user_id,university_id',
-  })
+    const query = editingBudgetId.value
+      ? supabase.from('user_budgets').update(payload).eq('id', editingBudgetId.value).eq('user_id', user.id)
+      : supabase.from('user_budgets').insert(payload)
+    const { error } = await query
+    if (error) throw error
 
-if (error) throw error
-
-    successMessage.value = 'Your budget has been saved successfully.'
+    const savedMessage = editingBudgetId.value
+      ? 'Your budget has been updated successfully.'
+      : 'Your new budget has been created successfully.'
+    // Switch back to the table after the database write succeeds.
+    currentView.value = 'list'
+    resetBudgetForm()
+    await loadBudgets()
+    // loadBudgets can show its own error, so restore the save confirmation after it completes.
+    errorMessage.value = ''
+    successMessage.value = savedMessage
+    // Wait for the list view and notification to render, then scroll to the top.
+    await nextTick()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (error) {
     console.error('Error saving budget:', error)
-    errorMessage.value =
-      error.message || 'Unable to save your budget. Please try again.'
+    errorMessage.value = error.message || 'Unable to save your budget. Please try again.'
   } finally {
     saving.value = false
   }
@@ -567,6 +720,7 @@ onMounted(async () => {
 
   try {
     await loadUniversities()
+    await loadBudgets()
   } catch (error) {
     console.error('Initial cost estimator load failed:', error)
     errorMessage.value =
@@ -603,42 +757,214 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <div
-        v-if="errorMessage"
-        class="alert alert-danger alert-dismissible"
-        role="alert"
-      >
-        {{ errorMessage }}
+      <!-- Floating notification cards stay visible at the top of the page,
+           including after the app switches between the list and planner views. -->
+      <Transition name="notice">
+        <div
+          v-if="errorMessage || successMessage"
+          class="budget-notice-wrap"
+          aria-live="polite"
+        >
+          <div
+            v-if="errorMessage"
+            class="budget-notice budget-notice-error card border-0 shadow-lg"
+            role="alert"
+          >
+            <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
+              <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
+              <div class="flex-grow-1">
+                <h2 class="h6 fw-bold mb-1">Something went wrong</h2>
+                <p class="mb-0">{{ errorMessage }}</p>
+              </div>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Dismiss error message"
+                @click="errorMessage = ''"
+              ></button>
+            </div>
+          </div>
 
-        <button
-          type="button"
-          class="btn-close"
-          aria-label="Dismiss"
-          @click="errorMessage = ''"
-        ></button>
-      </div>
+          <div
+            v-else-if="successMessage"
+            class="budget-notice budget-notice-success card border-0 shadow-lg"
+            role="status"
+          >
+            <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
+              <div class="notice-icon notice-icon-success" aria-hidden="true">✓</div>
+              <div class="flex-grow-1">
+                <h2 class="h6 fw-bold mb-1">Successfully completed</h2>
+                <p class="mb-0">{{ successMessage }}</p>
+              </div>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Dismiss success message"
+                @click="successMessage = ''"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
-      <div
-        v-if="successMessage"
-        class="alert alert-success alert-dismissible"
-        role="status"
-      >
-        {{ successMessage }}
+      <!-- In-app delete confirmation card, styled consistently with notifications. -->
+      <Transition name="delete-modal">
+        <div
+          v-if="budgetToDelete"
+          class="delete-confirm-backdrop"
+          role="presentation"
+          @click.self="cancelDeleteBudget"
+        >
+          <section
+            class="delete-confirm-card card border-0 shadow-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirm-title"
+            aria-describedby="delete-confirm-description"
+          >
+            <div class="card-body p-4">
+              <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
+                <div class="flex-grow-1">
+                  <h2 id="delete-confirm-title" class="h5 fw-bold mb-1">Delete this budget?</h2>
+                  <p id="delete-confirm-description" class="text-secondary mb-0">
+                    Are you sure you want to delete the budget for
+                    <strong>{{ budgetToDelete.university_name }}</strong>?
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="btn-close"
+                  aria-label="Cancel deletion"
+                  :disabled="deletingBudgetId !== null"
+                  @click="cancelDeleteBudget"
+                ></button>
+              </div>
+              <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  :disabled="deletingBudgetId !== null"
+                  @click="cancelDeleteBudget"
+                >Cancel</button>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  :disabled="deletingBudgetId !== null"
+                  @click="confirmDeleteBudget"
+                >
+                  <span
+                    v-if="deletingBudgetId === budgetToDelete.id"
+                    class="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  ></span>
+                  {{ deletingBudgetId === budgetToDelete.id ? 'Deleting…' : 'Delete Budget' }}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </Transition>
 
-        <button
-          type="button"
-          class="btn-close"
-          aria-label="Dismiss"
-          @click="successMessage = ''"
-        ></button>
-      </div>
+      <section v-if="currentView === 'list'" class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+              <h2 class="h4 fw-bold mb-1">My Budgets</h2>
+              <p class="text-secondary mb-0">View and manage your saved exchange budgets.</p>
+            </div>
+            <button type="button" class="btn btn-primary" @click="createNewBudget">＋ Create New Budget</button>
+          </div>
+          <div v-if="budgetsLoading" class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"><span class="visually-hidden">Loading...</span></div>
+            <p class="text-secondary mb-0">Loading your budgets...</p>
+          </div>
+          <div v-else-if="savedBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
+            <div class="display-6 mb-3">🧳</div>
+            <h3 class="h5 fw-bold">No budgets yet</h3>
+            <p class="text-secondary mb-3">Create your first exchange budget to start planning your expenses.</p>
+            <button type="button" class="btn btn-primary" @click="createNewBudget">Create Your First Budget</button>
+          </div>
+          <div v-else>
+            <div v-if="savedBudgets.length" class="budget-filters rounded-4 p-3 p-md-4 mb-4">
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-5">
+                  <label for="budgetSearch" class="form-label fw-semibold">Search budgets</label>
+                  <input
+                    id="budgetSearch"
+                    v-model="budgetSearchQuery"
+                    type="search"
+                    class="form-control"
+                    placeholder="Search university, country, region or period"
+                  />
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label for="budgetRegion" class="form-label fw-semibold">Filter by region</label>
+                  <select id="budgetRegion" v-model="selectedRegionFilter" class="form-select">
+                    <option value="">All regions</option>
+                    <option v-for="region in availableBudgetRegions" :key="region" :value="region">{{ region }}</option>
+                  </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-4">
+                  <label for="budgetSort" class="form-label fw-semibold">Sort by</label>
+                  <select id="budgetSort" v-model="budgetSortBy" class="form-select">
+                    <option value="recent">Recently added</option>
+                    <option value="name">University name (A–Z)</option>
+                    <option value="country">Country (A–Z)</option>
+                    <option value="cost">Total cost (low to high)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                <span class="small text-secondary">Showing {{ filteredBudgets.length }} of {{ savedBudgets.length }} budget<span v-if="savedBudgets.length !== 1">s</span></span>
+                <button
+                  v-if="budgetSearchQuery || selectedRegionFilter || budgetSortBy !== 'recent'"
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="budgetSearchQuery = ''; selectedRegionFilter = ''; budgetSortBy = 'recent'"
+                >Reset search and filters</button>
+              </div>
+            </div>
 
-      <div v-if="universities.length === 0" class="alert alert-info">
+            <div v-if="filteredBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
+              <div class="display-6 mb-3">🔎</div>
+              <h3 class="h5 fw-bold">No matching budgets</h3>
+              <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
+              <button type="button" class="btn btn-outline-primary" @click="budgetSearchQuery = ''; selectedRegionFilter = ''; budgetSortBy = 'recent'">Clear filters</button>
+            </div>
+            <div v-else class="table-responsive">
+            <table class="table align-middle budget-table mb-0">
+              <thead><tr><th>University</th><th>Exchange period</th><th>Duration</th><th>Total budget</th><th class="text-end">Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="budget in filteredBudgets" :key="budget.id">
+                  <td data-label="University"><div class="fw-semibold">{{ budget.university_name }}</div><div class="small text-secondary">{{ budget.university_country }}</div></td>
+                  <td data-label="Exchange period">{{ budget.period_name || 'Not specified' }}</td>
+                  <td data-label="Duration">{{ budget.duration_months }} month<span v-if="Number(budget.duration_months) !== 1">s</span></td>
+                  <td data-label="Total budget" class="fw-semibold text-nowrap">{{ formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}</td>
+                  <td data-label="Actions"><div class="d-flex justify-content-end gap-2 budget-actions">
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="editBudget(budget)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" :disabled="deletingBudgetId === budget.id" @click="deleteBudget(budget)">{{ deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+          <p v-if="savedBudgets.length" class="small text-secondary mt-3 mb-0">{{ savedBudgets.length }} saved budget<span v-if="savedBudgets.length !== 1">s</span> in total</p>
+        </div>
+      </section>
+
+      <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
         No universities are available yet. Please add universities
         to your database before creating a budget.
       </div>
 
-      <div v-else class="row g-4 align-items-start">
+      <div v-if="currentView === 'planner' && universities.length > 0" class="mb-3">
+        <button type="button" class="btn btn-outline-secondary" @click="currentView = 'list'; loadBudgets()">← Back to My Budgets</button>
+      </div>
+
+      <div v-if="currentView === 'planner' && universities.length > 0" class="row g-4 align-items-start">
         <section class="col-12 col-lg-5">
           <div class="summary-column">
             <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -873,7 +1199,7 @@ onMounted(async () => {
           <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4 p-md-5">
               <div class="mb-4">
-                <h2 class="h4 fw-bold mb-2">Plan your expenses</h2>
+                <h2 class="h4 fw-bold mb-2">{{ editingBudgetId ? "Edit your budget" : "Plan your expenses" }}</h2>
 
                 <p class="text-secondary mb-0">
                   Select your destination and exchange period, then
@@ -1041,11 +1367,6 @@ onMounted(async () => {
                       {{ option.label }}
                     </option>
                   </select>
-
-                  <div class="form-text">
-                    Choose a private room, whole house, shared accommodation,
-                    studio apartment, university dormitory, or homestay.
-                  </div>
                 </div>
 
                 <div class="mb-4">
@@ -1067,9 +1388,6 @@ onMounted(async () => {
                     />
                   </div>
 
-                  <div class="form-text">
-                    Enter your estimated monthly rent and accommodation fees.
-                  </div>
                 </div>
 
                 <div class="mb-3">
@@ -1242,7 +1560,7 @@ onMounted(async () => {
                     aria-hidden="true"
                   ></span>
 
-                  {{ saving ? 'Saving budget...' : 'Save My Budget' }}
+                  {{ saving ? 'Saving budget...' : (editingBudgetId ? 'Update Budget' : 'Create Budget') }}
                 </button>
 
                 <p class="small text-secondary text-center mt-3 mb-0">
@@ -1259,6 +1577,89 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.budget-table thead th {
+  color: #6c757d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom-color: #e8eaf0;
+}
+ .budget-table td { padding-top: 1rem; padding-bottom: 1rem; }
+
+/* On phones, render each saved budget as a readable card instead of a cramped table. */
+@media (max-width: 767.98px) {
+  .budget-table,
+  .budget-table tbody,
+  .budget-table tr,
+  .budget-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .budget-table thead {
+    display: none;
+  }
+
+  .budget-table tbody tr {
+    margin-bottom: 1rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #e3e7ef;
+    border-radius: 0.9rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(25, 30, 40, 0.04);
+  }
+
+  .budget-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .budget-table td {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.75rem 0 !important;
+    border: 0;
+    border-bottom: 1px solid #edf0f5;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  .budget-table td::before {
+    content: attr(data-label);
+    color: #6c757d;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .budget-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .budget-table td[data-label="Actions"] {
+    display: block;
+    padding-top: 0.9rem !important;
+  }
+
+  .budget-table td[data-label="Actions"]::before {
+    display: block;
+    margin-bottom: 0.65rem;
+  }
+
+  .budget-actions {
+    justify-content: flex-start !important;
+  }
+
+  .budget-actions .btn {
+    flex: 1 1 0;
+  }
+}
+.empty-state { background: #f7f8fc; border: 1px dashed #d9deea; }
+.budget-filters { background: #f8f9fc; border: 1px solid #e8eaf0; }
+
 .summary-column {
   position: sticky;
   top: 1.5rem;
@@ -1306,6 +1707,113 @@ onMounted(async () => {
   .summary-column {
     position: static;
   }
+}
+
+/* Card-style notification popup fixed at the top of the viewport. */
+.budget-notice-wrap {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min( min(42rem, calc(100vw - 2rem)), 100%);
+  z-index: 1085;
+  pointer-events: none;
+}
+
+.budget-notice {
+  pointer-events: auto;
+  border-radius: 1rem;
+  overflow: hidden;
+  animation: notice-enter 180ms ease-out;
+}
+
+.budget-notice .card-body {
+  background: #fff;
+}
+
+.budget-notice-error {
+  border-left: 5px solid #dc3545 !important;
+}
+
+.budget-notice-success {
+  border-left: 5px solid #198754 !important;
+}
+
+.notice-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.notice-icon-error {
+  background: #fce8ea;
+  color: #b02a37;
+}
+
+.notice-icon-success {
+  background: #dff4e7;
+  color: #146c43;
+}
+
+.notice-enter-active,
+.notice-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.notice-enter-from,
+.notice-leave-to {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+
+@keyframes notice-enter {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Centered in-app delete confirmation popup. */
+.delete-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(25, 30, 40, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.delete-confirm-card {
+  width: min(100%, 31rem);
+  border-radius: 1rem;
+  overflow: hidden;
+  border-top: 5px solid #dc3545 !important;
+}
+
+.delete-modal-enter-active,
+.delete-modal-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.delete-modal-enter-from,
+.delete-modal-leave-to {
+  opacity: 0;
+}
+
+.delete-modal-enter-from .delete-confirm-card,
+.delete-modal-leave-to .delete-confirm-card {
+  transform: translateY(0.5rem) scale(0.98);
+}
+
+.delete-confirm-card {
+  transition: transform 180ms ease;
 }
 
 @media (max-width: 575.98px) {
