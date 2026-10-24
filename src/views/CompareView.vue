@@ -859,7 +859,7 @@ header, footer {
 }
 .sticky-uni-selector {
     position: sticky;
-    top: 0;
+    top: 58px;
     z-index: 1030;
     background-color: white;
     padding-top: 12px;
