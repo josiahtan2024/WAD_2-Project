@@ -11,6 +11,7 @@ export const useUniversitiesStore = defineStore('universities', {
     sortBy: 'name',
     loading: false,
     error: null,
+    scheduleUniName:null,
   }),
   actions: {
     /** Load all universities from Supabase into `items`. Set loading and error. */
@@ -50,5 +51,14 @@ async load() {
       // TODO(student): implement
       throw new Error('Not implemented')
     },
+    async getUniversityName(universityId){
+      try {
+        const {data,error} = await supabase.from('universities').select('name').eq('id',universityId)
+        
+        this.scheduleUniName= data[0].name
+      } catch (error) {
+        
+      }
+    }
   },
 })

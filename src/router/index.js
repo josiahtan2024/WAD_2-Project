@@ -10,6 +10,7 @@ import ShortlistView from '@/views/ShortlistView.vue'
 import CompareView from '@/views/CompareView.vue'
 import ScheduleView from '@/views/ScheduleView.vue'
 import CostEstimator from '@/views/CostEstimatorView.vue'
+import CreditMappingTable from '@/views/../components/CreditMappingTable.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
@@ -30,6 +31,13 @@ const routes = [
     name: 'cost-estimator',
     component: CostEstimator,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/map-exchange-module',
+    name: 'map-exchange-module/:universityId',
+    component: CreditMappingTable,
+    meta: { requiresAuth: true },
+
   },
 ]
 

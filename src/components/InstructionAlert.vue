@@ -3,7 +3,6 @@ import {ref} from 'vue';
 const props = defineProps({
     'action':String,
     'instructions':Array,
-    'modules':Array,
     'color':String,
     
 })
@@ -32,6 +31,7 @@ const collapsed = ref(props.action!='Insert'); // LEAVE IT OPEN BY DEFAULT IF US
             <div class="d-flex flex-row align-items-center mb-2">
                 <div class="rounded p-2 border border-dark-subtle me-2 fw-bold">{{ i+1 }}</div>
                 <div>{{ins}}</div>
+                <template v-if="i==0"><i class="bi bi-info-circle-fill ms-2 text-info" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data"></i></template>
             </div>
         </template>
         
