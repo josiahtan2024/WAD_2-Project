@@ -37,3 +37,14 @@
   --bs-btn-hover-color: #0b2348;
   --bs-btn-active-color: #0b2348;
 }
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-footer {
+  background-color: #f8faff;
+  color: #52627a;
+}
