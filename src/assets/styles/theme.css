@@ -5,6 +5,7 @@
   --bs-body-font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
   --bs-body-bg: #ffffff;
   --app-radius: 0.75rem;
+  --app-navbar-height: 58px;
 }
 
 .btn-primary {
@@ -23,6 +24,7 @@
   position: sticky;
   top: 0;
   z-index: 1040;
+  min-height: var(--app-navbar-height);
 
   --bs-navbar-color: #fff;
   --bs-navbar-hover-color: #cbdcff;
