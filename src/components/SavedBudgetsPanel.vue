@@ -1,4 +1,6 @@
 <script setup>
+import { computed, ref, watch } from 'vue'
+
 const props = defineProps({
   budgets: { type: Array, default: () => [] },
   filteredBudgets: { type: Array, default: () => [] },
@@ -11,6 +13,25 @@ const props = defineProps({
 const searchQuery = defineModel('searchQuery', { type: String, default: '' })
 const regionFilter = defineModel('regionFilter', { type: String, default: '' })
 const sortBy = defineModel('sortBy', { type: String, default: 'recent' })
+const currentPage = ref(1)
+const pageSize = 6
+const pageCount = computed(() => Math.ceil(props.filteredBudgets.length / pageSize))
+const paginatedBudgets = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return props.filteredBudgets.slice(start, start + pageSize)
+})
+
+watch([searchQuery, regionFilter, sortBy], () => {
+  currentPage.value = 1
+})
+
+watch(() => props.filteredBudgets.length, () => {
+  currentPage.value = Math.min(currentPage.value, Math.max(pageCount.value, 1))
+})
+
+function goToPage(page) {
+  currentPage.value = Math.min(Math.max(page, 1), pageCount.value)
+}
 
 const emit = defineEmits(['create', 'read', 'edit', 'delete'])
 
@@ -85,7 +106,7 @@ function resetFilters() {
           <table class="table align-middle budget-table mb-0">
             <thead><tr><th>University</th><th>Exchange period</th><th>Duration</th><th>Total budget</th><th class="text-end">Actions</th></tr></thead>
             <tbody>
-              <tr v-for="budget in props.filteredBudgets" :key="budget.id">
+              <tr v-for="budget in paginatedBudgets" :key="budget.id">
                 <td data-label="University">
                   <div>
                     <div class="fw-semibold">{{ budget.university_name }}</div>
@@ -106,9 +127,28 @@ function resetFilters() {
             </tbody>
           </table>
         </div>
+
+        <nav
+          v-if="pageCount > 1"
+          class="budget-pagination mt-4"
+          aria-label="Budget table pages"
+          data-testid="budget-pagination"
+        >
+          <ul class="pagination justify-content-center flex-wrap mb-0">
+            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+              <button class="page-link" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="goToPage(currentPage - 1)">Previous</button>
+            </li>
+            <li v-for="page in pageCount" :key="page" class="page-item" :class="{ active: currentPage === page }">
+              <button class="page-link" type="button" :aria-current="currentPage === page ? 'page' : undefined" :aria-label="`Page ${page}`" @click="goToPage(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" :class="{ disabled: currentPage === pageCount }">
+              <button class="page-link" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="goToPage(currentPage + 1)">Next</button>
+            </li>
+          </ul>
+        </nav>
       </div>
 
-      <p v-if="props.budgets.length" class="small text-secondary mt-3 mb-0">{{ props.budgets.length }} saved budget<span v-if="props.budgets.length !== 1">s</span> in total</p>
+      <!-- <p v-if="props.budgets.length" class="small text-secondary mt-3 mb-0">{{ props.budgets.length }} saved budget<span v-if="props.budgets.length !== 1">s</span> in total</p> -->
     </div>
   </section>
 </template>
@@ -127,6 +167,33 @@ function resetFilters() {
 .budget-table td { padding-top: 1rem; padding-bottom: 1rem; }
 .empty-state { background: #f7f8fc; border: 1px dashed #d9deea; }
 .budget-filters { background: #f8f9fc; border: 1px solid #e8eaf0; }
+
+.budget-pagination .page-link {
+  color: #0b2348;
+  border-color: #d7deea;
+  background-color: #fff;
+}
+
+.budget-pagination .page-link:hover:not(:disabled) {
+  color: #0b2348;
+  border-color: #cbdcff;
+  background-color: #f1f5fc;
+}
+
+.budget-pagination .page-item.active .page-link {
+  color: #fff;
+  border-color: #0b2348;
+  background-color: #0b2348;
+}
+
+.budget-pagination .page-link:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+}
+
+.budget-pagination .page-item.disabled .page-link {
+  color: #8793a6;
+  background-color: #f8faff;
+}
 
 @media (max-width: 767.98px) {
   .budget-table,
