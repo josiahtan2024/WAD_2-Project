@@ -290,11 +290,17 @@ async function createMap(idx) {
         maps.value[idx] = null
     }
 
-    // No uni selected
-    if (!uni || !element || !uni.location.coordinates.lat) return
+    if (!uni || !element) return
 
+    const hasCoords = uni?.location?.coordinates?.lat && uni?.location?.coordinates?.lon
+    if (!hasCoords) {
+        element.innerHTML = `<div class="d-flex align-items-center justify-content-center
+        h-100 w-100 bg-light text-secondary small">Map unavailable.</div>`
+        return
+    }
+
+    element.innerHTML = ''
     const { lat, lon } = uni.location.coordinates
-
     const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
 
     map.on('click', () => {

@@ -1,5 +1,19 @@
 -- Run in the Supabase SQL Editor.
 -- Disable sequence auto-increment overriding so the explicitly defined IDs are respected
+-- SUPABASE STORAGE
+INSERT INTO storage.buckets (id, name, public, allowed_mime_types)
+VALUES ('university-logos', 'university-logos', true, array['image/jpeg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO UPDATE
+    SET public = EXCLUDED.public,
+        allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('review-images', 'review-images', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO UPDATE
+    SET public = EXCLUDED.public,
+        file_size_limit = EXCLUDED.file_size_limit,
+        allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 -- 1. Base University Data
 INSERT INTO universities (
     id, name, country, state, city, region, lat, long, timezone, website_url, modules_url, logo_url

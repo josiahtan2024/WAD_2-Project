@@ -13,6 +13,7 @@ ALTER TABLE user_budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE timetables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planned_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE university_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE review_comments ENABLE ROW LEVEL SECURITY;
 
 -- Public Read-Only
 CREATE POLICY "Allow public read access on universities"
@@ -92,3 +93,53 @@ CREATE POLICY "Authenticated users can create their own review"
     ON university_reviews FOR INSERT
     TO authenticated
     WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Authenticated users can update their own review"
+    ON university_reviews FOR UPDATE
+    TO authenticated
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Authenticated users can delete their own review"
+    ON university_reviews FOR DELETE
+    TO authenticated
+    USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Allow public read access on review-images"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'review-images');
+
+CREATE POLICY "Authenticated users can upload their own review images"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'review-images' AND (storage.foldername(name))[1] = (select auth.uid())::text);
+
+CREATE POLICY "Authenticated users can delete their own review images"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'review-images' AND (storage.foldername(name))[1] = (select auth.uid())::text);
+
+CREATE POLICY "Allow public read access on review_comments"
+    ON review_comments FOR SELECT
+    USING (true);
+
+CREATE POLICY "Authenticated users can comment"
+    ON review_comments FOR INSERT
+    TO authenticated
+    WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Authenticated users can update their own comments"
+    ON review_comments FOR UPDATE
+    TO authenticated
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Authenticated users can delete their own comments"
+    ON review_comments FOR DELETE
+    TO authenticated
+    USING ((select auth.uid()) = user_id);
+
+-- MISC
+CREATE POLICY "Allow public read access on university-logos"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'university-logos');
