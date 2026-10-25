@@ -1,8 +1,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useCourseCartStore } from '@/stores/courseCart'
 
 const auth = useAuthStore()
+const cart = useCourseCartStore()
 const router = useRouter()
 
 async function logout() {
@@ -54,6 +56,17 @@ async function logout() {
               data-testid="nav-compare"
             >
               Compare
+            </RouterLink>
+          </li>
+
+          <li class="nav-item">
+            <RouterLink
+              class="nav-link"
+              to="/courses"
+              data-testid="nav-courses"
+            >
+              Courses
+              <span v-if="cart.items.length" class="badge rounded-pill text-bg-light ms-1" data-testid="nav-cart-count">{{ cart.items.length }}</span>
             </RouterLink>
           </li>
 

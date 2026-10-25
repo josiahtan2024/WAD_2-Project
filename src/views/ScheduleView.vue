@@ -4,12 +4,14 @@ import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { useScheduleStore } from '@/stores/schedule'
 import { useUniversitiesStore } from '@/stores/universities'
+import { useCourseCartStore } from '@/stores/courseCart'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 
 const route = useRoute()
 const schedule = useScheduleStore()
 const uni = useUniversitiesStore()
+const cart = useCourseCartStore()
 const saving = ref(false)
 const discarding = ref(false);
 const saved = ref(false)
@@ -30,7 +32,8 @@ async function save() {
   saving.value = true
   saved.value = false
   schedule.error = null
-  const mode = hasSchedule.value?'update':'insert';
+  // update when a timetable row already exists (even if all its modules were removed), else create one
+  const mode = schedule.studentTimeTableId?'update':'insert';
   try {
     await schedule.save(route.params.universityId,mode);
     saved.value = true
@@ -79,6 +82,16 @@ function checkScheduleModule(modName){
   }
   return false;
 }
+// Courses added to the cart on the Courses page become the modules this schedule can use
+function addCartModules(){
+  const codeFor = (id) => uni.mappings.find((m) => m.university_module.id === id)?.university_module.module_code
+  schedule.addModules(cart.forUniversity(route.params.universityId).map((item) => ({
+    id: item.universityModuleId,
+    module_name: item.moduleName,
+    // items added before moduleCode existed fall back to the mapping data, then the name
+    module_code: item.moduleCode || codeFor(item.universityModuleId) || item.moduleName,
+  })))
+}
 async function discardChange(){
   await schedule.load(route.params.universityId,false) // reset the currentSchedule record
   discarding.value=!discarding.value; // show discarding text
@@ -89,13 +102,13 @@ async function discardChange(){
 
 onMounted(async () => {
   try {
-    //await uni.loadMappings(route.params.universityId)
+    await uni.loadMappings(route.params.universityId)
     
     await uni.getUniversityName(route.params.universityId)
     await schedule.load(route.params.universityId,true)
+    addCartModules()
     hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
     timeSlots.value = loadTimeSlots()
-    
 
   } catch (e) {
     schedule.error = e.message
@@ -130,27 +143,18 @@ onMounted(async () => {
     <div v-if="saved" class="alert alert-success" data-testid="schedule-saved">Schedule saved.</div>
     <div v-if="schedule.loading" class="text-muted" data-testid="schedule-loading">Loading schedule...</div>
 
-    <div class="row g-3">
-      <div class="col-12 col-lg-3">
-        <h6 class="h6">Mapped modules</h6>
-        
+    <div class="card my-3">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <p v-if="!schedule.moduleData.length" class="text-muted m-0" data-testid="schedule-no-modules">
+          No modules in your cart for this university yet. Add some to start planning.
+        </p>
+        <p v-else class="m-0" data-testid="schedule-module-count">
+          {{ schedule.moduleData.length }} module{{ schedule.moduleData.length === 1 ? '' : 's' }} available from your cart and saved schedule.
+        </p>
+        <RouterLink :to="{ name: 'courses', query: { university: route.params.universityId } }" data-testid="schedule-add-courses-link">
+          Add courses from Course search
+        </RouterLink>
       </div>
-      <template v-if="!uni.mappings.length">
-        <div class="card">
-          <div class="card-body d-flex flex-wrap justify-content-between">
-
-            <div class="d-inline-block ">
-              <p  class="text-muted m-0" data-testid="schedule-no-modules">No Exchange modules mapped for this university.</p>
-            </div>
-            <div class="d-inline-block mt-2 mt-sm-0">
-              <a class="w-100 text-underline" :href='`/map-exchange-module/${route.params.universityId}`'>Map Exchange Modules</a>
-            </div>
-          </div>
-          
-        </div>
-
-      </template>
-
     </div>
 
 

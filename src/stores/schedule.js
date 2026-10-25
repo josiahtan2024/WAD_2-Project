@@ -21,7 +21,8 @@ export const useScheduleStore = defineStore('schedule', {
         for(const slot of this.currentSchedule[day]){
           
           insertModuleData.push({
-             timetable_id: this.studentTimeTableId, university_module_id: (this.moduleData.find((m)=> m.module_code == slot.module)).id, day_of_week: day, start_time: slot.start, end_time: slot.end, 
+             // match on module_name: it is unique per university, while module_code can repeat (e.g. two "IM" courses)
+             timetable_id: this.studentTimeTableId, university_module_id: (this.moduleData.find((m)=> m.module_name == slot.moduleName)).id, day_of_week: day, start_time: slot.start, end_time: slot.end,
           })
           
 
@@ -30,10 +31,24 @@ export const useScheduleStore = defineStore('schedule', {
       }
       return insertModuleData
     },
+    /** Add modules ({ id, module_name, module_code }) to the pickable list, skipping ones already there. */
+    addModules(modules) {
+      for (const mod of modules) {
+        if (!this.moduleData.some((m) => m.id === mod.id)) {
+          this.moduleData.push(mod)
+        }
+      }
+    },
     async load(uniId,isInitial) {
       // 1. Reset states before fetching
       this.loading = true
       this.error = null
+      if (isInitial) {
+        // Opening a schedule page: drop anything left over from a previously viewed university
+        this.moduleData = []
+        this.currentSchedule = {}
+        this.studentTimeTableId = null
+      }
 
       try {
         // 2. Target the table and filter by universityId
@@ -44,7 +59,7 @@ export const useScheduleStore = defineStore('schedule', {
             user_id,
             university_id,
             exchange_period_id,
-            planned_modules!inner (
+            planned_modules (
               id,
               day_of_week,
               start_time,
@@ -64,8 +79,8 @@ export const useScheduleStore = defineStore('schedule', {
             this.loading=false;
             return;
           }
-          if(isInitial && this.moduleData.length==0){
-            
+          if(isInitial){
+
             this.studentTimeTableId = data[0].id // persistently store the timetableId for future updates
             data[0].planned_modules.forEach(mod => {
               if(!this.moduleData.some(i => i.id === mod.university_modules.id)){

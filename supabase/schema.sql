@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS university_modules (
     university_id BIGINT NOT NULL
         REFERENCES universities(id) ON DELETE CASCADE,
     module_name TEXT NOT NULL,
+    module_code TEXT,
     description TEXT,
     language TEXT,
 

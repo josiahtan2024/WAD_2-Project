@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useScheduleStore } from '@/stores/schedule'
+import { useCourseCartStore } from '@/stores/courseCart'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({ user: null, loading: false, error: null, initialized: false }),
@@ -14,6 +15,8 @@ export const useAuthStore = defineStore('auth', {
         useScheduleStore().$reset()
       }
       this.user = user
+      // The course cart is stored per user, so reload it once the user is known.
+      if (oldId !== newId || !this.initialized) useCourseCartStore().load()
     },
     /** Restore the session on app start (supabase.auth.getSession) and listen for changes. */
     async init() {
