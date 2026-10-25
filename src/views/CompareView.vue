@@ -107,8 +107,12 @@ async function fetchUniversities() {
 const shortlist = ref([])
 const shortlistIsLoading = ref(true)
 async function fetchShortlist() {
+    if (!auth.user) {
+        shortlistIsLoading.value = false
+        return
+    }
+
     shortlistIsLoading.value = true
-    if (!auth.user) return
 
     try {
         const { data, error } = await supabase

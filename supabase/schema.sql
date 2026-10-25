@@ -1,6 +1,5 @@
 -- Run in the Supabase SQL Editor.
 -- 1. Universities & Localization
-
 CREATE TABLE IF NOT EXISTS universities (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL,
@@ -38,7 +37,6 @@ CREATE TABLE IF NOT EXISTS exchange_periods (
     max_temperature INT,
     description TEXT,
 
-    -- Supports composite foreign keys that verify university ownership.
     UNIQUE (id, university_id),
 
     CHECK (
@@ -63,7 +61,6 @@ CREATE TABLE IF NOT EXISTS university_costs (
 
 
 -- 2. Academics & Curriculum
-
 CREATE TABLE IF NOT EXISTS smu_modules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     course_area TEXT UNIQUE NOT NULL,
@@ -96,7 +93,6 @@ CREATE TABLE IF NOT EXISTS credit_mappings (
 
 
 -- 3. User Personalization & Planner
-
 CREATE TABLE IF NOT EXISTS shortlists (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id UUID NOT NULL
@@ -157,7 +153,6 @@ CREATE TABLE IF NOT EXISTS timetables (
         REFERENCES universities(id) ON DELETE CASCADE,
     exchange_period_id BIGINT NOT NULL,
 
-    -- One timetable per user per university
     UNIQUE (user_id, university_id),
     UNIQUE (id, university_id, exchange_period_id),
 
