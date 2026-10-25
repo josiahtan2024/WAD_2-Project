@@ -255,17 +255,15 @@ function selectUniversity(slotIndex, uniId) {
     }
 }
 
-const selectRefs = ref([]);
+const openDropdownIndex = ref(null)
 function openDropdown(idx) {
-    const selectEl = selectRefs.value[idx];
-    if (selectEl) {
-        if (typeof selectEl.showPicker === 'function') {
-            selectEl.showPicker();
-        } else {
-            selectEl.focus();
-        }
-    }
-};
+    openDropdownIndex.value = openDropdownIndex.value === idx ? null : idx
+}
+
+function chooseUniversity(idx, universityId) {
+    selectUniversity(idx, universityId)
+    openDropdownIndex.value = null
+}
 
 // Maps - Leaflet API
 // TO-DO: Implement Google Maps API for better visuals
@@ -433,19 +431,58 @@ watch(
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
                     <template #default="{ idx }">
-                        <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
-                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
-                        class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
-                            <option value="">Choose a university</option>
-                            <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
-                                <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
-                                :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
-                            </optgroup>
-                            <optgroup label="Other Universities" v-if="remainingUnis.length > 0">
-                                <option v-for="uni in remainingUnis" :key="uni.id" :value="uni.id"
-                                :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
-                            </optgroup>
-                        </select>
+                        <div class="compare-uni-dropdown">
+                            <button
+                                type="button"
+                                class="form-select fs-5 fw-semibold text-start compare-uni-select"
+                                :aria-expanded="openDropdownIndex === idx"
+                                :aria-controls="`compare-uni-menu-${idx}`"
+                                @click="openDropdown(idx)"
+                            >
+                                <span class="d-block text-truncate">{{ unisToCompare[idx]?.name || 'Choose a university' }}</span>
+                            </button>
+                            <div
+                                v-if="openDropdownIndex === idx"
+                                :id="`compare-uni-menu-${idx}`"
+                                class="compare-uni-menu text-start"
+                                role="listbox"
+                                aria-label="Choose a university to compare"
+                            >
+                                <button class="compare-uni-option" type="button" @click="chooseUniversity(idx, null)">
+                                    Choose a university
+                                </button>
+                                <template v-if="shortlistedUnis.length">
+                                    <div class="compare-uni-group-label">My Shortlist</div>
+                                    <button
+                                        v-for="university in shortlistedUnis"
+                                        :key="university.id"
+                                        class="compare-uni-option"
+                                        :class="{ selected: uniSlots[idx] === university.id }"
+                                        :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === university.id)"
+                                        role="option"
+                                        :aria-selected="uniSlots[idx] === university.id"
+                                        @click="chooseUniversity(idx, university.id)"
+                                    >
+                                        {{ university.name }}
+                                    </button>
+                                </template>
+                                <template v-if="remainingUnis.length">
+                                    <div class="compare-uni-group-label">Other Universities</div>
+                                    <button
+                                        v-for="university in remainingUnis"
+                                        :key="university.id"
+                                        class="compare-uni-option"
+                                        :class="{ selected: uniSlots[idx] === university.id }"
+                                        :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === university.id)"
+                                        role="option"
+                                        :aria-selected="uniSlots[idx] === university.id"
+                                        @click="chooseUniversity(idx, university.id)"
+                                    >
+                                        {{ university.name }}
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                     </template>
                 </CompareRow>
 
@@ -863,11 +900,68 @@ header, footer {
 }
 .sticky-uni-selector {
     position: sticky;
-    top: 0;
+    top: var(--app-navbar-height);
     z-index: 1030;
     background-color: white;
     padding-top: 12px;
     padding-bottom: 12px;
+}
+.compare-uni-dropdown {
+    position: relative;
+    width: 100%;
+}
+.sticky-uni-selector .compare-uni-select {
+    width: 100%;
+    min-width: 0;
+    font-size: clamp(0.8rem, 1.5vw, 1.25rem) !important;
+    padding: 0.75rem 2rem 0.75rem 0.75rem !important;
+}
+.compare-uni-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    z-index: 1035;
+    width: 100%;
+    max-height: min(50vh, 22rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid #d7deea;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 0.5rem 1rem rgba(11, 35, 72, 0.18);
+    scrollbar-width: thin;
+    scrollbar-color: #9aa9bf #f1f5fc;
+}
+.compare-uni-group-label {
+    padding: 0.5rem 0.75rem 0.25rem;
+    color: #52627a;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.compare-uni-option {
+    display: block;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    background: #fff;
+    color: #0b2348;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+.compare-uni-option:hover:not(:disabled),
+.compare-uni-option.selected {
+    background: #f1f5fc;
+}
+.compare-uni-option:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid #1f4e9c;
+    outline-offset: -2px;
+}
+.compare-uni-option:disabled {
+    color: #8793a6;
+    cursor: not-allowed;
 }
 .custom-select-blue {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%230d6efd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") !important;
@@ -891,6 +985,11 @@ header, footer {
 }
 /* below md breakpoint - bottom border only */
 @media (max-width: 767.98px) {
+    .sticky-uni-selector .compare-uni-select {
+        font-size: clamp(0.75rem, 3.2vw, 1rem) !important;
+        padding: 0.625rem 1.75rem 0.625rem 0.625rem !important;
+    }
+
     .form-select {
         border: none;
         border-bottom: 1px solid var(--bs-border-color);
