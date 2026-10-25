@@ -106,6 +106,7 @@ async function fetchUniversities() {
 // Shortlist
 const shortlist = ref([])
 const shortlistIsLoading = ref(true)
+const shortlistLoadingIds = ref(new Set())
 async function fetchShortlist() {
     if (!auth.user) {
         shortlistIsLoading.value = false
@@ -148,13 +149,15 @@ const isShortlisted = (uniId) => {
 }
 
 async function toggleShortlist(uniId) {
-    shortlistIsLoading.value = true
     if (!auth.user) {
         return router.push({
             name: 'login',
             query: { redirect: '/compare' }
         })
     }
+
+    if (shortlistLoadingIds.value.has(uniId)) return 
+    shortlistLoadingIds.value.add(uniId)
 
     try {
         if (isShortlisted(uniId)) {
@@ -182,7 +185,7 @@ async function toggleShortlist(uniId) {
     } catch (error) {
         console.error(error.message)
     } finally {
-        shortlistIsLoading.value = false
+        shortlistLoadingIds.value.delete(uniId)
     }
 }
 
@@ -481,7 +484,7 @@ watch(
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
                             <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
-                            :disabled="shortlistIsLoading" @click="toggleShortlist(uni.id)">
+                            :disabled="shortlistLoadingIds.has(uni.id)" @click="toggleShortlist(uni.id)">
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
