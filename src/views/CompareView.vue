@@ -106,7 +106,7 @@ async function fetchUniversities() {
 // Shortlist
 const shortlist = ref([])
 const shortlistIsLoading = ref(true)
-const shortlistLoadingIds = ref(new Set())
+const shortlistLoadingIds = ref({})
 async function fetchShortlist() {
     if (!auth.user) {
         shortlistIsLoading.value = false
@@ -156,8 +156,8 @@ async function toggleShortlist(uniId) {
         })
     }
 
-    if (shortlistLoadingIds.value.has(uniId)) return 
-    shortlistLoadingIds.value.add(uniId)
+    if (shortlistLoadingIds.value[uniId]) return 
+    shortlistLoadingIds.value[uniId] = true
 
     try {
         if (isShortlisted(uniId)) {
@@ -185,7 +185,7 @@ async function toggleShortlist(uniId) {
     } catch (error) {
         console.error(error.message)
     } finally {
-        shortlistLoadingIds.value.delete(uniId)
+        shortlistLoadingIds.value[uniId] = false
     }
 }
 
@@ -256,6 +256,10 @@ function selectUniversity(slotIndex, uniId) {
         // Normal selection
         uniSlots.value[slotIndex] = uniId
     }
+
+    nextTick(() => {
+        selectRefs.value[slotIndex]?.blur()
+    })
 }
 
 const selectRefs = ref([]);
@@ -271,7 +275,7 @@ function openDropdown(idx) {
 };
 
 // Maps - Leaflet API
-// TO-DO: Implement Google Maps API for better visuals
+// TODO: Implement Google Maps API for better visuals
 const maps = ref([])
 const mapElements = ref([])
 async function createMap(idx) {
@@ -437,7 +441,7 @@ watch(
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
-                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
+                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))" 
                         class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
                             <option value="">Choose a university</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
@@ -483,8 +487,9 @@ watch(
                 special-vif-class="d-flex flex-column flex-grow-1">
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
-                            <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
-                            :disabled="shortlistLoadingIds.has(uni.id)" @click="toggleShortlist(uni.id)">
+                            <button class="btn rounded-pill px-4" :class="isShortlisted(uni.id) ? 'btn-primary' : 'btn-outline-primary'" 
+                            :disabled="shortlistLoadingIds[uni.id]" @click="toggleShortlist(uni.id)">
+                                <i class="bi d-none d-md-inline-block me-1" :class="isShortlisted(uni.id) ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
@@ -497,7 +502,7 @@ watch(
 
                 <!-- Location -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Location
                     </template>
                 </CompareRowHeader>
@@ -510,7 +515,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Location
                         </div>
@@ -519,14 +524,14 @@ watch(
 
                 <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni }">
-                        <div class="text-break">
+                        <div class="text-break fw-bold">
                             {{ formatLocation(uni.location) }}
                         </div>
                     </template>
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Region
                         </div>
@@ -542,7 +547,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Timezone
                         </div>
@@ -558,7 +563,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Distance from SG
                         </div>
@@ -575,7 +580,7 @@ watch(
 
                 <!-- Cost -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Cost
                     </template>
                 </CompareRowHeader>
@@ -597,7 +602,7 @@ watch(
                 </CompareRow>                
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Estimated Monthly Total
                         </div>
@@ -613,7 +618,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Accommodation
                         </div>
@@ -629,7 +634,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Food
                         </div>
@@ -645,7 +650,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Transport
                         </div>
@@ -661,7 +666,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Personal Expenses
                         </div>
@@ -678,13 +683,13 @@ watch(
 
                 <!-- Academics -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Academics
                     </template>
                 </CompareRowHeader>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Mapped Modules
                         </div>
@@ -700,7 +705,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Language
                         </div>
@@ -726,7 +731,7 @@ watch(
                 
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Exchange
                     </template>
                 </CompareRowHeader>
@@ -739,7 +744,8 @@ watch(
                                     @click="uniProgrammes[idx] = pIdx"
                                     class="btn btn-sm flex-fill text-truncate px-1"
                                     :class="uniProgrammes[idx] === pIdx ? 'btn-primary' : 'btn-outline-primary'">
-                                    {{ formatExchangeDate(period.startDate) }}
+                                    <span class="d-none d-md-inline">{{ formatExchangeDate(period.startDate) }}</span>
+                                    <span class="d-md-none d-inline">{{ formatExchangeDate(period.startDate).split(' ')[0] }}</span>
                                 </button>
                             </div>
                         </div>
@@ -784,8 +790,10 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} - 
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} </span>
+                            <span class="d-md-inline d-none mx-2">-</span>
+                            <span class="d-md-none d-inline mx-4">to</span>
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}</span>
                         </div>
                     </template>
                 </CompareRow>
@@ -803,7 +811,8 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"  
                             class="text-break">
-                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }} - 
+                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }}
+                            <span class="mx-1">-</span>
                             {{ uni.exchange.periods[uniProgrammes[idx]].maxTemp }} °C
                         </div>
                     </template>

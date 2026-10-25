@@ -59,7 +59,7 @@ function resetFilters() {
       </div>
 
       <div v-else-if="props.budgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-        <div class="display-6 mb-3">🧳</div>
+        <!-- <div class="display-6 mb-3">🧳</div> -->
         <h3 class="h5 fw-bold">No budgets yet</h3>
         <p class="text-secondary mb-3">Create your first exchange budget to start planning your expenses.</p>
         <button type="button" class="btn btn-primary" @click="emit('create')">Create Your First Budget</button>
@@ -96,7 +96,7 @@ function resetFilters() {
         </div>
 
         <div v-if="props.filteredBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-          <div class="display-6 mb-3">🔎</div>
+          <!-- <div class="display-6 mb-3">🔎</div> -->
           <h3 class="h5 fw-bold">No matching budgets</h3>
           <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
           <button type="button" class="btn btn-outline-primary" @click="resetFilters">Clear filters</button>
