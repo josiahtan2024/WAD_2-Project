@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
-// The cart is kept in localStorage per user (or "guest") until scheduling saves it to `planned_modules`.
+// The cart is kept in localStorage per logged-in user until scheduling saves it to `planned_modules`.
+// Logged-out visitors can search courses but have no cart.
 function storageKey() {
-  return `courseCart:${useAuthStore().user?.id ?? 'guest'}`
+  const userId = useAuthStore().user?.id
+  return userId ? `courseCart:${userId}` : null
 }
 
 /**
@@ -29,22 +31,30 @@ export const useCourseCartStore = defineStore('courseCart', {
   actions: {
     /** Read the current user's cart from localStorage. Call on app start and when the user changes. */
     load() {
+      const key = storageKey()
+      if (!key) {
+        this.items = []
+        return
+      }
       try {
-        const saved = JSON.parse(localStorage.getItem(storageKey()) ?? '[]')
+        const saved = JSON.parse(localStorage.getItem(key) ?? '[]')
         this.items = Array.isArray(saved) ? saved : []
       } catch {
         this.items = []
       }
     },
     persist() {
+      const key = storageKey()
+      if (!key) return
       try {
-        localStorage.setItem(storageKey(), JSON.stringify(this.items))
+        localStorage.setItem(key, JSON.stringify(this.items))
       } catch {
         // Storage can be unavailable (private mode); the cart still works for this visit.
       }
     },
     /** @param {object} mapping A credit_mappings row loaded with MAPPING_SELECT. */
     add(mapping) {
+      if (!useAuthStore().user) throw new Error('Log in to add courses to your cart')
       const um = mapping.university_module
       if (this.has(um.id)) return
       this.items.push({

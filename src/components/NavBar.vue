@@ -84,6 +84,16 @@ async function logout() {
             <li class="nav-item">
               <RouterLink
                 class="nav-link"
+                to="/schedule"
+                data-testid="nav-schedule"
+              >
+                Schedule
+              </RouterLink>
+            </li>
+
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link"
                 to="/cost-estimator"
                 data-testid="nav-cost-estimator"
               >

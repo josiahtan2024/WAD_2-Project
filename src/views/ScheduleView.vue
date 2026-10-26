@@ -1,17 +1,35 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useScheduleStore } from '@/stores/schedule'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
+import { useShortlistStore } from '@/stores/shortlist'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 
 const route = useRoute()
+const router = useRouter()
 const schedule = useScheduleStore()
 const uni = useUniversitiesStore()
 const cart = useCourseCartStore()
+const shortlist = useShortlistStore()
+const selectedPeriodId = ref(null)
+
+// The university being planned comes from the URL (/schedule/2); null on /schedule
+const universityId = computed(() => route.params.universityId ? Number(route.params.universityId) : null)
+
+// Dropdown options: shortlisted universities plus any university the student has carted courses for
+const universityOptions = computed(() => {
+  const ids = new Set([
+    ...shortlist.items.map((s) => s.university_id),
+    ...cart.items.map((i) => i.universityId),
+  ])
+  if (universityId.value) ids.add(universityId.value)
+  return [...ids]
+    .map((id) => ({ id, name: uni.items.find((u) => u.id === id)?.name ?? `University ${id}` }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
 const saving = ref(false)
 const discarding = ref(false);
 const saved = ref(false)
@@ -35,10 +53,11 @@ async function save() {
   // update when a timetable row already exists (even if all its modules were removed), else create one
   const mode = schedule.studentTimeTableId?'update':'insert';
   try {
-    await schedule.save(route.params.universityId,mode);
-    saved.value = true
+    await schedule.save(universityId.value,mode,selectedPeriodId.value);
+    saved.value = !schedule.error
     if(!schedule.error){
-      changesMade.value = false; // hide the bar 
+      changesMade.value = false; // hide the bar
+      hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
     }
   } catch (e) {
     schedule.error = e.message
@@ -85,7 +104,7 @@ function checkScheduleModule(modName){
 // Courses added to the cart on the Courses page become the modules this schedule can use
 function addCartModules(){
   const codeFor = (id) => uni.mappings.find((m) => m.university_module.id === id)?.university_module.module_code
-  schedule.addModules(cart.forUniversity(route.params.universityId).map((item) => ({
+  schedule.addModules(cart.forUniversity(universityId.value).map((item) => ({
     id: item.universityModuleId,
     module_name: item.moduleName,
     // items added before moduleCode existed fall back to the mapping data, then the name
@@ -93,27 +112,75 @@ function addCartModules(){
   })))
 }
 async function discardChange(){
-  await schedule.load(route.params.universityId,false) // reset the currentSchedule record
+  await schedule.load(universityId.value,false) // reset the currentSchedule record
   discarding.value=!discarding.value; // show discarding text
   changesMade.value=false;
+  selectedPeriodId.value = schedule.exchangePeriodId ?? uni.exchangePeriods[0]?.id ?? null;
   discarding.value=!discarding.value; // revert to original button form
 
 }
 
-onMounted(async () => {
+function formatDate(date){
+  return new Date(date).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Picking a university changes the URL; the route guards below ask before dropping unsaved changes
+async function selectUniversity(event){
+  const failure = await router.push({ name: 'schedule', params: { universityId: event.target.value } })
+  if (failure) event.target.value = universityId.value ?? '' // switch cancelled: show the current university again
+}
+
+function confirmDiscard(){
+  if (!changesMade.value) return true
+  return window.confirm('You have unsaved changes to this schedule. Discard them?')
+}
+onBeforeRouteUpdate(confirmDiscard) // switching university from the dropdown
+onBeforeRouteLeave(confirmDiscard) // leaving the schedule page
+
+// Load everything for one university: its cart modules, saved schedule and exchange periods
+async function loadUniversity(id){
+  // start each university from a clean view
+  editSchedule.value = false;
+  showGrid.value = false;
+  hasSchedule.value = false;
+  changesMade.value = false;
+  saved.value = false;
+  selectedModule.value = '';
+  deleteModules.value = [];
+  schedule.error = null;
+  uni.scheduleUniName = null;
+  if (!id) return
   try {
-    await uni.loadMappings(route.params.universityId)
-    
-    await uni.getUniversityName(route.params.universityId)
-    await schedule.load(route.params.universityId,true)
+    await uni.loadMappings(id)
+
+    await uni.getUniversityName(id)
+    await uni.loadExchangePeriods(id)
+    await schedule.load(id,true)
     addCartModules()
     hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
-    timeSlots.value = loadTimeSlots()
+    // a saved timetable keeps its period; a new one defaults to the earliest period
+    selectedPeriodId.value = schedule.exchangePeriodId ?? uni.exchangePeriods[0]?.id ?? null;
 
   } catch (e) {
     schedule.error = e.message
     console.log(schedule.error)
   }
+}
+
+watch(universityId, (id) => loadUniversity(id))
+
+onMounted(async () => {
+  timeSlots.value = loadTimeSlots()
+  try {
+    // names for the dropdown come from the universities list; options from the shortlist and cart
+    await Promise.all([
+      uni.items.length ? Promise.resolve() : uni.load(),
+      shortlist.load(),
+    ])
+  } catch (e) {
+    schedule.error = e.message
+  }
+  await loadUniversity(universityId.value)
 })
 
 </script>
@@ -144,20 +211,46 @@ onMounted(async () => {
     <div v-if="schedule.loading" class="text-muted" data-testid="schedule-loading">Loading schedule...</div>
 
     <div class="card my-3">
-      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <p v-if="!schedule.moduleData.length" class="text-muted m-0" data-testid="schedule-no-modules">
-          No modules in your cart for this university yet. Add some to start planning.
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-6">
+            <label for="schedule-university" class="form-label fw-semibold mb-1">University</label>
+            <select id="schedule-university" class="form-select" :value="universityId ?? ''" data-testid="schedule-university-select" @change="selectUniversity($event)">
+              <option value="" disabled>Choose a university</option>
+              <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </select>
+          </div>
+          <div v-if="universityId" class="col-12 col-md-6">
+            <label for="schedule-period" class="form-label fw-semibold mb-1">Exchange period</label>
+            <select id="schedule-period" v-model="selectedPeriodId" class="form-select" data-testid="schedule-period-select" @change="changesMade=true">
+              <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
+                {{ p.period_name }} ({{ formatDate(p.start_date) }} – {{ formatDate(p.end_date) }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="universityId" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+          <p v-if="!schedule.moduleData.length" class="text-muted m-0" data-testid="schedule-no-modules">
+            No modules in your cart for this university yet. Add some to start planning.
+          </p>
+          <p v-else class="m-0" data-testid="schedule-module-count">
+            {{ schedule.moduleData.length }} module{{ schedule.moduleData.length === 1 ? '' : 's' }} available from your cart and saved schedule.
+          </p>
+          <RouterLink :to="{ name: 'courses', query: { university: universityId } }" data-testid="schedule-add-courses-link">
+            Add courses from Course search
+          </RouterLink>
+        </div>
+        <p v-else-if="!universityOptions.length" class="text-muted mt-3 mb-0" data-testid="schedule-no-universities">
+          <RouterLink to="/universities">Shortlist a university</RouterLink> or <RouterLink to="/courses">add courses to your cart</RouterLink> to start planning.
         </p>
-        <p v-else class="m-0" data-testid="schedule-module-count">
-          {{ schedule.moduleData.length }} module{{ schedule.moduleData.length === 1 ? '' : 's' }} available from your cart and saved schedule.
+        <p v-else class="text-muted mt-3 mb-0" data-testid="schedule-choose-university">
+          Choose a university to plan its schedule.
         </p>
-        <RouterLink :to="{ name: 'courses', query: { university: route.params.universityId } }" data-testid="schedule-add-courses-link">
-          Add courses from Course search
-        </RouterLink>
       </div>
     </div>
 
-
+    <template v-if="universityId">
     <div class="container-fluid">
   
 
@@ -285,7 +378,8 @@ onMounted(async () => {
         </template>
       </table>
     </div>
-   
+    </template>
+
   </section>
 </template>
 

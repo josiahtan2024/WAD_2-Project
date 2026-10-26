@@ -22,7 +22,8 @@ const routes = [
   { path: '/compare', name: 'compare', component: CompareView },
   { path: '/courses', name: 'courses', component: CourseSearchView },
   { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { requiresAuth: true }, },
-  { path: '/schedule/:universityId', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
+  // universityId is optional: /schedule shows the university picker, /schedule/2 opens that university's schedule
+  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })

@@ -20,6 +20,7 @@ export const useUniversitiesStore = defineStore('universities', {
     mappings: [], // rows from `credit_mappings` (joined with smu_modules) for one university
     allMappings: [], // rows from `credit_mappings` across every university (course search page)
     modules: [], // rows from `smu_modules`
+    exchangePeriods: [], // rows from `exchange_periods` for one university (schedule page)
     query: '',
     filters: { region: null, country: null },
     sortBy: 'name',
@@ -81,6 +82,17 @@ export const useUniversitiesStore = defineStore('universities', {
         if (!data || data.length < PAGE_SIZE) break
       }
       this.allMappings = rows
+    },
+
+    /** @param {number|string} universityId Load that university's exchange periods (earliest first) into `exchangePeriods`. */
+    async loadExchangePeriods(universityId) {
+      const { data, error } = await supabase
+        .from('exchange_periods')
+        .select('id, period_name, term, academic_year, start_date, end_date')
+        .eq('university_id', universityId)
+        .order('start_date', { ascending: true })
+      if (error) throw error
+      this.exchangePeriods = data ?? []
     },
 
     /** Load all SMU course areas into `modules`. */

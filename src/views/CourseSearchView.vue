@@ -3,11 +3,16 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const uni = useUniversitiesStore()
 const cart = useCourseCartStore()
+const auth = useAuthStore()
+
+// Logged-out visitors can search; the login link brings them back to the same search afterwards
+const loginLink = computed(() => ({ name: 'login', query: { redirect: route.fullPath } }))
 
 const pageLoading = ref(true)
 const pageError = ref('')
@@ -212,7 +217,7 @@ onMounted(async () => {
               <div class="fw-semibold">{{ selectedArea.course_area }} · {{ selectedArea.description }}</div>
               <div class="small text-muted">{{ selectedArea.school }}</div>
             </div>
-            <div class="card-body pb-0">
+            <div class="card-body pb-0 flex-grow-0">
               <input
                 v-model="moduleQuery"
                 type="search"
@@ -224,6 +229,9 @@ onMounted(async () => {
               <p class="small text-muted mt-2 mb-0">
                 {{ areaModuleCount }} course{{ areaModuleCount === 1 ? '' : 's' }}
                 {{ universityId === '' ? 'across all universities' : `at ${universityName(universityId)}` }}
+              </p>
+              <p v-if="!auth.user" class="small mt-2 mb-0" data-testid="course-login-hint">
+                <RouterLink :to="loginLink">Log in</RouterLink> to add courses to your cart.
               </p>
             </div>
             <p v-if="!areaModuleGroups.length" class="text-muted p-3 mb-0" data-testid="course-module-empty">
@@ -244,6 +252,7 @@ onMounted(async () => {
                       <div v-if="m.university_module.language" class="small text-muted">{{ m.university_module.language }}</div>
                       <div v-if="m.notes" class="small text-muted">{{ m.notes }}</div>
                     </div>
+                    <template v-if="auth.user">
                     <button
                       v-if="cart.has(m.university_module.id)"
                       type="button"
@@ -262,6 +271,7 @@ onMounted(async () => {
                     >
                       <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
                     </button>
+                    </template>
                   </li>
                 </ul>
               </div>
@@ -277,7 +287,10 @@ onMounted(async () => {
             <span class="fw-semibold"><i class="bi bi-cart3 me-1" aria-hidden="true"></i> My cart</span>
             <span class="badge text-bg-primary" data-testid="course-cart-count">{{ cart.items.length }}</span>
           </div>
-          <p v-if="!cart.items.length" class="text-muted small p-3 mb-0" data-testid="course-cart-empty">
+          <p v-if="!auth.user" class="text-muted small p-3 mb-0" data-testid="course-cart-login">
+            <RouterLink :to="loginLink">Log in</RouterLink> to save courses to your cart and plan your schedule.
+          </p>
+          <p v-else-if="!cart.items.length" class="text-muted small p-3 mb-0" data-testid="course-cart-empty">
             Your cart is empty. Add courses to plan your schedule.
           </p>
           <div v-else class="card-body">

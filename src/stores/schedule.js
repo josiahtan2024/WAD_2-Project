@@ -12,7 +12,7 @@ const currentUserId = computed(() => {
 
 
 export const useScheduleStore = defineStore('schedule', {
-  state: () => ({ currentSchedule: {}, moduleData:[], loading: false, error: null,studentTimeTableId:null }), // rows from `schedule_blocks`
+  state: () => ({ currentSchedule: {}, moduleData:[], loading: false, error: null,studentTimeTableId:null,exchangePeriodId:null }), // rows from `schedule_blocks`
   actions: {
     /** @param {number|string} universityId Load the user's blocks for this university. */
     serialiseToDb(){
@@ -48,6 +48,7 @@ export const useScheduleStore = defineStore('schedule', {
         this.moduleData = []
         this.currentSchedule = {}
         this.studentTimeTableId = null
+        this.exchangePeriodId = null
       }
 
       try {
@@ -74,7 +75,8 @@ export const useScheduleStore = defineStore('schedule', {
           .eq('user_id', currentUserId.value)
           .eq('university_id', uniId)
 
-          if (data.length == 0 || !data){ // Student doesn't have timetable record for shortlisted university
+          if (error) throw error
+          if (!data || data.length == 0){ // Student doesn't have timetable record for shortlisted university
             
             this.loading=false;
             return;
@@ -82,6 +84,7 @@ export const useScheduleStore = defineStore('schedule', {
           if(isInitial){
 
             this.studentTimeTableId = data[0].id // persistently store the timetableId for future updates
+            this.exchangePeriodId = data[0].exchange_period_id
             data[0].planned_modules.forEach(mod => {
               if(!this.moduleData.some(i => i.id === mod.university_modules.id)){
                 this.moduleData.push(mod.university_modules)
@@ -116,27 +119,44 @@ export const useScheduleStore = defineStore('schedule', {
       }
     },
     /** Save the current blocks to Supabase. */
-    async save(uniId,mode) {
+    async save(uniId,mode,exchangePeriodId) {
       // applies for both updating existing schedule records & inserting fresh schedule records
       // 1. check if there are existing schedule records, then delete if any
       if (mode=='update'){
+        if (exchangePeriodId && exchangePeriodId != this.exchangePeriodId){
+          await this.updateExchangePeriod(exchangePeriodId)
+        }
         await this.deleteScheduleModules(uniId);
         await this.insertScheduleModules();
       }else if(mode == 'insert'){
-        await this.insertTimetable(uniId)
+        await this.insertTimetable(uniId,exchangePeriodId)
       }
     
       // 2. Insert the currentSchedule record fresh into the database 
     },
-    async insertTimetable(uniId){
-      let newTimetableRecord = {user_id:currentUserId.value,university_id:uniId}
+    async insertTimetable(uniId,exchangePeriodId){
+      // every timetable belongs to one exchange period (timetables.exchange_period_id is NOT NULL)
+      let newTimetableRecord = {user_id:currentUserId.value,university_id:uniId,exchange_period_id:exchangePeriodId}
       let {data,error} = await supabase.from('timetables').insert(newTimetableRecord).select('id').single()
       if(error){
-        this.error=error;
+        this.error=error.message;
       }
       else if(data){
         this.studentTimeTableId= data.id;
+        this.exchangePeriodId = exchangePeriodId;
         await this.insertScheduleModules()
+      }
+    },
+    async updateExchangePeriod(exchangePeriodId){
+      // the student picked a different exchange period for an existing timetable
+      const { error } = await supabase
+        .from('timetables')
+        .update({ exchange_period_id: exchangePeriodId })
+        .eq('id', this.studentTimeTableId)
+      if (error) {
+        this.error = 'Failed to update exchange period:'+ error.message
+      } else {
+        this.exchangePeriodId = exchangePeriodId
       }
     },
     async deleteScheduleModules() {
@@ -160,7 +180,7 @@ export const useScheduleStore = defineStore('schedule', {
         .select()     
         if (insertError) throw insertError;   
       } catch (error) {
-        this.error = error;
+        this.error = error.message;
         console.log(error)
       }
       
