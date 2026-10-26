@@ -343,11 +343,7 @@ SELECT setval(pg_get_serial_sequence('smu_modules', 'id'), COALESCE(MAX(id), 1))
 
 
 -- 6. Previously Approved Courses (OASIS > ALL APPS > EXCHANGE COURSE MAPPING)
-INSERT INTO university_modules (id, university_id, module_name, description, language) OVERRIDING SYSTEM VALUE VALUES
--- 6. Previously Approved Courses (OASIS > ALL APPS > EXCHANGE COURSE MAPPING)
-INSERT INTO university_modules
-    (id, university_id, module_code, module_name, description, language)
-OVERRIDING SYSTEM VALUE VALUES
+INSERT INTO university_modules (id, university_id, module_code, module_name, description, language) OVERRIDING SYSTEM VALUE VALUES
 (1, 1, 'PSY 310', 'Developmental Psychology', NULL, 'English'),
 (2, 1, 'BEM 311', 'Marketing Management 311', NULL, 'English'),
 (3, 1, 'BEM 321', 'Marketing Management 321', NULL, 'English'),
@@ -371,12 +367,12 @@ OVERRIDING SYSTEM VALUE VALUES
 (21, 2, 'QST FE 448', 'Business Valuation', NULL, 'English'),
 (22, 2, 'QST FE 430', 'Derivatives Securities and Market', NULL, 'English'),
 (23, 2, 'QST FE 442', 'Equity Security Analysis', NULL, 'English'),
-(24, 2, 'QST FE 580', 'ESG Investing', NULL, 'English'),
+(24, 2, 'QST FE 581', 'ESG Investing', NULL, 'English'),
 (25, 2, 'QST FE 450', 'Financing New Ventures', NULL, 'English'),
 (26, 2, 'QST FE 421', 'Fixed Income Analysis', NULL, 'English'),
 (27, 2, 'QST FE 459', 'Futures, Options and Financial Risk', NULL, 'English'),
 (28, 2, 'QST FE 456', 'Investment Banking', NULL, 'English'),
-(29, 2, 'QST FE 448', 'Multinational Finance & Trade', NULL, 'English'),
+(29, 2, 'QST FE 449', 'Multinational Finance & Trade', NULL, 'English'),
 (30, 2, 'QST FE 465', 'Private Equity', NULL, 'English'),
 (31, 2, 'QST FE 475', 'Real Estate Finance', NULL, 'English'),
 (32, 2, 'QST MK 420', 'Digital Marketing Analytics', NULL, 'English'),
@@ -412,7 +408,7 @@ OVERRIDING SYSTEM VALUE VALUES
 (62, 2, 'QST SI 480', 'Dilemmas in Scaling New Ventures', NULL, 'English'),
 (63, 2, 'QST SI 471', 'Entrepreneurship', NULL, 'English'),
 (64, 2, 'QST SI 476', 'International Entrepreneurship', NULL, 'English'),
-(65, 2, 'QST SI 480', 'Entrepreneurship: Solving Problems in a Dynamic World', NULL, 'English'),
+(65, 2, 'QST SI 481', 'Entrepreneurship: Solving Problems in a Dynamic World', NULL, 'English'),
 (66, 2, 'CAS LG 111', 'First-Semester German', NULL, 'English'),
 (67, 2, 'CAS IS 223', 'Introduction to Information Systems', NULL, 'English'),
 (68, 3, 'MATH 1400', 'Linear Algebra', NULL, 'English'),
@@ -478,7 +474,7 @@ OVERRIDING SYSTEM VALUE VALUES
 (128, 4, 'UDS3107', 'Global Journalism', NULL, 'English'),
 (129, 4, 'UDS3108', 'Global Finance and Industry', NULL, 'English'),
 (130, 4, 'BIZ3102', 'International Management', NULL, 'English'),
-(131, 4, 'UDS3102', 'International Money and Capital Markets', NULL, 'English'),
+(131, 4, 'BIZ3106', 'Financial Management', NULL, 'English'),
 (132, 4, 'IEE3202', 'Introduction to Business Analytics', NULL, 'English'),
 (133, 4, 'UDS3109', 'Introduction to International Law', NULL, 'English'),
 (134, 4, 'UDS3110', 'Investment Analysis and Global Management', NULL, 'English'),
