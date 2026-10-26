@@ -101,10 +101,6 @@ CREATE POLICY "Authenticated users can delete their own review"
     TO authenticated
     USING ((select auth.uid()) = user_id);
 
-CREATE POLICY "Allow public read access on review-images"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'review-images');
-
 CREATE POLICY "Authenticated users can upload their own review images"
     ON storage.objects FOR INSERT
     TO authenticated
@@ -134,8 +130,3 @@ CREATE POLICY "Authenticated users can delete their own comments"
     ON review_comments FOR DELETE
     TO authenticated
     USING ((select auth.uid()) = user_id);
-
--- MISC
-CREATE POLICY "Allow public read access on university-logos"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'university-logos');
