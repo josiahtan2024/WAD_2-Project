@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS university_modules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     university_id BIGINT NOT NULL
         REFERENCES universities(id) ON DELETE CASCADE,
+    module_code TEXT NOT NULL,
     module_name TEXT NOT NULL,
     description TEXT,
     language TEXT,
@@ -94,7 +95,7 @@ CREATE TABLE IF NOT EXISTS university_modules (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (university_id, module_name),
+    UNIQUE (university_id, module_code),
     UNIQUE (id, university_id)
 );
 
@@ -203,20 +204,40 @@ CREATE TABLE IF NOT EXISTS timetables (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (user_id, university_id),
-    UNIQUE (id, university_id, exchange_period_id),
+    UNIQUE (user_id, university_id, exchange_period_id),
+    UNIQUE (id, user_id, university_id),
 
     FOREIGN KEY (exchange_period_id, university_id)
         REFERENCES exchange_periods(id, university_id)
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS cart_modules (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id UUID NOT NULL
+        REFERENCES auth.users(id) ON DELETE CASCADE,
+    university_id BIGINT NOT NULL
+        REFERENCES universities(id) ON DELETE CASCADE,
+    university_module_id BIGINT NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE (user_id, university_id, university_module_id),
+    UNIQUE (id, user_id, university_id),
+
+    FOREIGN KEY (university_module_id, university_id)
+        REFERENCES university_modules(id, university_id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS planned_modules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    timetable_id BIGINT NOT NULL
-        REFERENCES timetables(id) ON DELETE CASCADE,
-    university_module_id BIGINT NOT NULL
-        REFERENCES university_modules(id) ON DELETE CASCADE,
+    timetable_id BIGINT NOT NULL,
+    cart_module_id BIGINT NOT NULL,
+    user_id UUID NOT NULL
+        REFERENCES auth.users(id) ON DELETE CASCADE,
+    university_id BIGINT NOT NULL
+        REFERENCES universities(id) ON DELETE CASCADE,
     section TEXT,
     day_of_week TEXT NOT NULL CHECK (day_of_week IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
     start_time TIME NOT NULL,
@@ -227,7 +248,15 @@ CREATE TABLE IF NOT EXISTS planned_modules (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (timetable_id, university_module_id),
+    UNIQUE (timetable_id, cart_module_id),
+
+    FOREIGN KEY (timetable_id, user_id, university_id)
+        REFERENCES timetables(id, user_id, university_id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (cart_module_id, user_id, university_id)
+        REFERENCES cart_modules(id, user_id, university_id)
+        ON DELETE CASCADE,
 
     CHECK (end_time > start_time)
 );
@@ -235,8 +264,10 @@ CREATE TABLE IF NOT EXISTS planned_modules (
 
 -- INDEX
 CREATE INDEX IF NOT EXISTS exchange_periods_university_id_idx ON exchange_periods(university_id);
-CREATE INDEX IF NOT EXISTS university_languages_university_id_idx ON university_languages(university_id);
-CREATE INDEX IF NOT EXISTS university_modules_university_id_idx ON university_modules(university_id);
 CREATE INDEX IF NOT EXISTS credit_mappings_university_module_id_idx ON credit_mappings(university_module_id);
 CREATE INDEX IF NOT EXISTS university_reviews_university_id_idx ON university_reviews(university_id);
 CREATE INDEX IF NOT EXISTS review_comments_review_id_idx ON review_comments(review_id);
+CREATE INDEX IF NOT EXISTS review_comments_user_id_idx ON review_comments(user_id);
+CREATE INDEX IF NOT EXISTS planned_modules_timetable_id_idx ON planned_modules(timetable_id);
+CREATE INDEX IF NOT EXISTS planned_modules_cart_module_id_idx ON planned_modules(cart_module_id);
+CREATE INDEX IF NOT EXISTS planned_modules_user_id_idx ON planned_modules(user_id);

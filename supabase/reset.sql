@@ -1,5 +1,6 @@
 -- Run in the Supabase SQL Editor to safely drop all custom tables.
 DROP TABLE IF EXISTS public.planned_modules CASCADE;
+DROP TABLE IF EXISTS public.cart_modules CASCADE;
 DROP TABLE IF EXISTS public.timetables CASCADE;
 DROP TABLE IF EXISTS public.review_comments CASCADE;
 DROP TABLE IF EXISTS public.university_reviews CASCADE;
