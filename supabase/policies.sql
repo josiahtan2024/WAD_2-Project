@@ -101,6 +101,12 @@ CREATE POLICY "Authenticated users can delete their own review"
     TO authenticated
     USING ((select auth.uid()) = user_id);
 
+-- Needed besides the public bucket: uploads read the new row back and deletes look rows up,
+-- so without a SELECT policy removing or replacing a photo silently does nothing.
+CREATE POLICY "Allow public read access on review images"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'review-images');
+
 CREATE POLICY "Authenticated users can upload their own review images"
     ON storage.objects FOR INSERT
     TO authenticated

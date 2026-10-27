@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { supabase } from '@/lib/supabase'
+import { STORAGE_URL, supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 
 const BUCKET = 'review-images'
@@ -15,10 +15,14 @@ export const REVIEW_TOPICS = [
 ]
 
 const REVIEW_COLUMNS = `
-  id, user_id, university_id, rating, review, image_path, created_at,
+  id, user_id, university_id, rating, review, image_path, created_at, updated_at,
   academics_rating, accommodation_rating, cost_rating, campus_rating,
   review_comments ( id, user_id, body, created_at )
 `
+
+export function reviewImageUrl(path) {
+  return `${STORAGE_URL}/${BUCKET}/${path}`
+}
 
 function getUserId() {
   const user = useAuthStore().user
@@ -28,10 +32,19 @@ function getUserId() {
 
 function explain(error) {
   if (error.code === '23505') {
-    return new Error('You have already reviewed this university. Delete your review to post a new one.')
+    return new Error('You have already reviewed this university. Edit or delete your review instead.')
   }
   if (error.code === '42501') return new Error('You are not allowed to do that.')
+  // .single() finds no row when the review is gone or belongs to someone else
+  if (error.code === 'PGRST116') return new Error('That review no longer exists.')
   return error
+}
+
+// the columns that make up a review, shared by post() and update()
+function reviewFields(draft) {
+  const fields = { rating: draft.rating, review: draft.body }
+  for (const topic of REVIEW_TOPICS) fields[topic.key] = draft.topics?.[topic.key] || null
+  return fields
 }
 
 async function uploadImage(userId, file) {
@@ -43,6 +56,11 @@ async function uploadImage(userId, file) {
   return path
 }
 
+// Best effort: a photo that can't be removed is not worth failing the whole action for.
+async function deleteImage(path) {
+  if (path) await supabase.storage.from(BUCKET).remove([path])
+}
+
 export const useReviewsStore = defineStore('reviews', {
   state: () => ({
     items: [], // rows from `university_reviews`, newest first, each with its `review_comments`
@@ -52,6 +70,11 @@ export const useReviewsStore = defineStore('reviews', {
     saving: false,
     error: null,
   }),
+  getters: {
+    // the store can still hold the previous university's reviews until the next load starts
+    isLoadedFor: (state) => (universityId) => state.loaded && state.universityId === String(universityId),
+    reviewOf: (state) => (userId) => state.items.find((r) => r.user_id === userId),
+  },
   actions: {
     /** @param {number|string} universityId */
     async load(universityId) {
@@ -67,7 +90,7 @@ export const useReviewsStore = defineStore('reviews', {
         const { data, error } = await supabase
           .from('university_reviews')
           .select(REVIEW_COLUMNS)
-          .eq('university_id', universityId)
+          .eq('university_id', id)
           .order('created_at', { ascending: false })
           .order('created_at', { referencedTable: 'review_comments', ascending: true })
         if (error) throw error
@@ -94,30 +117,61 @@ export const useReviewsStore = defineStore('reviews', {
       try {
         const userId = getUserId()
         if (draft.image) imagePath = await uploadImage(userId, draft.image)
-
-        const row = {
-          user_id: userId,
-          university_id: universityId,
-          rating: draft.rating,
-          review: draft.body,
-          image_path: imagePath,
-        }
-        for (const topic of REVIEW_TOPICS) row[topic.key] = draft.topics?.[topic.key] || null
-
         const { data, error } = await supabase
           .from('university_reviews')
-          .insert(row)
+          .insert({ ...reviewFields(draft), user_id: userId, university_id: universityId, image_path: imagePath })
           .select(REVIEW_COLUMNS)
           .single()
         if (error) throw error
         if (String(universityId) === this.universityId) this.items.unshift(data)
       } catch (error) {
         // don't leave an orphaned photo behind when the review itself was rejected
-        if (imagePath) await supabase.storage.from(BUCKET).remove([imagePath])
+        await deleteImage(imagePath)
         throw explain(error)
       } finally {
         this.saving = false
       }
+    },
+    /**
+     * Edit one of the current user's reviews. The photo is kept unless a new one is
+     * picked or `removeImage` is set.
+     * @param {number} reviewId
+     * @param {{ rating: number, body: string, topics?: Object, image?: File|null, removeImage?: boolean }} draft
+     */
+    async update(reviewId, draft) {
+      if (this.saving) return
+      this.saving = true
+      const before = this.items.find((r) => r.id === reviewId)
+      let newPath = null
+      let saved
+      try {
+        const userId = getUserId()
+        if (draft.image) newPath = await uploadImage(userId, draft.image)
+
+        const changes = { ...reviewFields(draft), updated_at: new Date().toISOString() }
+        if (newPath) changes.image_path = newPath
+        else if (draft.removeImage) changes.image_path = null
+
+        const { data, error } = await supabase
+          .from('university_reviews')
+          .update(changes)
+          .eq('id', reviewId)
+          .select(REVIEW_COLUMNS)
+          .single()
+        if (error) throw error
+        saved = data
+      } catch (error) {
+        await deleteImage(newPath)
+        throw explain(error)
+      } finally {
+        this.saving = false
+      }
+
+      // keep the comments we already have, they may have changed while the form was open
+      const index = this.items.findIndex((r) => r.id === reviewId)
+      if (index !== -1) this.items[index] = { ...saved, review_comments: this.items[index].review_comments }
+      // only drop the old photo once the new row is safely saved
+      if (before?.image_path && before.image_path !== saved.image_path) await deleteImage(before.image_path)
     },
     /** @param {number} reviewId Delete one of the current user's reviews. */
     async remove(reviewId) {
@@ -130,7 +184,7 @@ export const useReviewsStore = defineStore('reviews', {
       if (error) throw explain(error)
       if (!data?.length) throw new Error('Could not delete that review.')
       this.items = this.items.filter((r) => r.id !== reviewId)
-      if (review?.image_path) await supabase.storage.from(BUCKET).remove([review.image_path])
+      await deleteImage(review?.image_path)
     },
     /** @param {number} reviewId @param {string} body */
     async addComment(reviewId, body) {

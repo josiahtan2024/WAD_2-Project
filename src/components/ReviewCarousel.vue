@@ -1,20 +1,28 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { STORAGE_URL } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import { REVIEW_TOPICS, useReviewsStore } from '@/stores/reviews'
+import { REVIEW_TOPICS, reviewImageUrl, useReviewsStore } from '@/stores/reviews'
 import ReviewComments from '@/components/ReviewComments.vue'
+import ReviewForm from '@/components/ReviewForm.vue'
 
 const props = defineProps({ reviews: { type: Array, default: () => [] } })
 
 const route = useRoute()
 const auth = useAuthStore()
 const store = useReviewsStore()
+const editingId = ref(null)
 const actionError = ref('')
 
-// the store can still hold the previous university's reviews until the new load starts
-const ready = computed(() => store.loaded && store.universityId === String(route.params.id))
+// Load here so the reviews show up whichever page mounts this, and reload when the
+// route changes to another university. A failure ends up in store.error.
+watch(
+  () => route.params.id,
+  (id) => store.load(id).catch(() => {}),
+  { immediate: true },
+)
+
+const ready = computed(() => store.isLoadedFor(route.params.id))
 
 const average = computed(() => {
   if (!props.reviews.length) return 0
@@ -26,6 +34,15 @@ const average = computed(() => {
 // over whenever a review is added or removed.
 const carouselKey = computed(() => props.reviews.map((r) => r.id).join('-'))
 
+function isMine(review) {
+  return review.user_id === auth.user?.id
+}
+
+// updated_at starts out equal to created_at, so only a real gap means it was edited
+function wasEdited(review) {
+  return !!review.updated_at && new Date(review.updated_at) - new Date(review.created_at) > 1000
+}
+
 function stars(n) {
   const filled = Math.round(n)
   return '★'.repeat(filled) + '☆'.repeat(5 - filled)
@@ -33,10 +50,6 @@ function stars(n) {
 
 function topicsFor(review) {
   return REVIEW_TOPICS.filter((t) => review[t.key])
-}
-
-function imageUrl(path) {
-  return `${STORAGE_URL}/review-images/${path}`
 }
 
 async function remove(review) {
@@ -68,16 +81,23 @@ async function remove(review) {
               <div>
                 <span class="text-warning fs-5" :aria-label="`${r.rating} out of 5`" data-testid="review-rating">{{ stars(r.rating) }}</span>
                 <small class="text-muted ms-2">
-                  {{ r.user_id === auth.user?.id ? 'You' : 'SMU student' }} &middot; {{ new Date(r.created_at).toLocaleDateString() }}
+                  {{ isMine(r) ? 'You' : 'SMU student' }} &middot; {{ new Date(r.created_at).toLocaleDateString() }}
+                  <span v-if="wasEdited(r)" data-testid="review-edited">(edited)</span>
                 </small>
               </div>
-              <button v-if="r.user_id === auth.user?.id" type="button" class="btn btn-outline-danger btn-sm" data-testid="review-delete-btn" @click="remove(r)">Delete</button>
+              <div v-if="isMine(r)" class="d-flex gap-1">
+                <button v-if="editingId !== r.id" type="button" class="btn btn-outline-secondary btn-sm" data-testid="review-edit-btn" @click="editingId = r.id">Edit</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-testid="review-delete-btn" @click="remove(r)">Delete</button>
+              </div>
             </div>
-            <ul v-if="topicsFor(r).length" class="list-inline small text-muted my-1">
-              <li v-for="t in topicsFor(r)" :key="t.key" class="list-inline-item">{{ t.label }} {{ r[t.key] }}/5</li>
-            </ul>
-            <blockquote class="my-2 text-break" style="white-space: pre-line" data-testid="review-body">{{ r.review }}</blockquote>
-            <img v-if="r.image_path" :src="imageUrl(r.image_path)" alt="Photo shared with this review" class="img-fluid rounded mb-2" style="max-height: 16rem" data-testid="review-image" />
+            <ReviewForm v-if="editingId === r.id" :review="r" logged-in @saved="editingId = null" @cancel="editingId = null" />
+            <template v-else>
+              <ul v-if="topicsFor(r).length" class="list-inline small text-muted my-1">
+                <li v-for="t in topicsFor(r)" :key="t.key" class="list-inline-item">{{ t.label }} {{ r[t.key] }}/5</li>
+              </ul>
+              <blockquote class="my-2 text-break" style="white-space: pre-line" data-testid="review-body">{{ r.review }}</blockquote>
+              <img v-if="r.image_path" :src="reviewImageUrl(r.image_path)" alt="Photo shared with this review" class="img-fluid rounded mb-2" style="max-height: 16rem" data-testid="review-image" />
+            </template>
             <ReviewComments :review="r" />
           </div>
         </div>
