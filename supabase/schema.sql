@@ -122,9 +122,12 @@ CREATE TABLE IF NOT EXISTS user_budgets (
     transport_budget NUMERIC CHECK (transport_budget >= 0),
     personal_budget NUMERIC CHECK (personal_budget >= 0),
     other_budget NUMERIC CHECK (other_budget >= 0),
+    housing_type TEXT,
+    food_option TEXT,
+    transport_option TEXT,
 
-    -- One budget per user per university
-    UNIQUE (user_id, university_id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     FOREIGN KEY (exchange_period_id, university_id)
         REFERENCES exchange_periods(id, university_id)

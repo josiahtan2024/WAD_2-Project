@@ -19,10 +19,12 @@ function toggleUniversity(university) {
 }
 
 onMounted(async () => {
+  uni.error = null
   exchangeRates.load()
+
   try {
-    await uni.load()
-    await uni.loadModules()
+    if (!uni.items.length) await uni.load()
+    // await uni.loadMappings(route.params.id)
   } catch (e) {
     uni.error = e.message
   }

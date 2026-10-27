@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 
+
 export const useUniversitiesStore = defineStore('universities', {
   state: () => ({
     items: [], // rows from `universities`
@@ -39,16 +40,14 @@ async load() {
   } finally {
     this.loading = false
   }
-},
+},}})
     /** @param {number|string} universityId Load credit mappings (with SMU module code and name) into `mappings`. */
-    async loadMappings(universityId) {
+  //  async loadMappings(universityId) {
       // TODO(student): implement
-      throw new Error('Not implemented')
-    },
+  //    throw new Error('Not implemented')}
+
     /** Load all SMU modules into `modules`. */
-    async loadModules() {
-      // TODO(student): implement
-      throw new Error('Not implemented')
-    },
-  },
-})
+  //  async loadModules() {
+       // TODO(student): implement
+  //    throw new Error('Not implemented')}
+
