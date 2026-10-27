@@ -354,6 +354,30 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+@media (max-width: 991.98px) {
+  .shortlist-main,
+  .shortlist-actions {
+    flex-basis: 100%;
+  }
+
+  .shortlist-actions {
+    flex-wrap: wrap;
+  }
+
+  .shortlist-actions > .btn,
+  .shortlist-secondary-actions {
+    flex: 1 0 100%;
+  }
+
+  .shortlist-secondary-actions {
+    width: 100%;
+  }
+
+  .shortlist-secondary-actions > .btn {
+    flex: 1 1 0;
+  }
+}
+
 @media (max-width: 575.98px) {
   .shortlist-row {
     padding: 1rem;
@@ -373,18 +397,6 @@ onMounted(async () => {
     font-size: 1.1rem;
   }
 
-  .shortlist-actions {
-    width: 100%;
-  }
-
-  .shortlist-secondary-actions {
-    flex: 1 0 100%;
-    width: 100%;
-  }
-
-  .shortlist-secondary-actions > .btn {
-    flex: 1 1 0;
-  }
 }
 
 .shortlist-sort {
