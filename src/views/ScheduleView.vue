@@ -98,8 +98,8 @@ onMounted(async () => {
 
 <template>
   <section data-testid="schedule-page">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="h3 mb-0">Weekly schedule</h1>
+    <div class="d-flex flex-column align-items-center gap-2 mb-3">
+      <h1 class="h3 fw-bold text-center mb-0">Weekly schedule</h1>
       <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save">
         {{ saving ? 'Saving...' : 'Save schedule' }}
       </button>
@@ -121,7 +121,7 @@ onMounted(async () => {
 
       <div class="container-fluid">
   
-    <div class="row"><h1 class="text-center">My Schedule - {{ universityName }}</h1></div>
+    <div class="row"><h2 class="h3 fw-bold text-center">My Schedule - {{ universityName }}</h2></div>
 
     <template v-if="hasSchedule">
       <div class="row justify-content-center">

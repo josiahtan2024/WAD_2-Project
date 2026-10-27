@@ -100,10 +100,10 @@ onMounted(async () => {
 
 <template>
   <section data-testid="shortlist-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-    <h1 class="h3 mb-0">Your shortlist</h1>
+    <div class="d-flex flex-column gap-3 mb-3">
+    <h1 class="h3 fw-bold text-center mb-0">Your shortlist</h1>
 
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex justify-content-end align-items-center gap-2">
       <label for="shortlist-sort" class="visually-hidden">
         Sort shortlist
       </label>

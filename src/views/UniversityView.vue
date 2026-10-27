@@ -72,7 +72,7 @@ onMounted(async () => {
 
 
         <div>
-          <h1 class="h3 mb-2">{{ university.name }}</h1>
+          <h1 class="h3 fw-bold text-center mb-2">{{ university.name }}</h1>
           <p class="text-muted mb-0">
             {{ university.city }}, {{ university.country }}
           </p>
