@@ -39,10 +39,10 @@ function clearFilters() {
       </div>
     </div>
     <div class="d-flex flex-column align-items-start gap-2 mt-3">
-      <span class="small text-secondary">Showing {{ props.resultCount }} of {{ props.totalCount }} universities</span>
       <button v-if="query || region || sortBy !== 'name'" class="btn btn-sm btn-outline-secondary" type="button" data-testid="clear-filters-btn" @click="clearFilters">
         Reset search and filters
       </button>
+      <span class="small text-secondary">Showing {{ props.resultCount }} of {{ props.totalCount }} universities</span>
     </div>
   </div>
 </template>
