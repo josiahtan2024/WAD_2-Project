@@ -10,6 +10,7 @@ import ShortlistView from '@/views/ShortlistView.vue'
 import CompareView from '@/views/CompareView.vue'
 import ScheduleView from '@/views/ScheduleView.vue'
 import CostEstimator from '@/views/CostEstimatorView.vue'
+import CourseSearchView from '@/views/CourseSearchView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
@@ -19,18 +20,9 @@ const routes = [
   { path: '/universities/:id', name: 'university', component: UniversityView },
   { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { requiresAuth: true } },
   { path: '/compare', name: 'compare', component: CompareView },
-  {
-    path: '/schedule/:universityId',
-    name: 'schedule',
-    component: ScheduleView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/cost-estimator',
-    name: 'cost-estimator',
-    component: CostEstimator,
-    meta: { requiresAuth: true },
-  },
+  { path: '/courses', name: 'courses', component: CourseSearchView },
+  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { requiresAuth: true }, },
+  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })

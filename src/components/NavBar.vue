@@ -1,10 +1,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useCourseCartStore } from '@/stores/courseCart'
 import { ref } from 'vue'
 import { Collapse } from 'bootstrap'
 
 const auth = useAuthStore()
+const cart = useCourseCartStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 
@@ -85,6 +87,18 @@ async function logout() {
             </RouterLink>
           </li>
 
+          <li class="nav-item">
+            <RouterLink
+              class="nav-link"
+              to="/courses"
+              data-testid="nav-courses"
+              @click="closeMobileMenu"
+            >
+              Courses
+              <span v-if="cart.items.length" class="badge rounded-pill text-bg-light ms-1" data-testid="nav-cart-count">{{ cart.items.length }}</span>
+            </RouterLink>
+          </li>
+
           <template v-if="auth.user">
             <li class="nav-item">
               <RouterLink
@@ -94,6 +108,17 @@ async function logout() {
                 @click="closeMobileMenu"
               >
                 Shortlist
+              </RouterLink>
+            </li>
+
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link"
+                to="/schedule"
+                data-testid="nav-schedule"
+                @click="closeMobileMenu"
+              >
+                Schedule
               </RouterLink>
             </li>
 

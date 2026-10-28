@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useScheduleStore } from '@/stores/schedule'
+import { useCourseCartStore } from '@/stores/courseCart'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -29,6 +30,8 @@ export const useAuthStore = defineStore('auth', {
         this.previewAsStudent = false
       }
       this.user = user
+      // The course cart is stored per user, so reload it once the user is known.
+      if (oldId !== newId || !this.initialized) useCourseCartStore().load()
     },
     togglePreview() {
       this.previewAsStudent = !this.previewAsStudent
