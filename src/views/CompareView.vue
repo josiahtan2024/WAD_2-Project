@@ -431,11 +431,11 @@ watch(
 <template>
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
-        <section class="text-center py-3 my-5">
-            <div class="container-fluid">
-                <h1 class="display-3 fw-semibold">Compare Universities</h1>
-                <p class="fs-5">SMU Global Experience</p>
-                <p class="fs-5"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
+        <section class="container pt-0 pb-3">
+            <div>
+                <h1 class="h3 fw-bold text-center mb-3">Compare Universities</h1>
+                <p class="text-center mb-2">SMU Global Experience</p>
+                <p class="text-center mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link"
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>

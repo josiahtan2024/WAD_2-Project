@@ -27,7 +27,7 @@ async function submit() {
 <template>
   <section class="row justify-content-center" data-testid="signup-page">
     <div class="col-12 col-md-6 col-lg-4">
-      <h1 class="h3 mb-3">Sign up</h1>
+      <h1 class="h3 fw-bold text-center mb-3">Sign up</h1>
       <form @submit.prevent="submit">
         <div class="mb-3">
           <label class="form-label" for="signup-email">Email</label>

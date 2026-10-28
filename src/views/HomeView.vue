@@ -33,7 +33,7 @@ onMounted(async () => {
 
 <template>
   <section data-testid="home-page">
-    <h1 class="h3 mb-3">Plan your SMU exchange</h1>
+    <h1 class="h3 fw-bold text-center mb-3">Plan your SMU exchange</h1>
     <div v-if="uni.error" class="alert alert-warning" data-testid="home-error">{{ uni.error }}</div>
     <div class="row g-3">
       <div class="col-12 col-md-3">

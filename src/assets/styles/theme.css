@@ -2,10 +2,30 @@
 :root {
   --bs-primary: #1f4e9c;
   --bs-primary-rgb: 31, 78, 156;
-  --bs-body-font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  --bs-body-font-family: Arial, Helvetica, sans-serif;
   --bs-body-bg: #ffffff;
   --app-radius: 0.75rem;
   --app-navbar-height: 58px;
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+}
+
+.btn,
+button,
+.page-link {
+  font-family: inherit;
+  font-weight: 700;
 }
 
 .btn-primary {

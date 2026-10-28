@@ -79,7 +79,7 @@ async function submit() {
     You have already reviewed this university. You can edit or delete your review above.
   </p>
   <form v-else-if="canShow" class="mt-3" data-testid="review-form" @submit.prevent="submit">
-    <h3 class="h6">{{ editing ? 'Edit your review' : 'Write a review' }}</h3>
+    <h3 class="h6 fw-bold">{{ editing ? 'Edit your review' : 'Write a review' }}</h3>
     <StarRating v-model="rating" label="Overall rating" testid="review-rating" />
     <div class="row row-cols-1 row-cols-md-2 g-1 my-1">
       <div v-for="t in REVIEW_TOPICS" :key="t.key" class="col">
