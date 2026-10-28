@@ -1,23 +1,66 @@
 import { defineStore } from 'pinia'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 
-// The cart is kept in localStorage per logged-in user until scheduling saves it to `planned_modules`.
-// Logged-out visitors can search courses but have no cart.
-function storageKey() {
-  const userId = useAuthStore().user?.id
-  return userId ? `courseCart:${userId}` : null
+// One cart_modules row with its course and the SMU course area it maps to.
+const CART_SELECT = `
+  id,
+  university_id,
+  university_module:university_modules (
+    id, module_name, module_code, language,
+    credit_mappings ( smu_module:smu_modules ( id, course_area, description ) )
+  )
+`
+
+// Postgres "foreign key violation": the cart row is still used by a saved schedule (planned_modules).
+const IN_SCHEDULE_ERROR = '23503'
+const IN_SCHEDULE_MESSAGE = 'This course is in a saved schedule. Remove it from the schedule first.'
+
+// Shared by every caller of ensureLoaded() while one load is in flight
+let loadPromise = null
+
+function getUserId() {
+  const user = useAuthStore().user
+  if (!user) throw new Error('Log in to use your cart')
+  return user.id
+}
+
+/** Turn a cart_modules row into the cart item shape used by the pages. */
+function toItem(row) {
+  const um = row.university_module
+  const smu = um?.credit_mappings?.[0]?.smu_module
+  return {
+    cartModuleId: row.id,
+    universityModuleId: um?.id,
+    universityId: row.university_id,
+    moduleName: um?.module_name ?? '',
+    moduleCode: um?.module_code ?? '',
+    language: um?.language ?? null,
+    smuModuleId: smu?.id ?? null,
+    courseArea: smu?.course_area ?? '',
+    smuDescription: smu?.description ?? '',
+  }
 }
 
 /**
+ * The cart lives in Supabase (`cart_modules`), one row per course per student; logged-out visitors have no cart.
  * Cart item shape (shared with the scheduling feature):
- * { universityModuleId, universityId, moduleName, moduleCode, language, smuModuleId, courseArea, smuDescription }
+ * { cartModuleId, universityModuleId, universityId, moduleName, moduleCode, language, smuModuleId, courseArea, smuDescription }
  */
 export const useCourseCartStore = defineStore('courseCart', {
-  state: () => ({ items: [] }),
+  state: () => ({
+    items: [],
+    loadedUserId: null, // whose cart `items` holds
+    pendingIds: [], // universityModuleIds being added or removed (disables their buttons)
+    loading: false,
+    error: null,
+  }),
   getters: {
     /** @returns {(universityModuleId: number) => boolean} */
     has: (state) => (universityModuleId) =>
       state.items.some((item) => item.universityModuleId === universityModuleId),
+    /** @returns {(universityModuleId: number) => boolean} */
+    isPending: (state) => (universityModuleId) => state.pendingIds.includes(universityModuleId),
     /** @returns {(universityId: number|string) => object[]} Cart items for one university, for scheduling. */
     forUniversity: (state) => (universityId) =>
       state.items.filter((item) => item.universityId === Number(universityId)),
@@ -29,57 +72,101 @@ export const useCourseCartStore = defineStore('courseCart', {
       }, {}),
   },
   actions: {
-    /** Read the current user's cart from localStorage. Call on app start and when the user changes. */
+    /** Load the current user's cart from Supabase. Called on app start and whenever the user changes. */
     load() {
-      const key = storageKey()
-      if (!key) {
+      const userId = useAuthStore().user?.id ?? null
+      this.error = null
+      if (!userId) {
         this.items = []
-        return
+        this.loadedUserId = null
+        return Promise.resolve()
       }
-      try {
-        const saved = JSON.parse(localStorage.getItem(key) ?? '[]')
-        this.items = Array.isArray(saved) ? saved : []
-      } catch {
-        this.items = []
-      }
+      loadPromise = (async () => {
+        this.loading = true
+        try {
+          const { data, error } = await supabase
+            .from('cart_modules')
+            .select(CART_SELECT)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true })
+          if (error) throw error
+          if (useAuthStore().user?.id !== userId) return // user changed while loading
+          this.items = (data ?? []).map(toItem)
+          this.loadedUserId = userId
+        } catch (error) {
+          this.error = error.message
+        } finally {
+          this.loading = false
+          loadPromise = null
+        }
+      })()
+      return loadPromise
     },
-    persist() {
-      const key = storageKey()
-      if (!key) return
-      try {
-        localStorage.setItem(key, JSON.stringify(this.items))
-      } catch {
-        // Storage can be unavailable (private mode); the cart still works for this visit.
-      }
+    /** Make sure `items` holds the current user's cart (pages call this before reading it). */
+    async ensureLoaded() {
+      const userId = useAuthStore().user?.id ?? null
+      if (loadPromise) await loadPromise
+      if (this.loadedUserId !== userId) await this.load()
     },
     /** @param {object} mapping A credit_mappings row loaded with MAPPING_SELECT. */
-    add(mapping) {
-      if (!useAuthStore().user) throw new Error('Log in to add courses to your cart')
+    async add(mapping) {
       const um = mapping.university_module
-      if (this.has(um.id)) return
-      this.items.push({
-        universityModuleId: um.id,
-        universityId: um.university_id,
-        moduleName: um.module_name,
-        moduleCode: um.module_code ?? '',
-        language: um.language,
-        smuModuleId: mapping.smu_module?.id ?? null,
-        courseArea: mapping.smu_module?.course_area ?? '',
-        smuDescription: mapping.smu_module?.description ?? '',
-      })
-      this.persist()
+      if (this.has(um.id) || this.isPending(um.id)) return
+      this.error = null
+      this.pendingIds.push(um.id)
+      try {
+        const userId = getUserId()
+        const { data, error } = await supabase
+          .from('cart_modules')
+          .insert({ user_id: userId, university_module_id: um.id, university_id: um.university_id })
+          .select(CART_SELECT)
+          .single()
+        if (error) throw error
+        if (useAuthStore().user?.id !== userId) return
+        this.items.push(toItem(data))
+      } catch (error) {
+        this.error = error.message
+        throw error
+      } finally {
+        this.pendingIds = this.pendingIds.filter((id) => id !== um.id)
+      }
     },
     /** @param {number} universityModuleId */
-    remove(universityModuleId) {
-      this.items = this.items.filter((item) => item.universityModuleId !== universityModuleId)
-      this.persist()
+    async remove(universityModuleId) {
+      const item = this.items.find((i) => i.universityModuleId === universityModuleId)
+      if (!item || this.isPending(universityModuleId)) return
+      this.error = null
+      this.pendingIds.push(universityModuleId)
+      try {
+        const { error } = await supabase
+          .from('cart_modules')
+          .delete()
+          .eq('id', item.cartModuleId)
+          .eq('user_id', getUserId())
+        if (error) throw error.code === IN_SCHEDULE_ERROR ? new Error(IN_SCHEDULE_MESSAGE) : error
+        this.items = this.items.filter((i) => i.cartModuleId !== item.cartModuleId)
+      } catch (error) {
+        this.error = error.message
+        throw error
+      } finally {
+        this.pendingIds = this.pendingIds.filter((id) => id !== universityModuleId)
+      }
     },
     /** @param {number} [universityId] Clear one university's items, or the whole cart when omitted. */
-    clear(universityId) {
-      this.items = universityId == null
-        ? []
-        : this.items.filter((item) => item.universityId !== Number(universityId))
-      this.persist()
+    async clear(universityId) {
+      this.error = null
+      try {
+        let query = supabase.from('cart_modules').delete().eq('user_id', getUserId())
+        if (universityId != null) query = query.eq('university_id', universityId)
+        const { error } = await query
+        if (error) throw error.code === IN_SCHEDULE_ERROR ? new Error(IN_SCHEDULE_MESSAGE) : error
+        this.items = universityId == null
+          ? []
+          : this.items.filter((item) => item.universityId !== Number(universityId))
+      } catch (error) {
+        this.error = error.message
+        throw error
+      }
     },
   },
 })

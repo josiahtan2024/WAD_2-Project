@@ -11,8 +11,20 @@ const currentUserId = computed(() => {
   
 
 
+// planned_modules.start_time / end_time are TIME columns ("10:00:00"); the grid works in seconds since midnight (36000)
+function secondsToTime(seconds){
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds % 3600 / 60))}:00`
+}
+function timeToSeconds(time){
+  if (typeof time === 'number') return time
+  const [h, m, s = 0] = String(time).split(':').map(Number)
+  return h * 3600 + m * 60 + s
+}
+
 export const useScheduleStore = defineStore('schedule', {
-  state: () => ({ currentSchedule: {}, moduleData:[], loading: false, error: null,studentTimeTableId:null,exchangePeriodId:null }), // rows from `schedule_blocks`
+  // one timetable per user per university per exchange period; savedPeriodIds lists the periods that have one
+  state: () => ({ currentSchedule: {}, moduleData:[], loading: false, error: null,studentTimeTableId:null,exchangePeriodId:null,universityId:null,savedPeriodIds:[] }), // rows from `schedule_blocks`
   actions: {
     /** @param {number|string} universityId Load the user's blocks for this university. */
     serialiseToDb(){
@@ -20,9 +32,11 @@ export const useScheduleStore = defineStore('schedule', {
       for(const day in this.currentSchedule){
         for(const slot of this.currentSchedule[day]){
           
+          // match on module_name: it is unique per university, while module_code can repeat (e.g. two "IM" courses)
+          const mod = this.moduleData.find((m)=> m.module_name == slot.moduleName)
           insertModuleData.push({
-             // match on module_name: it is unique per university, while module_code can repeat (e.g. two "IM" courses)
-             timetable_id: this.studentTimeTableId, university_module_id: (this.moduleData.find((m)=> m.module_name == slot.moduleName)).id, day_of_week: day, start_time: slot.start, end_time: slot.end,
+             // each slot points at the student's cart row (cart_modules), which points at the course
+             timetable_id: this.studentTimeTableId, cart_module_id: mod.cart_module_id, university_id: this.universityId, user_id: currentUserId.value, day_of_week: day, start_time: secondsToTime(slot.start), end_time: secondsToTime(slot.end),
           })
           
 
@@ -31,7 +45,7 @@ export const useScheduleStore = defineStore('schedule', {
       }
       return insertModuleData
     },
-    /** Add modules ({ id, module_name, module_code }) to the pickable list, skipping ones already there. */
+    /** Add modules ({ id, module_name, module_code, cart_module_id }) to the pickable list, skipping ones already there. */
     addModules(modules) {
       for (const mod of modules) {
         if (!this.moduleData.some((m) => m.id === mod.id)) {
@@ -39,16 +53,27 @@ export const useScheduleStore = defineStore('schedule', {
         }
       }
     },
-    async load(uniId,isInitial) {
+    /** @param {number|string} uniId Load which exchange periods already have a saved timetable for this university. */
+    async loadSavedPeriods(uniId) {
+      const { data, error } = await supabase
+        .from('timetables')
+        .select('exchange_period_id')
+        .eq('user_id', currentUserId.value)
+        .eq('university_id', uniId)
+      if (error) throw error
+      this.savedPeriodIds = (data ?? []).map((t) => t.exchange_period_id)
+    },
+    async load(uniId,isInitial,periodId) {
       // 1. Reset states before fetching
       this.loading = true
       this.error = null
       if (isInitial) {
-        // Opening a schedule page: drop anything left over from a previously viewed university
+        // Opening a timetable: drop anything left over from a previously viewed university or period
         this.moduleData = []
         this.currentSchedule = {}
         this.studentTimeTableId = null
-        this.exchangePeriodId = null
+        this.exchangePeriodId = Number(periodId)
+        this.universityId = Number(uniId)
       }
 
       try {
@@ -65,15 +90,19 @@ export const useScheduleStore = defineStore('schedule', {
               day_of_week,
               start_time,
               end_time,
-              university_modules!inner (
+              cart_modules!inner (
                 id,
-                module_name,
-                module_code
+                university_modules!inner (
+                  id,
+                  module_name,
+                  module_code
+                )
               )
             )
           `)
           .eq('user_id', currentUserId.value)
           .eq('university_id', uniId)
+          .eq('exchange_period_id', periodId)
 
           if (error) throw error
           if (!data || data.length == 0){ // Student doesn't have timetable record for shortlisted university
@@ -84,10 +113,10 @@ export const useScheduleStore = defineStore('schedule', {
           if(isInitial){
 
             this.studentTimeTableId = data[0].id // persistently store the timetableId for future updates
-            this.exchangePeriodId = data[0].exchange_period_id
             data[0].planned_modules.forEach(mod => {
-              if(!this.moduleData.some(i => i.id === mod.university_modules.id)){
-                this.moduleData.push(mod.university_modules)
+              const course = mod.cart_modules.university_modules
+              if(!this.moduleData.some(i => i.id === course.id)){
+                this.moduleData.push({ ...course, cart_module_id: mod.cart_modules.id })
               }
             })
           }
@@ -101,10 +130,10 @@ export const useScheduleStore = defineStore('schedule', {
 
           acc[day].push({
             id: lesson.id,
-            module: lesson.university_modules.module_code,
-            moduleName: lesson.university_modules.module_name,
-            start: lesson.start_time,
-            end: lesson.end_time
+            module: lesson.cart_modules.university_modules.module_code,
+            moduleName: lesson.cart_modules.university_modules.module_name,
+            start: timeToSeconds(lesson.start_time),
+            end: timeToSeconds(lesson.end_time)
           })
           
           return acc
@@ -123,9 +152,6 @@ export const useScheduleStore = defineStore('schedule', {
       // applies for both updating existing schedule records & inserting fresh schedule records
       // 1. check if there are existing schedule records, then delete if any
       if (mode=='update'){
-        if (exchangePeriodId && exchangePeriodId != this.exchangePeriodId){
-          await this.updateExchangePeriod(exchangePeriodId)
-        }
         await this.deleteScheduleModules(uniId);
         await this.insertScheduleModules();
       }else if(mode == 'insert'){
@@ -144,19 +170,8 @@ export const useScheduleStore = defineStore('schedule', {
       else if(data){
         this.studentTimeTableId= data.id;
         this.exchangePeriodId = exchangePeriodId;
+        this.savedPeriodIds.push(exchangePeriodId);
         await this.insertScheduleModules()
-      }
-    },
-    async updateExchangePeriod(exchangePeriodId){
-      // the student picked a different exchange period for an existing timetable
-      const { error } = await supabase
-        .from('timetables')
-        .update({ exchange_period_id: exchangePeriodId })
-        .eq('id', this.studentTimeTableId)
-      if (error) {
-        this.error = 'Failed to update exchange period:'+ error.message
-      } else {
-        this.exchangePeriodId = exchangePeriodId
       }
     },
     async deleteScheduleModules() {

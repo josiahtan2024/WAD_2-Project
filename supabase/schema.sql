@@ -146,12 +146,14 @@ CREATE TABLE IF NOT EXISTS university_reviews (
 
 CREATE TABLE IF NOT EXISTS timetables (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id UUID UNIQUE NOT NULL
+    user_id UUID NOT NULL
         REFERENCES auth.users(id) ON DELETE CASCADE,
     university_id BIGINT NOT NULL
         REFERENCES universities(id) ON DELETE CASCADE,
     exchange_period_id BIGINT NOT NULL,
 
+    -- One timetable per user per university per exchange period (picked from the Schedule page dropdowns)
+    UNIQUE (user_id, university_id, exchange_period_id),
     UNIQUE (id, university_id, exchange_period_id),
 
     FOREIGN KEY (exchange_period_id, university_id)
@@ -159,20 +161,37 @@ CREATE TABLE IF NOT EXISTS timetables (
         ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS planned_modules (
+-- Courses a student has added to their cart on the Courses page (one row per course per student)
+CREATE TABLE IF NOT EXISTS cart_modules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    timetable_id BIGINT NOT NULL
-        REFERENCES timetables(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL
+        REFERENCES auth.users(id) ON DELETE CASCADE,
     university_module_id BIGINT NOT NULL
         REFERENCES university_modules(id) ON DELETE CASCADE,
+    university_id BIGINT NOT NULL
+        REFERENCES universities(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE (user_id, university_module_id)
+);
+
+-- One row per class slot; a course can have several slots (e.g. lecture + tutorial)
+CREATE TABLE IF NOT EXISTS planned_modules (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id UUID NOT NULL
+        REFERENCES auth.users(id) ON DELETE CASCADE,
+    timetable_id BIGINT NOT NULL
+        REFERENCES timetables(id) ON DELETE CASCADE,
+    cart_module_id BIGINT NOT NULL
+        REFERENCES cart_modules(id) ON DELETE CASCADE,
+    university_id BIGINT NOT NULL
+        REFERENCES universities(id) ON DELETE CASCADE,
     section TEXT,
     day_of_week TEXT,
     start_time TIME,
     end_time TIME,
     location TEXT,
     session_type TEXT,
-
-    UNIQUE (timetable_id, university_module_id),
 
     CHECK (
         (start_time IS NULL AND end_time IS NULL)

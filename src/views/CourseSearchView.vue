@@ -87,6 +87,17 @@ const cartGroups = computed(() =>
     .sort((a, b) => compareText(a.name, b.name))
 )
 
+// Cart changes go to Supabase; a failure is shown from cart.error, so it is not re-thrown here
+async function addToCart(mapping) {
+  try { await cart.add(mapping) } catch { /* shown via cart.error */ }
+}
+async function removeFromCart(universityModuleId) {
+  try { await cart.remove(universityModuleId) } catch { /* shown via cart.error */ }
+}
+async function clearCart() {
+  try { await cart.clear() } catch { /* shown via cart.error */ }
+}
+
 function selectArea(area) {
   selectedAreaId.value = area.id
   moduleQuery.value = ''
@@ -107,6 +118,7 @@ onMounted(async () => {
       uni.items.length ? Promise.resolve() : uni.load(),
       uni.modules.length ? Promise.resolve() : uni.loadModules(),
       uni.allMappings.length ? Promise.resolve() : uni.loadAllMappings(),
+      cart.ensureLoaded(),
     ])
   } catch (error) {
     pageError.value = error.message
@@ -258,7 +270,8 @@ onMounted(async () => {
                       type="button"
                       class="btn btn-sm btn-success flex-shrink-0"
                       data-testid="course-remove-btn"
-                      @click="cart.remove(m.university_module.id)"
+                      :disabled="cart.isPending(m.university_module.id)"
+                      @click="removeFromCart(m.university_module.id)"
                     >
                       <i class="bi bi-check-lg" aria-hidden="true"></i> Added
                     </button>
@@ -267,7 +280,8 @@ onMounted(async () => {
                       type="button"
                       class="btn btn-sm btn-outline-primary flex-shrink-0"
                       data-testid="course-add-btn"
-                      @click="cart.add(m)"
+                      :disabled="cart.isPending(m.university_module.id)"
+                      @click="addToCart(m)"
                     >
                       <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
                     </button>
@@ -287,6 +301,7 @@ onMounted(async () => {
             <span class="fw-semibold"><i class="bi bi-cart3 me-1" aria-hidden="true"></i> My cart</span>
             <span class="badge text-bg-primary" data-testid="course-cart-count">{{ cart.items.length }}</span>
           </div>
+          <div v-if="auth.user && cart.error" class="alert alert-warning small m-2 mb-0 py-2" data-testid="course-cart-error">{{ cart.error }}</div>
           <p v-if="!auth.user" class="text-muted small p-3 mb-0" data-testid="course-cart-login">
             <RouterLink :to="loginLink">Log in</RouterLink> to save courses to your cart and plan your schedule.
           </p>
@@ -312,7 +327,8 @@ onMounted(async () => {
                     class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
                     :aria-label="`Remove ${item.moduleName}`"
                     data-testid="course-cart-remove-btn"
-                    @click="cart.remove(item.universityModuleId)"
+                    :disabled="cart.isPending(item.universityModuleId)"
+                    @click="removeFromCart(item.universityModuleId)"
                   >
                     <i class="bi bi-x-lg" aria-hidden="true"></i>
                   </button>
@@ -330,7 +346,7 @@ onMounted(async () => {
               type="button"
               class="btn btn-sm btn-outline-secondary w-100"
               data-testid="course-cart-clear-btn"
-              @click="cart.clear()"
+              @click="clearCart()"
             >
               Clear cart
             </button>

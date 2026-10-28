@@ -12,6 +12,7 @@ ALTER TABLE shortlists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE timetables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planned_modules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cart_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE university_reviews ENABLE ROW LEVEL SECURITY;
 
 -- Public Read-Only
@@ -64,24 +65,19 @@ CREATE POLICY "Users can manage their own timetables"
     USING ((select auth.uid()) = user_id)
     WITH CHECK ((select auth.uid()) = user_id);
 
--- Planned Modules (Enforces ownership through parent timetable relation)
-CREATE POLICY "Users can manage planned modules for their timetables"
+-- Cart Modules
+CREATE POLICY "Users can manage their own cart modules"
+    ON cart_modules FOR ALL
+    TO authenticated
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
+
+-- Planned Modules
+CREATE POLICY "Users can manage their own planned modules"
     ON planned_modules FOR ALL
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM timetables t
-            WHERE t.id = planned_modules.timetable_id
-              AND t.user_id = (select auth.uid())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM timetables t
-            WHERE t.id = planned_modules.timetable_id
-              AND t.user_id = (select auth.uid())
-        )
-    );
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Reviews
 CREATE POLICY "Allow public read access on university_reviews"
