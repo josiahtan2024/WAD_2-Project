@@ -112,7 +112,17 @@ async function logout() {
 
         <div class="d-flex gap-2">
           <template v-if="auth.user">
-
+            <template v-if="auth.isAdmin">
+              <span v-if="auth.adminActive" class="badge text-bg-warning align-self-center" data-testid="nav-staff-badge">Staff</span>
+              <span v-else class="badge text-bg-info align-self-center" data-testid="nav-preview-badge">Student view</span>
+              <button
+                class="btn btn-outline-light btn-sm"
+                data-testid="nav-preview-toggle"
+                @click="auth.togglePreview()"
+              >
+                {{ auth.previewAsStudent ? 'Back to staff view' : 'View as student' }}
+              </button>
+            </template>
 
             <button
               class="btn btn-outline-light btn-sm"

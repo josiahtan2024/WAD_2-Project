@@ -73,8 +73,10 @@ function topicsFor(review) {
   return REVIEW_TOPICS.filter((t) => review[t.key])
 }
 
+// an admin can remove any review, and says so, so nobody mistakes it for their own
 async function remove(review) {
-  if (!confirm('Delete your review?')) return
+  const question = isMine(review) ? 'Delete your review?' : 'Remove this review? The student will not be told.'
+  if (!confirm(question)) return
   actionError.value = ''
   try {
     await store.remove(review.id)
@@ -107,6 +109,7 @@ async function remove(review) {
                   <span v-if="wasEdited(r)" data-testid="review-edited">(edited)</span>
                 </small>
               </div>
+              <button v-if="!isMine(r) && auth.adminActive" type="button" class="btn btn-outline-danger btn-sm" data-testid="review-remove-btn" @click="remove(r)">Remove</button>
               <div v-if="isMine(r)" class="d-flex gap-1">
                 <button v-if="editingId !== r.id" type="button" class="btn btn-outline-secondary btn-sm" data-testid="review-edit-btn" @click="editingId = r.id">Edit</button>
                 <button type="button" class="btn btn-outline-danger btn-sm" data-testid="review-delete-btn" @click="remove(r)">Delete</button>
