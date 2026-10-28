@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { REVIEW_TOPICS, reviewImageUrl, useReviewsStore } from '@/stores/reviews'
@@ -13,6 +13,8 @@ const auth = useAuthStore()
 const store = useReviewsStore()
 const editingId = ref(null)
 const actionError = ref('')
+const activeIndex = ref(0)
+const carouselElement = ref(null)
 
 // Load here so the reviews show up whichever page mounts this, and reload when the
 // route changes to another university. A failure ends up in store.error.
@@ -33,6 +35,25 @@ const average = computed(() => {
 // Bootstrap moves the "active" class around by itself, so start the carousel
 // over whenever a review is added or removed.
 const carouselKey = computed(() => props.reviews.map((r) => r.id).join('-'))
+function updateActiveReview(event) {
+  activeIndex.value = event.to
+}
+
+function bindCarouselListener() {
+  carouselElement.value?.removeEventListener('slid.bs.carousel', updateActiveReview)
+  carouselElement.value?.addEventListener('slid.bs.carousel', updateActiveReview)
+}
+
+watch(carouselKey, async () => {
+  activeIndex.value = 0
+  await nextTick()
+  bindCarouselListener()
+})
+
+onMounted(bindCarouselListener)
+onBeforeUnmount(() => {
+  carouselElement.value?.removeEventListener('slid.bs.carousel', updateActiveReview)
+})
 
 function isMine(review) {
   return review.user_id === auth.user?.id
@@ -65,7 +86,7 @@ async function remove(review) {
 
 <template>
   <div data-testid="review-carousel">
-    <h2 class="h5">Reviews</h2>
+    <h2 class="h5 fw-bold">Reviews</h2>
     <p v-if="!ready && !store.error" class="text-muted" data-testid="reviews-loading">Loading reviews...</p>
     <p v-else-if="ready && !reviews.length" class="text-muted" data-testid="reviews-empty">No reviews yet. Be the first to post one.</p>
     <template v-else-if="ready">
@@ -74,7 +95,8 @@ async function remove(review) {
         {{ average.toFixed(1) }} out of 5 from {{ reviews.length }} {{ reviews.length === 1 ? 'review' : 'reviews' }}
       </p>
       <div v-if="actionError" class="alert alert-danger" data-testid="review-action-error">{{ actionError }}</div>
-      <div :key="carouselKey" id="review-carousel" class="carousel slide card card-body" data-bs-interval="false">
+      <div :key="carouselKey" ref="carouselElement" id="review-carousel" class="carousel slide card border-0 shadow-sm rounded-4" data-bs-interval="false">
+        <div class="card-body p-3 p-md-4">
         <div class="carousel-inner px-4">
           <div v-for="(r, i) in reviews" :key="r.id" class="carousel-item" :class="{ active: i === 0 }" data-testid="review-item">
             <div class="d-flex justify-content-between align-items-start gap-2">
@@ -101,12 +123,18 @@ async function remove(review) {
             <ReviewComments :review="r" />
           </div>
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#review-carousel" data-bs-slide="prev" aria-label="Previous review" data-testid="review-prev-btn">
-          <span class="carousel-control-prev-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#review-carousel" data-bs-slide="next" aria-label="Next review" data-testid="review-next-btn">
-          <span class="carousel-control-next-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
-        </button>
+        <nav v-if="reviews.length > 1" class="review-pagination d-flex justify-content-center align-items-center gap-3 mt-3" aria-label="Review pages">
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-target="#review-carousel" data-bs-slide="prev" aria-label="Previous review" data-testid="review-prev-btn">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span class="visually-hidden">Previous review</span>
+          </button>
+          <span class="small text-secondary" aria-live="polite">{{ activeIndex + 1 }} / {{ reviews.length }}</span>
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-target="#review-carousel" data-bs-slide="next" aria-label="Next review" data-testid="review-next-btn">
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            <span class="visually-hidden">Next review</span>
+          </button>
+        </nav>
+        </div>
       </div>
     </template>
   </div>

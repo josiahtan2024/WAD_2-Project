@@ -747,12 +747,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="container py-4 py-lg-5">
-    <div class="mb-4">
+  <main class="container px-0">
+    <div class="mb-3">
 
-      <h1 class="fw-bold mb-2">Exchange Budget Planner</h1>
+      <h1 class="h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
 
-      <p class="text-secondary mb-0">
+      <p class="text-secondary text-center mb-0">
         Estimate your exchange expenses, compare published costs,
         and plan your budget before you go.
       </p>

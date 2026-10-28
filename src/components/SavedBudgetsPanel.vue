@@ -88,9 +88,9 @@ function resetFilters() {
               </select>
             </div>
           </div>
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-            <span class="small text-secondary">Showing {{ props.filteredBudgets.length }} of {{ props.budgets.length }} budget<span v-if="props.budgets.length !== 1">s</span></span>
+          <div class="d-flex flex-column align-items-start gap-2 mt-3">
             <button v-if="searchQuery || regionFilter || sortBy !== 'recent'" type="button" class="btn btn-sm btn-outline-secondary" @click="resetFilters">Reset search and filters</button>
+            <span class="small text-secondary">Showing {{ props.filteredBudgets.length }} of {{ props.budgets.length }} budget<span v-if="props.budgets.length !== 1">s</span></span>
           </div>
         </div>
 

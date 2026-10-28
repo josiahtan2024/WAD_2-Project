@@ -128,8 +128,8 @@ onMounted(async () => {
     </button>
 </div>
   <section data-testid="universities-page">
-    <h1 class="h3 mb-3">Universities</h1>
-    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" />
+    <h1 class="h3 fw-bold text-center mb-3">Universities</h1>
+    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="uni.items.length" />
 
     <div v-if="shortlist.error" class="alert alert-warning" data-testid="shortlist-error">{{ shortlist.error }}</div>
     <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading universities...</div>
