@@ -1,6 +1,8 @@
 <script setup>
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
+import { useAuthStore } from '@/stores/auth'
 const exchangeRates = useExchangeRatesStore()
+const auth = useAuthStore()
 import { supabase } from '@/lib/supabase'
 function getLogoUrl(path) {
   const filePath = path.replace(/^university-logos\//, '')
@@ -124,6 +126,7 @@ defineEmits(['toggle-shortlist'])
         </div>
 
         <div class="university-info flex-grow-1">
+          <span v-if="university.published === false" class="badge text-bg-secondary mb-1" data-testid="university-hidden-badge">Hidden from students</span>
           <h2
             class="h5 card-title university-name mb-2"
             data-testid="university-card-name"
@@ -149,6 +152,15 @@ defineEmits(['toggle-shortlist'])
       data-testid="university-card-link"
     >
       Details
+    </RouterLink>
+
+    <RouterLink
+      v-if="auth.adminActive"
+      :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
+      class="btn btn-outline-secondary btn-sm"
+      data-testid="university-card-edit"
+    >
+      Edit
     </RouterLink>
 
     <button
