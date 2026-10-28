@@ -2,12 +2,38 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCourseCartStore } from '@/stores/courseCart'
+import { ref } from 'vue'
+import { Collapse } from 'bootstrap'
 
 const auth = useAuthStore()
 const cart = useCourseCartStore()
 const router = useRouter()
+const mobileMenuOpen = ref(false)
+
+function toggleMobileMenu() {
+  const menu = document.getElementById('nav-menu')
+  if (!menu || window.innerWidth >= 768) return
+
+  const collapse = Collapse.getOrCreateInstance(menu, { toggle: false })
+  if (menu.classList.contains('show')) {
+    collapse.hide()
+    mobileMenuOpen.value = false
+  } else {
+    collapse.show()
+    mobileMenuOpen.value = true
+  }
+}
+
+function closeMobileMenu() {
+  if (window.innerWidth >= 768) return
+
+  const menu = document.getElementById('nav-menu')
+  if (menu) Collapse.getOrCreateInstance(menu, { toggle: false }).hide()
+  mobileMenuOpen.value = false
+}
 
 async function logout() {
+  closeMobileMenu()
   await auth.logout()
   router.push('/login')
 }
@@ -29,9 +55,9 @@ async function logout() {
       <button
         class="navbar-toggler"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#nav-menu"
         aria-label="Toggle navigation"
+        :aria-expanded="mobileMenuOpen"
+        @click="toggleMobileMenu"
         data-testid="nav-toggle"
       >
         <span class="navbar-toggler-icon"></span>
@@ -44,6 +70,7 @@ async function logout() {
               class="nav-link"
               to="/universities"
               data-testid="nav-universities"
+              @click="closeMobileMenu"
             >
               Universities
             </RouterLink>
@@ -54,6 +81,7 @@ async function logout() {
               class="nav-link"
               to="/compare"
               data-testid="nav-compare"
+              @click="closeMobileMenu"
             >
               Compare
             </RouterLink>
@@ -64,6 +92,7 @@ async function logout() {
               class="nav-link"
               to="/courses"
               data-testid="nav-courses"
+              @click="closeMobileMenu"
             >
               Courses
               <span v-if="cart.items.length" class="badge rounded-pill text-bg-light ms-1" data-testid="nav-cart-count">{{ cart.items.length }}</span>
@@ -76,6 +105,7 @@ async function logout() {
                 class="nav-link"
                 to="/shortlist"
                 data-testid="nav-shortlist"
+                @click="closeMobileMenu"
               >
                 Shortlist
               </RouterLink>
@@ -86,6 +116,7 @@ async function logout() {
                 class="nav-link"
                 to="/schedule"
                 data-testid="nav-schedule"
+                @click="closeMobileMenu"
               >
                 Schedule
               </RouterLink>
@@ -96,6 +127,7 @@ async function logout() {
                 class="nav-link"
                 to="/cost-estimator"
                 data-testid="nav-cost-estimator"
+                @click="closeMobileMenu"
               >
                 Budget
               </RouterLink>
@@ -123,6 +155,7 @@ async function logout() {
               class="btn btn-outline-light btn-sm"
               to="/login"
               data-testid="nav-login-link"
+              @click="closeMobileMenu"
             >
               Log in
             </RouterLink>
@@ -131,6 +164,7 @@ async function logout() {
               class="btn btn-light btn-sm nav-signup"
               to="/signup"
               data-testid="nav-signup-link"
+              @click="closeMobileMenu"
             >
               Sign up
             </RouterLink>

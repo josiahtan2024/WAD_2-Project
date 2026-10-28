@@ -1,25 +1,23 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
-import { calculateMonthlyCost } from '@/lib/universityCost'
-import { useRouter } from 'vue-router'
-import { useShortlistStore } from '@/stores/shortlist'
-import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const shortlist = useShortlistStore()
 const auth = useAuthStore()
-// TODO TO-DO FIX SCALING AND RESPONSIVE UI
-const universities = ref([])
-const isLoading = ref(true)
 
+// TODO TO-DO FIX SCALING AND RESPONSIVE UI
+// Universities
+const universities = ref([])
+const uniIsLoading = ref(true)
 async function fetchUniversities() {
-    isLoading.value = true
+    uniIsLoading.value = true
     try {
         const { data, error } = await supabase
             .from('universities')
@@ -42,7 +40,7 @@ async function fetchUniversities() {
             const food = Number(cost.food || 0)
             const transport = Number(cost.transport || 0)
             const personal = Number(cost.personal_expenses || 0)
-            const total = calculateMonthlyCost(uni.university_costs)
+            const total = accom + food + transport + personal
 
             const periods = (uni.exchange_periods || []).map(period => ({
                 id: period.id,
@@ -97,17 +95,54 @@ async function fetchUniversities() {
                     periods: periods
                 }
             }
-        })
+        }).sort((a, b) => a.name.localeCompare(b.name))
     } catch (error) {
         console.error('Error fetching universities from Supabase:', error.message)
     } finally {
-        isLoading.value = false
+        uniIsLoading.value = false
     }
 }
 
-const shortlistedIds = computed(() =>
-    shortlist.items.map(item => item.university_id)
-)
+// Shortlist
+const shortlist = ref([])
+const shortlistIsLoading = ref(true)
+const shortlistLoadingIds = ref({})
+async function fetchShortlist() {
+    if (!auth.user) {
+        shortlistIsLoading.value = false
+        return
+    }
+
+    shortlistIsLoading.value = true
+
+    try {
+        const { data, error } = await supabase
+            .from('shortlists')
+            .select('*')
+            .eq('user_id', auth.user.id)
+            .order('id', { ascending: false })
+
+        if (error) throw error
+
+        shortlist.value = data
+    } catch (error) {
+        console.error('Error fetching shortlist from Supabase:', error.message)
+    } finally {
+        shortlistIsLoading.value = false
+    }
+}
+
+const shortlistedIds = computed(() => {
+    return shortlist.value.map(item => item.university_id)
+})
+
+const shortlistedUnis = computed(() => {
+    return universities.value.filter(uni => shortlistedIds.value.includes(uni.id))
+})
+
+const remainingUnis = computed(() => {
+    return universities.value.filter(uni => !shortlistedIds.value.includes(uni.id))
+})
 
 const isShortlisted = (uniId) => {
     return shortlistedIds.value.includes(uniId)
@@ -121,93 +156,67 @@ async function toggleShortlist(uniId) {
         })
     }
 
-    if (shortlist.loading || shortlist.saving) return
+    if (shortlistLoadingIds.value[uniId]) return 
+    shortlistLoadingIds.value[uniId] = true
 
     try {
         if (isShortlisted(uniId)) {
-            await shortlist.remove(uniId)
+            const { error } = await supabase
+                .from('shortlists')
+                .delete()
+                .eq('user_id', auth.user.id)
+                .eq('university_id', uniId)
+
+            if (error) throw error
+            shortlist.value = shortlist.value.filter(item => item.university_id !== uniId)
         } else {
-            await shortlist.add(uniId)
+            const { data, error } = await supabase
+                .from('shortlists')
+                .insert({
+                    user_id: auth.user.id,
+                    university_id: uniId
+                })
+                .select()
+                .single()
+
+            if (error) throw error
+            if (data) shortlist.value.push(data)
         }
     } catch (error) {
-        shortlist.error = error.message
+        console.error(error.message)
+    } finally {
+        shortlistLoadingIds.value[uniId] = false
     }
 }
-// Lines 11-45 to be removed - temp solution for shortlisting demo
 
-const shortlistedUnis = computed(() => {
-    return universities.value.filter(uni => shortlistedIds.value.includes(uni.id))
-})
-
-const remainingUnis = computed(() => {
-    return universities.value.filter(uni => !shortlistedIds.value.includes(uni.id))
-})
-
-// TO-DO: Slot1 from Query(or pass in hidden payload)
-const COMPARE_STORAGE_KEY = 'smu_geo_compare_slots'
-
+// Compare
+const COMPARE_STORAGE_KEY = 'SMUXchange_compare_slots'
 function getStoredCompareSlots() {
     try {
         const raw = sessionStorage.getItem(COMPARE_STORAGE_KEY)
         if (!raw) return [null, null, null]
-
+        
         const slots = JSON.parse(raw)
 
-        if (
-            Array.isArray(slots) &&
-            slots.length === 3 &&
-            slots.every(id =>
-                id === null || (Number.isSafeInteger(id) && id > 0)
-            ) &&
-            new Set(slots.filter(id => id !== null)).size ===
-                slots.filter(id => id !== null).length
-        ) {
+        if (Array.isArray(slots) && slots.length === 3
+            && slots.every(id => id === null || (Number.isSafeInteger(id) && id > 0)) 
+            && new Set(slots.filter(id => id !== null)).size === slots.filter(id => id !== null).length) {
             return slots
         }
     } catch (error) {
-        console.error('Failed to restore compare selection:', error)
+        console.error(`Failed to restore compare selection: `, error)
     }
-
     return [null, null, null]
 }
 
 const uniSlots = ref(getStoredCompareSlots())
-
-watch(
-    () => [...uniSlots.value],
-    (slots) => {
-        try {
-            sessionStorage.setItem(
-                COMPARE_STORAGE_KEY,
-                JSON.stringify(slots)
-            )
-        } catch (error) {
-            console.error('Failed to save compare selection:', error)
-        }
-    }
-)
-
 const uniCurrencies = ref(['home', 'home', 'home'])
 const uniProgrammes = ref([0, 0, 0])
 
-// Comparision Data
 const unisToCompare = computed (() => {
     return uniSlots.value.map(id => {
         return universities.value.find(uni => uni.id === id) || null })
 })
-
-const selectRefs = ref([]);
-const openDropdown = (idx) => {
-    const selectEl = selectRefs.value[idx];
-    if (selectEl) {
-        // showPicker() opens the dropdown immediately on click
-        if (typeof selectEl.showPicker === 'function') {
-            selectEl.showPicker();
-        } else {
-            selectEl.focus();
-        }
-    }
-};
 
 // Uni Selection Helper
 function selectUniversity(slotIndex, uniId) {
@@ -247,6 +256,70 @@ function selectUniversity(slotIndex, uniId) {
         // Normal selection
         uniSlots.value[slotIndex] = uniId
     }
+
+    nextTick(() => {
+        selectRefs.value[slotIndex]?.blur()
+    })
+}
+
+const selectRefs = ref([]);
+function openDropdown(idx) {
+    const selectEl = selectRefs.value[idx];
+    if (selectEl) {
+        if (typeof selectEl.showPicker === 'function') {
+            selectEl.showPicker();
+        } else {
+            selectEl.focus();
+        }
+    }
+};
+
+// Maps - Leaflet API
+// TODO: Implement Google Maps API for better visuals
+const maps = ref([])
+const mapElements = ref([])
+async function createMap(idx) {
+    await nextTick()
+
+    const uni = unisToCompare.value[idx]
+    const element = mapElements.value[idx]
+
+    // Remove previous map at slot
+    if (maps.value[idx]) {
+        maps.value[idx].remove()
+        maps.value[idx] = null
+    }
+
+    if (!uni || !element) return
+
+    const hasCoords = uni?.location?.coordinates?.lat && uni?.location?.coordinates?.lon
+    if (!hasCoords) {
+        element.innerHTML = `<div class="d-flex align-items-center justify-content-center
+        h-100 w-100 bg-light text-secondary small">Map unavailable.</div>`
+        return
+    }
+
+    element.innerHTML = ''
+    const { lat, lon } = uni.location.coordinates
+    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
+
+    map.on('click', () => {
+        const googleMapsUrl =
+            `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+        window.open(googleMapsUrl, '_blank', 'noopener,noreferrer')
+    })
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map)
+
+    L.marker([lat, lon]).addTo(map).bindPopup(uni.name)
+
+    maps.value[idx] = map
+
+    requestAnimationFrame(() => {
+        map.invalidateSize()
+    })
 }
 
 // Location Helper
@@ -260,7 +333,6 @@ function formatLocation(location) {
 
 function distanceFromSMU(coordinates) {
     if (!coordinates?.lat || !coordinates?.lon) return '-'
-    // Haversine Formula
     const lat1 = 1.29627
     const lon1 = 103.85185
     const lat2 = coordinates.lat
@@ -276,6 +348,26 @@ function distanceFromSMU(coordinates) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return Math.round(R * c)
 }
+
+// FX Rates - Frankfurter API
+const currencyRates = ref([])
+async function fetchCurrencyRates() {
+    const url = "https://api.frankfurter.dev/v2/rates?base=sgd"
+    try {
+        const response = await axios.get(url)
+        const data = response.data.map(({base, ...rest}) => rest)
+        currencyRates.value = data
+    } catch (error) {
+        console.error(error.message)
+    }
+}
+
+const ratesMap = computed(() => {
+    return currencyRates.value.reduce((map, item) => {
+        map[item.quote] = item.rate
+        return map
+    }, {})
+})
 
 // Cost/Currency Helpers
 function formatCurrency(value, currency) {
@@ -311,91 +403,20 @@ function formatExchangeDate(dateStr) {
     }) // Output: "Jan 2027"
 }
 
-// Maps - Leaflet API
-// TO-DO: Implement Google Maps API for better visuals
-const maps = ref([])
-const mapElements = ref([])
-async function createMap(idx) {
-    await nextTick()
-
-    const uni = unisToCompare.value[idx]
-    const element = mapElements.value[idx]
-
-    // Remove previous map at slot
-    if (maps.value[idx]) {
-        maps.value[idx].remove()
-        maps.value[idx] = null
-    }
-
-    // No uni selected
-    if (!uni || !element || !uni.location.coordinates.lat) return
-
-    const { lat, lon } = uni.location.coordinates
-
-    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
-
-    map.on('click', () => {
-        const googleMapsUrl =
-            `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
-        window.open(googleMapsUrl, '_blank', 'noopener,noreferrer')
-    })
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map)
-
-    L.marker([lat, lon]).addTo(map).bindPopup(uni.name)
-
-    maps.value[idx] = map
-
-    requestAnimationFrame(() => {
-        map.invalidateSize()
-    })
-}
-
-// FX Rates - Frankfurter API
-const currencyRates = ref([])
-async function fetchCurrencyRates() {
-    const url = "https://api.frankfurter.dev/v2/rates?base=sgd"
-    try {
-        const response = await axios.get(url)
-        const data = response.data.map(({base, ...rest}) => rest)
-        currencyRates.value = data
-    } catch (error) {
-        console.error(error.message)
-    }
-}
-
-const ratesMap = computed(() => {
-    return currencyRates.value.reduce((map, item) => {
-        map[item.quote] = item.rate
-        return map
-    }, {})
-})
-
 // Lifecycle
 onMounted(async () => {
-    const loadShortlist = async () => {
-        if (!auth.user) return
-
-        try {
-            await shortlist.load()
-        } catch (error) {
-            shortlist.error = error.message
-        }
-    }
-
     await Promise.all([
-        fetchUniversities(),
-        loadShortlist()
+        fetchCurrencyRates(),
+        fetchShortlist(),
+        fetchUniversities()
     ])
-
     unisToCompare.value.forEach((uni, idx) => createMap(idx))
-    fetchCurrencyRates()
 })
+
 watch(
     () => [...uniSlots.value],
     (newSlots, oldSlots) => {
+        sessionStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(newSlots))
         newSlots.forEach((slot, idx) => {
             if (slot !== oldSlots[idx]) {
                 uniCurrencies.value[idx] = 'home'
@@ -410,30 +431,25 @@ watch(
 <template>
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
-        <section class="text-center py-3 my-5">
-            <div class="container-fluid">
-                <h1 class="display-3 fw-semibold">Compare Universities</h1>
-                <p class="fs-5">SMU Global Experience</p>
-                <p class="fs-5"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
+        <section class="container pt-0 pb-3">
+            <div>
+                <h1 class="h3 fw-bold text-center mb-3">Compare Universities</h1>
+                <p class="text-center mb-2">SMU Global Experience</p>
+                <p class="text-center mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link"
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
 
         <section class="container pb-5 mb-5">
-            <div v-if="shortlist.error" class="alert alert-warning" role="alert">{{ shortlist.error }}</div>
-            <div v-if="shortlist.loading" class="text-muted mb-3">Loading shortlist...</div>
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
-                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value)); $event.target.blur()" 
+                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))" 
                         class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
                             <option value="">Choose a university</option>
-                            <!-- <option v-for="uni in universities" :key="uni.id" :value="uni.id"
-                            :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option> -->
-                            <!-- TO-DO: Grouping TODO -->
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
@@ -477,9 +493,9 @@ watch(
                 special-vif-class="d-flex flex-column flex-grow-1">
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
-                            <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
-                            :disabled="shortlist.loading || shortlist.saving" 
-                            @click="toggleShortlist(uni.id)">
+                            <button class="btn rounded-pill px-4" :class="isShortlisted(uni.id) ? 'btn-primary' : 'btn-outline-primary'" 
+                            :disabled="shortlistLoadingIds[uni.id]" @click="toggleShortlist(uni.id)">
+                                <i class="bi d-none d-md-inline-block me-1" :class="isShortlisted(uni.id) ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
@@ -492,7 +508,7 @@ watch(
 
                 <!-- Location -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Location
                     </template>
                 </CompareRowHeader>
@@ -505,7 +521,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Location
                         </div>
@@ -514,14 +530,14 @@ watch(
 
                 <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni }">
-                        <div class="text-break">
+                        <div class="text-break fw-bold">
                             {{ formatLocation(uni.location) }}
                         </div>
                     </template>
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Region
                         </div>
@@ -537,7 +553,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Timezone
                         </div>
@@ -553,7 +569,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Distance from SG
                         </div>
@@ -570,7 +586,7 @@ watch(
 
                 <!-- Cost -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Cost
                     </template>
                 </CompareRowHeader>
@@ -592,7 +608,7 @@ watch(
                 </CompareRow>                
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Estimated Monthly Total
                         </div>
@@ -608,7 +624,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Accommodation
                         </div>
@@ -624,7 +640,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Food
                         </div>
@@ -640,7 +656,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Transport
                         </div>
@@ -656,7 +672,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Personal Expenses
                         </div>
@@ -673,13 +689,13 @@ watch(
 
                 <!-- Academics -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Academics
                     </template>
                 </CompareRowHeader>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Mapped Modules
                         </div>
@@ -695,7 +711,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Language
                         </div>
@@ -721,7 +737,7 @@ watch(
                 
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Exchange
                     </template>
                 </CompareRowHeader>
@@ -734,7 +750,8 @@ watch(
                                     @click="uniProgrammes[idx] = pIdx"
                                     class="btn btn-sm flex-fill text-truncate px-1"
                                     :class="uniProgrammes[idx] === pIdx ? 'btn-primary' : 'btn-outline-primary'">
-                                    {{ formatExchangeDate(period.startDate) }}
+                                    <span class="d-none d-md-inline">{{ formatExchangeDate(period.startDate) }}</span>
+                                    <span class="d-md-none d-inline">{{ formatExchangeDate(period.startDate).split(' ')[0] }}</span>
                                 </button>
                             </div>
                         </div>
@@ -779,8 +796,10 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} - 
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} </span>
+                            <span class="d-md-inline d-none mx-2">-</span>
+                            <span class="d-md-none d-inline mx-4">to</span>
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}</span>
                         </div>
                     </template>
                 </CompareRow>
@@ -798,7 +817,8 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"  
                             class="text-break">
-                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }} - 
+                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }}
+                            <span class="mx-1">-</span>
                             {{ uni.exchange.periods[uniProgrammes[idx]].maxTemp }} °C
                         </div>
                     </template>
@@ -861,7 +881,7 @@ header, footer {
 }
 .sticky-uni-selector {
     position: sticky;
-    top: 0;
+    top: var(--app-navbar-height);
     z-index: 1030;
     background-color: white;
     padding-top: 12px;

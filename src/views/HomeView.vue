@@ -19,10 +19,12 @@ function toggleUniversity(university) {
 }
 
 onMounted(async () => {
+  uni.error = null
   exchangeRates.load()
+
   try {
-    await uni.load()
-    await uni.loadModules()
+    if (!uni.items.length) await uni.load()
+    // await uni.loadMappings(route.params.id)
   } catch (e) {
     uni.error = e.message
   }
@@ -31,7 +33,7 @@ onMounted(async () => {
 
 <template>
   <section data-testid="home-page">
-    <h1 class="h3 mb-3">Plan your SMU exchange</h1>
+    <h1 class="h3 fw-bold text-center mb-3">Plan your SMU exchange</h1>
     <div v-if="uni.error" class="alert alert-warning" data-testid="home-error">{{ uni.error }}</div>
     <div class="row g-3">
       <div class="col-12 col-md-3">
@@ -42,6 +44,8 @@ onMounted(async () => {
         <div v-if="uni.loading" class="text-muted">Loading...</div>
         <ul v-else-if="mode === 'universities'" class="list-group" data-testid="home-university-list">
           <li v-if="!uni.items.length" class="list-group-item text-muted">No universities yet.</li>
+
+
           <li v-for="u in uni.items" :key="u.id"
               class="list-group-item list-group-item-action university-list-item"
               :class="{ 'is-selected': selected?.id === u.id }"

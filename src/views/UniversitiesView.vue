@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useShortlistStore } from '@/stores/shortlist'
@@ -72,6 +72,22 @@ const results = computed(() => {
 
 })
 const regions = computed(() => Array.from(new Set(uni.items.map((u) => u.region))).sort())
+const currentPage = ref(1)
+const pageSize = 6
+const pageCount = computed(() => Math.ceil(results.value.length / pageSize))
+const pageResults = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return results.value.slice(start, start + pageSize)
+})
+
+watch(() => [uni.query, uni.filters.region, uni.sortBy], () => {
+  currentPage.value = 1
+})
+
+watch(pageCount, (count) => {
+  if (count > 0 && currentPage.value > count) currentPage.value = count
+})
+
 const isShortlisted = (id) => shortlist.items.some((s) => s.university_id === id)
 
 async function toggle(u) {
@@ -112,15 +128,15 @@ onMounted(async () => {
     </button>
 </div>
   <section data-testid="universities-page">
-    <h1 class="h3 mb-3">Universities</h1>
-    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" />
+    <h1 class="h3 fw-bold text-center mb-3">Universities</h1>
+    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="uni.items.length" />
 
     <div v-if="shortlist.error" class="alert alert-warning" data-testid="shortlist-error">{{ shortlist.error }}</div>
     <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading universities...</div>
     <div v-else-if="uni.error" class="alert alert-danger" data-testid="universities-error">Could not load universities: {{ uni.error }}</div>
     <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No universities match your search.</p>
     <div v-else class="row g-3" data-testid="universities-grid">
-      <div v-for="u in results" :key="u.id" class="col-6 col-lg-4">
+      <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
         <UniversityCard 
         :university="u" 
         :shortlisted="isShortlisted(u.id)" 
@@ -128,5 +144,54 @@ onMounted(async () => {
         @toggle-shortlist="toggle" />
       </div>
     </div>
+
+    <nav v-if="pageCount > 1" class="university-pagination mt-4" aria-label="University list pages" data-testid="universities-pagination">
+      <ul class="pagination justify-content-center flex-wrap mb-0">
+        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+          <button class="page-link" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
+            Previous
+          </button>
+        </li>
+        <li v-for="page in pageCount" :key="page" class="page-item" :class="{ active: currentPage === page }">
+          <button class="page-link" type="button" :aria-current="currentPage === page ? 'page' : undefined" :aria-label="`Page ${page}`" @click="currentPage = page">
+            {{ page }}
+          </button>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage === pageCount }">
+          <button class="page-link" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
+            Next
+          </button>
+        </li>
+      </ul>
+    </nav>
   </section>
 </template>
+
+<style scoped>
+.university-pagination .page-link {
+  color: #0b2348;
+  border-color: #d7deea;
+  background-color: #fff;
+}
+
+.university-pagination .page-link:hover:not(:disabled) {
+  color: #0b2348;
+  border-color: #cbdcff;
+  background-color: #f1f5fc;
+}
+
+.university-pagination .page-item.active .page-link {
+  color: #fff;
+  border-color: #0b2348;
+  background-color: #0b2348;
+}
+
+.university-pagination .page-link:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+}
+
+.university-pagination .page-item.disabled .page-link {
+  color: #8793a6;
+  background-color: #f8faff;
+}
+</style>

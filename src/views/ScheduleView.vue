@@ -79,10 +79,8 @@ function openScheduleBlock(){
   setTimeout(()=> {showGrid.value=true;},1500);
 }
 function removeModules(){
-
   for (const day in schedule.currentSchedule) {  
     schedule.currentSchedule[day] = schedule.currentSchedule[day].filter((mod) => !deleteModules.value.includes(mod.moduleName) )
-
   }
   deleteStatus.value = !deleteStatus.value; //change button status text to 'deleting'
 
@@ -93,7 +91,6 @@ function removeModules(){
   deleteModules.value=[];
   
 }
-
 function checkScheduleModule(modName){
   for (const day in schedule.currentSchedule) {
     let record = schedule.currentSchedule[day].find(lesson => lesson.moduleName === modName)
@@ -103,6 +100,7 @@ function checkScheduleModule(modName){
   }
   return false;
 }
+
 // Courses added to the cart on the Courses page become the modules this schedule can use
 function addCartModules(){
   schedule.addModules(cart.forUniversity(universityId.value).map((item) => ({
@@ -194,12 +192,14 @@ watch([universityId, periodId], loadTimetable)
 onMounted(async () => {
   timeSlots.value = loadTimeSlots()
   try {
+
     // names for the dropdown come from the universities list; options from the shortlist and cart
     await Promise.all([
       uni.items.length ? Promise.resolve() : uni.load(),
       shortlist.load(),
       cart.ensureLoaded(),
     ])
+
   } catch (e) {
     schedule.error = e.message
   }
@@ -213,7 +213,7 @@ onMounted(async () => {
     <div class="card top-0 z-3" :class="{'position-sticky':changesMade}">
       <div class="card-body align-items-center">
         <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Weekly schedule : {{ uni.scheduleUniName || "" }}</h1>
+        <h1 class="h3 fw-bold mb-0">Weekly schedule : {{ uni.scheduleUniName || "" }}</h1>
         <template v-if="changesMade">
         <div class="changes-pill">
 
@@ -278,11 +278,9 @@ onMounted(async () => {
           <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
           <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
           
-          
           <input type="radio" class="btn-check" id="edit"autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
           <label class="btn btn-outline-dark w-20 " for="edit">Edit Schedule</label>
-          
-          
+        
         </div>
       </div>
       
@@ -299,6 +297,7 @@ onMounted(async () => {
           
         </div>
     </template>
+
     <template>
        <button class="btn btn-danger" data-testid="schedule-save-btn" @click="discardChange">
         Discard Changes
@@ -330,7 +329,6 @@ onMounted(async () => {
                   Add courses from Course search
                 </RouterLink>
               </div>
-
           </div>
         </template>
 
@@ -342,8 +340,6 @@ onMounted(async () => {
       <InstructionAlert action="Delete"  color="danger"  :instructions="instructionsDelete" id="instructionDelete">
         <template v-slot:form>
           <div class="row justify-content-center mb-1">
-            
-
               <template v-for="mod in schedule.moduleData">
                 <div class="m-2 m-md-0 col-12 col-md-2 text-center align-items-center">
                   <input type="checkbox" :value="mod.module_name" class="form-check-input" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
@@ -381,21 +377,16 @@ onMounted(async () => {
                     Add courses from Course search
                   </RouterLink>
                 </div>
-
             </div>
         </template>
-
       </InstructionAlert>
       <ScheduleBlock :modules="schedule.moduleData" :time-slots="timeSlots" :week-days="weekDays" :current-schedule="schedule.currentSchedule" :selected-module="selectedModule" mode="edit" @insertModule="changesMade=true"></ScheduleBlock>
-
     </template>
 
     <template v-else-if="!editSchedule && hasSchedule ">
       <ScheduleBlock :modules="schedule.moduleData" :time-slots="timeSlots" :week-days="weekDays" :current-schedule="schedule.currentSchedule" mode="view"></ScheduleBlock>
-      
     </template>
-    
-    
+
     </div>
     <div class="module-pill btn rounded-pill btn-outline-info text-end" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data" aria-expanded="false">
 	  <i class="bi bi-info-circle-fill p-1"></i>

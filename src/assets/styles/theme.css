@@ -2,9 +2,30 @@
 :root {
   --bs-primary: #1f4e9c;
   --bs-primary-rgb: 31, 78, 156;
-  --bs-body-font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  --bs-body-font-family: Arial, Helvetica, sans-serif;
   --bs-body-bg: #ffffff;
   --app-radius: 0.75rem;
+  --app-navbar-height: 58px;
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+}
+
+.btn,
+button,
+.page-link {
+  font-family: inherit;
+  font-weight: 700;
 }
 
 .btn-primary {
@@ -20,6 +41,10 @@
 
 .app-navbar {
   background-color: #0b2348;
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+  min-height: var(--app-navbar-height);
 
   --bs-navbar-color: #fff;
   --bs-navbar-hover-color: #cbdcff;
@@ -31,9 +56,100 @@
   --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.5);
 }
 
+.app-navbar .nav-link.router-link-active {
+  color: #fff;
+  font-weight: 700;
+}
+
+.app-navbar .navbar-toggler {
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.app-navbar .navbar-toggler:hover {
+  background-color: rgba(203, 220, 255, 0.08);
+  border-color: #cbdcff;
+}
+
+.app-navbar .navbar-toggler:active {
+  transform: scale(0.96);
+}
+
+.app-navbar .navbar-toggler[aria-expanded="true"] {
+  background-color: #52627a;
+  border-color: #d7deea;
+  box-shadow: inset 0 0 0 1px rgba(215, 222, 234, 0.24);
+}
+
+.app-navbar .navbar-toggler:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(203, 220, 255, 0.3);
+}
+
 
 .app-navbar .nav-signup {
   --bs-btn-color: #0b2348;
   --bs-btn-hover-color: #0b2348;
   --bs-btn-active-color: #0b2348;
+}
+
+@media (max-width: 767.98px) {
+  .app-navbar .container-xl {
+    position: relative;
+  }
+
+  .app-navbar .navbar-collapse {
+    position: absolute;
+    top: 100%;
+    right: calc(var(--bs-gutter-x) * 0.5);
+    width: max-content;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--app-radius);
+    background-color: #102d59;
+  }
+
+  .app-navbar .navbar-collapse > .d-flex {
+    align-items: flex-end;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .app-navbar .navbar-nav {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .app-navbar .navbar-collapse > .d-flex {
+    width: 100%;
+  }
+
+  .app-navbar .navbar-collapse > .d-flex > .btn {
+    margin-left: auto;
+  }
+
+  .app-navbar .navbar-collapse > .d-flex > [data-testid="nav-logout-btn"] {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  .app-navbar .navbar-nav {
+    margin-bottom: 0.75rem;
+    margin-right: 0 !important;
+  }
+
+  .app-navbar .navbar-nav .nav-link {
+    padding-right: 0;
+  }
+
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-footer {
+  background-color: #f8faff;
+  color: #52627a;
 }

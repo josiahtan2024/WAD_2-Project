@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 
-
-
 // One credit_mappings row with its SMU course area and the foreign (partner university) module.
 const MAPPING_SELECT = `
   id,
@@ -12,7 +10,6 @@ const MAPPING_SELECT = `
 `
 // Supabase returns at most 1000 rows per request, so larger tables are fetched in pages.
 const PAGE_SIZE = 1000
-
 
 export const useUniversitiesStore = defineStore('universities', {
   state: () => ({
