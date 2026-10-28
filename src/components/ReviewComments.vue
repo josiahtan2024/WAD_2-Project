@@ -43,6 +43,7 @@ async function remove(comment) {
       <li v-for="c in review.review_comments" :key="c.id" class="d-flex justify-content-between gap-2 mb-1" data-testid="comment-item">
         <span class="text-break" style="white-space: pre-line">{{ c.body }}</span>
         <button v-if="c.user_id === auth.user?.id" type="button" class="btn btn-link btn-sm p-0 text-danger" data-testid="comment-delete-btn" @click="remove(c)">Delete</button>
+        <button v-else-if="auth.adminActive" type="button" class="btn btn-link btn-sm p-0 text-danger" data-testid="comment-remove-btn" @click="remove(c)">Remove</button>
       </li>
     </ul>
     <div v-if="error" class="text-danger small mb-1" data-testid="comment-error">{{ error }}</div>

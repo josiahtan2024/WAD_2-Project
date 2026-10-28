@@ -12,6 +12,7 @@ SMU Exchange Planner helps students explore partner universities and prepare for
 - **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account.
 - **Estimate exchange costs:** Set the exchange duration and monthly accommodation, food, transport, personal, and other expenses. The planner can use published estimates as a starting point and show local currency and SGD totals when exchange-rate data is available.
 - **Create an account:** Sign up and log in through Supabase Authentication. Shortlists, schedules, and budget planning require a signed-in account.
+- **Manage universities (staff):** Admins can add, edit, hide, and delete universities and their details, and remove reviews and comments. See [Admin accounts](#admin-accounts).
 
 ## How to use the app
 
@@ -64,6 +65,7 @@ SMU Exchange Planner helps students explore partner universities and prepare for
    supabase/schema.sql
    supabase/seed.sql
    supabase/policies.sql
+   supabase/admin.sql
    ```
 
 4. For local development, disable email confirmation in Supabase Authentication settings if you want new accounts to be usable immediately after signup.
@@ -75,6 +77,20 @@ SMU Exchange Planner helps students explore partner universities and prepare for
    ```
 
 6. Open the local URL printed by Vite (usually `http://localhost:5173`).
+
+### Admin accounts
+
+There are two kinds of user: students (anyone who signs up) and admins (staff). An admin can do everything a student can, and can also add, edit, hide, and delete universities and remove reviews and comments. A new university starts hidden from students until an admin publishes it, and only a hidden university can be deleted.
+
+A user becomes an admin when `role` is set to `admin` in their `app_metadata`. Users cannot change `app_metadata` themselves, so this is done in the Supabase SQL Editor, and the person has to log in again afterwards:
+
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'
+where email = 'staff@smu.edu.sg';
+```
+
+Admins see an extra **Staff** badge in the navigation bar, and a **View as student** switch to check what students see.
 
 ### Environment variables
 
@@ -95,7 +111,7 @@ npm run lint      # Run ESLint
 npm test          # Run Playwright end-to-end tests
 ```
 
-Playwright tests use a real browser and a configured Supabase account. Install the browser once with `npx playwright install chromium`, then provide `TEST_EMAIL` and `TEST_PASSWORD` for the test account before running `npm test`. The tests also expect the local environment and database to be set up.
+Playwright tests use a real browser and a configured Supabase account. Install the browser once with `npx playwright install chromium`, then provide `TEST_EMAIL` and `TEST_PASSWORD` for the test account before running `npm test`. The tests also expect the local environment and database to be set up. The admin tests in `tests/e2e/admin.spec.js` need an admin account, given as `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and skip themselves without one.
 
 ## Deployment
 

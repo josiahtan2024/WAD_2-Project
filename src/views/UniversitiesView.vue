@@ -6,6 +6,7 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
 import FilterBar from '@/components/FilterBar.vue'
 import UniversityCard from '@/components/UniversityCard.vue'
+import AdminEditor from '@/components/admin/AdminEditor.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { calculateMonthlyCost } from '@/lib/universityCost'
 
@@ -14,6 +15,8 @@ const uni = useUniversitiesStore()
 const shortlist = useShortlistStore()
 const auth = useAuthStore()
 const router = useRouter()
+const adminSection = ref(null)
+const showHidden = ref(true)
 
 // Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
 function getMonthlyCostSGD(university) {
@@ -47,7 +50,8 @@ const results = computed(() => {
         String(value ?? '').toLowerCase().includes(keyword))
     
     const matchesRegion = !uni.filters.region || university.region === uni.filters.region
-    return matchesKeyword && matchesRegion
+    const visible = university.published !== false || (auth.adminActive && showHidden.value)
+    return matchesKeyword && matchesRegion && visible
   })
 
   return filtered.sort((a, b) => {
@@ -87,6 +91,11 @@ watch(() => [uni.query, uni.filters.region, uni.sortBy], () => {
 watch(pageCount, (count) => {
   if (count > 0 && currentPage.value > count) currentPage.value = count
 })
+
+// a new university starts hidden, so go and fill it in
+function openCreated(created) {
+  router.push(`/universities/${created.id}`)
+}
 
 const isShortlisted = (id) => shortlist.items.some((s) => s.university_id === id)
 
@@ -129,6 +138,18 @@ onMounted(async () => {
 </div>
   <section data-testid="universities-page">
     <h1 class="h3 fw-bold text-center mb-3">Universities</h1>
+    <template v-if="auth.adminActive">
+      <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">
+        <div class="form-check mb-0">
+          <input id="show-hidden" v-model="showHidden" class="form-check-input" type="checkbox" data-testid="admin-show-hidden" />
+          <label class="form-check-label" for="show-hidden">Show hidden universities</label>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-testid="admin-add-university" @click="adminSection = 'create'">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add university
+        </button>
+      </div>
+      <AdminEditor v-model:section="adminSection" @created="openCreated" />
+    </template>
     <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="uni.items.length" />
 
     <div v-if="shortlist.error" class="alert alert-warning" data-testid="shortlist-error">{{ shortlist.error }}</div>

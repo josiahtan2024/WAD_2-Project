@@ -1,12 +1,16 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
+import { useAdminUniversitiesStore } from '@/stores/adminUniversities'
 import { useReviewsStore } from '@/stores/reviews'
 import { useAuthStore } from '@/stores/auth'
 import CreditMappingTable from '@/components/CreditMappingTable.vue'
 import ReviewCarousel from '@/components/ReviewCarousel.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
+import AdminBar from '@/components/admin/AdminBar.vue'
+import AdminEditor from '@/components/admin/AdminEditor.vue'
+import AdminEditButton from '@/components/admin/AdminEditButton.vue'
 import { supabase } from '@/lib/supabase'
 import { calculateMonthlyCost } from '@/lib/universityCost'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
@@ -30,7 +34,10 @@ const logoUrl = computed(() => {
 })
 
 const route = useRoute()
+const router = useRouter()
+const editing = ref(null) // which admin drawer is open
 const uni = useUniversitiesStore()
+const admin = useAdminUniversitiesStore()
 const reviews = useReviewsStore()
 const auth = useAuthStore()
 const exchangeRates = useExchangeRatesStore()
@@ -85,8 +92,8 @@ function distanceFromSmU() {
   return `${Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))} km`
 }
 
-async function loadCompareDetails() {
-  detailsLoading.value = true
+async function loadCompareDetails(silent = false) {
+  if (!silent) detailsLoading.value = true
   detailsError.value = ''
   try {
     const { data, error } = await supabase
@@ -106,12 +113,24 @@ async function loadCompareDetails() {
         String(a.start_date ?? '').localeCompare(String(b.start_date ?? ''))
       ),
     }
-    selectedPeriodIndex.value = 0
+    selectedPeriodIndex.value = silent ? Math.min(selectedPeriodIndex.value, Math.max(details.value.periods.length - 1, 0)) : 0
   } catch (error) {
     detailsError.value = error.message || 'Unable to load university details.'
   } finally {
     detailsLoading.value = false
   }
+}
+
+async function afterDelete(id) {
+  await router.push('/universities')
+  admin.forget(id)
+}
+
+// the university cards link here with ?edit=details
+function openRequestedEditor() {
+  if (route.query.edit !== 'details') return
+  if (auth.adminActive) editing.value = 'details'
+  router.replace({ query: {} })
 }
 
 async function post(body, done) {
@@ -133,6 +152,7 @@ watch(() => route.params.id, async () => {
   try {
     if (!uni.items.length) await uni.load()
     await loadCompareDetails()
+    openRequestedEditor()
   } catch (e) {
     uni.error = e.message
   }
@@ -145,6 +165,10 @@ watch(() => route.params.id, async () => {
     <div v-else-if="uni.error" class="alert alert-danger" data-testid="university-error">{{ uni.error }}</div>
     <p v-else-if="!university" class="text-muted" data-testid="university-not-found">University not found. <RouterLink to="/universities">Back to list</RouterLink></p>
     <template v-else>
+      <template v-if="auth.adminActive">
+        <AdminBar :university="university" :details="details" @edit="editing = $event" @changed="loadCompareDetails(true)" />
+        <AdminEditor v-model:section="editing" :university="university" :details="details" @changed="loadCompareDetails(true)" @deleted="afterDelete" />
+      </template>
       <header class="university-header d-flex flex-column align-items-center text-center gap-2 mb-4">
         <div class="university-heading">
           <h1 class="h3 fw-bold mb-2">{{ university.name }}</h1>
@@ -172,7 +196,10 @@ watch(() => route.params.id, async () => {
         <div class="col-12 col-lg-5">
           <section class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body p-3 p-md-4">
-              <h2 class="h5 fw-bold mb-3">Location</h2>
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h2 class="h5 fw-bold mb-0">Location</h2>
+                <AdminEditButton v-if="auth.adminActive" label="location" @click="editing = 'location'" />
+              </div>
               <dl class="detail-list mb-0">
                 <div><dt>City</dt><dd>{{ university.city || 'Not available' }}</dd></div>
                 <div><dt>State / province</dt><dd>{{ university.state || 'Not available' }}</dd></div>
@@ -195,7 +222,10 @@ watch(() => route.params.id, async () => {
         <div class="col-12 col-lg-7">
           <section class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body p-3 p-md-4">
-              <h2 class="h5 fw-bold mb-3">Cost</h2>
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h2 class="h5 fw-bold mb-0">Cost</h2>
+                <AdminEditButton v-if="auth.adminActive" label="cost" @click="editing = 'cost'" />
+              </div>
               <template v-if="universityCost">
                 <div class="mb-3">
                   <div class="small text-secondary">Estimated monthly total</div>
@@ -217,7 +247,10 @@ watch(() => route.params.id, async () => {
         <div class="col-12 col-lg-5">
           <section class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body p-3 p-md-4">
-              <h2 class="h5 fw-bold mb-3">Academics</h2>
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h2 class="h5 fw-bold mb-0">Academics</h2>
+                <AdminEditButton v-if="auth.adminActive" label="academics" @click="editing = 'academics'" />
+              </div>
               <dl class="detail-list mb-0">
                 <div><dt>Mapped modules</dt><dd>{{ details.modules.length }}</dd></div>
                 <div><dt>Instruction language</dt><dd>{{ details.languages.map(item => item.instruction_language).filter(Boolean).join(', ') || 'Not available' }}</dd></div>
@@ -237,7 +270,10 @@ watch(() => route.params.id, async () => {
         <div class="col-12 col-lg-7">
           <section class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body p-3 p-md-4">
-              <h2 class="h5 fw-bold mb-3">Exchange</h2>
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h2 class="h5 fw-bold mb-0">Exchange</h2>
+                <AdminEditButton v-if="auth.adminActive" label="exchange" @click="editing = 'exchange'" />
+              </div>
               <template v-if="details.periods.length">
                 <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Exchange periods">
                   <button
