@@ -189,7 +189,7 @@ export const useScheduleStore = defineStore('schedule', {
     },
     async insertScheduleModules(){
       try {
-        const {data,error:insertError} = await supabase
+        const {error:insertError} = await supabase
         .from('planned_modules')
         .insert(this.serialiseToDb())
         .select()     

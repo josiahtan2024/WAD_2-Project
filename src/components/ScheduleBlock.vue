@@ -1,5 +1,5 @@
 <script setup>
-import { computed,onMounted,ref } from 'vue';
+import { computed,ref } from 'vue';
 import { useScheduleStore } from '../stores/schedule';
 const props = defineProps({'modules':Array,
 'timeSlots':Array,

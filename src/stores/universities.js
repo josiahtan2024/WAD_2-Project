@@ -103,13 +103,9 @@ export const useUniversitiesStore = defineStore('universities', {
     },
 
     async getUniversityName(universityId){
-      try {
-        const {data,error} = await supabase.from('universities').select('name').eq('id',universityId)
-        
-        this.scheduleUniName= data[0].name
-      } catch (error) {
-        
-      }
+      const {data,error} = await supabase.from('universities').select('name').eq('id',universityId)
+      if (error) throw error // shown by the schedule page's error alert
+      this.scheduleUniName = data?.[0]?.name ?? null
     }
 
   },

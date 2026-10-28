@@ -278,8 +278,8 @@ onMounted(async () => {
           <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
           <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
           
-          <input type="radio" class="btn-check" id="edit"autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
-          <label class="btn btn-outline-dark w-20 " for="edit">Edit Schedule</label>
+          <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
+          <label class="btn btn-outline-dark w-20   " for="edit">Edit Schedule</label>
         
         </div>
       </div>
@@ -340,7 +340,7 @@ onMounted(async () => {
       <InstructionAlert action="Delete"  color="danger"  :instructions="instructionsDelete" id="instructionDelete">
         <template v-slot:form>
           <div class="row justify-content-center mb-1">
-              <template v-for="mod in schedule.moduleData">
+              <template v-for="mod in schedule.moduleData" :key="mod.id">
                 <div class="m-2 m-md-0 col-12 col-md-2 text-center align-items-center">
                   <input type="checkbox" :value="mod.module_name" class="form-check-input" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
                   
@@ -361,7 +361,7 @@ onMounted(async () => {
           <template v-slot:form>
             <div class="row justify-content-center">
               
-                <template v-for="mod in schedule.moduleData">
+                <template v-for="mod in schedule.moduleData" :key="mod.id">
                   <div class="col-6 col-sm-2  col-lg-1 m-1">
                     
                     <input type="radio" :value="mod.module_name" class = 'btn-check' :id="mod.id" v-model="selectedModule">
