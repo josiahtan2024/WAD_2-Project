@@ -1,208 +1,215 @@
--- Admin (staff) role. Run in the Supabase SQL Editor after schema.sql, policies.sql and seed.sql.
--- Safe to run again.
---
--- There are two kinds of user: students (everyone who signs up) and admins.
--- An admin is a user whose app_metadata has role = admin. Users cannot change app_metadata
--- themselves (unlike user_metadata), so the role can only be given from here:
---
---   update auth.users
---   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'
---   where email = 'staff@smu.edu.sg';
---
--- The person has to log in again before the role shows up in their session.
+-- Run in the Supabase SQL Editor. 
+-- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- Replace 'staff@smu.edu.sg' with the email of the staff to promote
+UPDATE auth.users
+SET raw_app_meta_data =
+    coalesce(raw_app_meta_data, '{}'::jsonb)
+    || '{"role": "admin"}'
+WHERE email = 'staff@smu.edu.sg';
 
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-as $$
-    select coalesce((select auth.jwt()) -> 'app_metadata' ->> 'role', '') = 'admin'
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    SELECT COALESCE(
+        (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin',
+        FALSE
+    );
 $$;
 
+DROP POLICY IF EXISTS "Allow public read access on universities" ON universities;
+CREATE POLICY "Public can read visible universities"
+    ON universities FOR SELECT
+    USING (published OR public.is_admin());
 
--- 1. Universities can be hidden from students until they are ready
-alter table universities add column if not exists published boolean not null default true;
+DROP POLICY IF EXISTS "Allow public read access on university_languages" ON university_languages;
+CREATE POLICY "Public can read details of visible university_languages"
+    ON university_languages FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_languages.university_id)
+    );
 
-create unique index if not exists universities_name_country_key
-    on universities (lower(name), lower(country));
+DROP POLICY IF EXISTS "Allow public read access on exchange_periods" ON exchange_periods;
+CREATE POLICY "Public can read details of visible exchange_periods"
+    ON exchange_periods FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = exchange_periods.university_id)
+    );
 
-drop policy if exists "Allow public read access on universities" on universities;
-drop policy if exists "Public can read published universities" on universities;
-create policy "Public can read published universities"
-    on universities for select
-    using (published or public.is_admin());
+DROP POLICY IF EXISTS "Allow public read access on university_costs" ON university_costs;
+CREATE POLICY "Public can read details of visible university_costs"
+    ON university_costs FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_costs.university_id)
+    );
 
--- the details of a hidden university stay hidden too (the subquery only sees what the user can see)
-do $$
-declare
-    t text;
-begin
-    foreach t in array array['university_languages', 'exchange_periods', 'university_costs', 'university_modules']
-    loop
-        execute format('drop policy if exists "Allow public read access on %1$s" on %1$I', t);
-        execute format('drop policy if exists "Public can read details of visible universities" on %I', t);
-        execute format(
-            'create policy "Public can read details of visible universities" on %I for select using (
-                exists (select 1 from universities u where u.id = %I.university_id)
-            )', t, t);
-    end loop;
-end
-$$;
+DROP POLICY IF EXISTS "Allow public read access on university_modules" ON university_modules;
+CREATE POLICY "Public can read details of visible university_modules"
+    ON university_modules FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_modules.university_id)
+    );
 
-drop policy if exists "Allow public read access on credit_mappings" on credit_mappings;
-drop policy if exists "Public can read mappings of visible universities" on credit_mappings;
-create policy "Public can read mappings of visible universities"
-    on credit_mappings for select
-    using (
-        exists (
-            select 1 from university_modules m
-            where m.id = credit_mappings.university_module_id
+DROP POLICY IF EXISTS "Allow public read access on credit_mappings" ON credit_mappings;
+CREATE POLICY "Public can read mappings of visible universities"
+    ON credit_mappings FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM university_modules m
+            WHERE m.id = credit_mappings.university_module_id
         )
     );
 
-drop policy if exists "Allow public read access on university_reviews" on university_reviews;
-drop policy if exists "Public can read reviews of visible universities" on university_reviews;
-create policy "Public can read reviews of visible universities"
-    on university_reviews for select
-    using (exists (select 1 from universities u where u.id = university_reviews.university_id));
-
-drop policy if exists "Allow public read access on review_comments" on review_comments;
-drop policy if exists "Public can read comments of visible reviews" on review_comments;
-create policy "Public can read comments of visible reviews"
-    on review_comments for select
-    using (exists (select 1 from university_reviews r where r.id = review_comments.review_id));
-
-
--- 2. Only admins can change university data
-drop policy if exists "Admins can add universities" on universities;
-create policy "Admins can add universities"
-    on universities for insert
-    to authenticated
-    with check (public.is_admin());
-
-drop policy if exists "Admins can edit universities" on universities;
-create policy "Admins can edit universities"
-    on universities for update
-    to authenticated
-    using (public.is_admin())
-    with check (public.is_admin());
-
--- deleting wipes every student's shortlist, budget, review and timetable for it,
--- so it is only allowed once the university has been hidden
-drop policy if exists "Admins can delete hidden universities" on universities;
-create policy "Admins can delete hidden universities"
-    on universities for delete
-    to authenticated
-    using (public.is_admin() and not published);
-
-do $$
-declare
-    t text;
-begin
-    foreach t in array array[
-        'university_languages', 'exchange_periods', 'university_costs',
-        'university_modules', 'credit_mappings', 'smu_modules'
-    ]
-    loop
-        execute format('drop policy if exists "Admins can manage %s" on %I', t, t);
-        execute format(
-            'create policy "Admins can manage %s" on %I for all to authenticated
-                using (public.is_admin()) with check (public.is_admin())', t, t);
-    end loop;
-end
-$$;
-
-
--- 3. Admins can remove reviews and comments (they cannot rewrite them)
-drop policy if exists "Admins can delete any review" on university_reviews;
-create policy "Admins can delete any review"
-    on university_reviews for delete
-    to authenticated
-    using (public.is_admin());
-
-drop policy if exists "Admins can delete any comment" on review_comments;
-create policy "Admins can delete any comment"
-    on review_comments for delete
-    to authenticated
-    using (public.is_admin());
-
-
--- 4. Logos and review photos
-update storage.buckets set file_size_limit = 2097152 where id = 'university-logos';
-
-drop policy if exists "Allow public read access on university logos" on storage.objects;
-create policy "Allow public read access on university logos"
-    on storage.objects for select
-    using (bucket_id = 'university-logos');
-
-drop policy if exists "Admins can upload university logos" on storage.objects;
-create policy "Admins can upload university logos"
-    on storage.objects for insert
-    to authenticated
-    with check (bucket_id = 'university-logos' and public.is_admin());
-
-drop policy if exists "Admins can delete university logos" on storage.objects;
-create policy "Admins can delete university logos"
-    on storage.objects for delete
-    to authenticated
-    using (bucket_id = 'university-logos' and public.is_admin());
-
-drop policy if exists "Admins can delete any review image" on storage.objects;
-create policy "Admins can delete any review image"
-    on storage.objects for delete
-    to authenticated
-    using (bucket_id = 'review-images' and public.is_admin());
-
-
--- 5. updated_at is kept by the database, so the browser cannot fake it
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-    new.updated_at = now();
-    return new;
-end
-$$;
-
-do $$
-declare
-    t text;
-begin
-    foreach t in array array[
-        'universities', 'exchange_periods', 'university_costs', 'university_modules',
-        'credit_mappings', 'smu_modules', 'university_reviews', 'review_comments'
-    ]
-    loop
-        execute format('drop trigger if exists set_updated_at on %I', t);
-        execute format(
-            'create trigger set_updated_at before update on %I
-                for each row execute function public.set_updated_at()', t);
-    end loop;
-end
-$$;
-
-
--- 6. What a delete would wipe, shown to the admin before they confirm
-create or replace function public.university_impact(p_university_id bigint)
-returns json
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-    if not public.is_admin() then
-        raise exception 'Only admins can do that' using errcode = '42501';
-    end if;
-
-    return json_build_object(
-        'shortlists', (select count(*) from public.shortlists where university_id = p_university_id),
-        'budgets', (select count(*) from public.user_budgets where university_id = p_university_id),
-        'reviews', (select count(*) from public.university_reviews where university_id = p_university_id),
-        'timetables', (select count(*) from public.timetables where university_id = p_university_id)
+DROP POLICY IF EXISTS "Allow public read access on university_reviews" ON university_reviews;
+CREATE POLICY "Public can read reviews of visible universities"
+    ON university_reviews FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_reviews.university_id)
     );
-end
+
+DROP POLICY IF EXISTS "Allow public read access on review_comments" ON review_comments;
+CREATE POLICY "Public can read comments of visible reviews"
+    ON review_comments FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM university_reviews r WHERE r.id = review_comments.review_id)
+    );
+
+CREATE POLICY "Admins can add universities"
+    ON universities FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can edit universities"
+    ON universities FOR UPDATE
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can delete hidden universities"
+    ON universities FOR DELETE
+    TO authenticated
+    USING (public.is_admin() AND NOT published);
+
+CREATE POLICY "Admins can manage university_languages"
+    ON university_languages FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can manage exchange_periods"
+    ON exchange_periods FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can manage university_costs"
+    ON university_costs FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can manage university_modules"
+    ON university_modules FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can manage credit_mappings"
+    ON credit_mappings FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can manage smu_modules"
+    ON smu_modules FOR ALL
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins can delete any review"
+    ON university_reviews FOR DELETE
+    TO authenticated
+    USING (public.is_admin());
+
+CREATE POLICY "Admins can delete any comment"
+    ON review_comments FOR DELETE
+    TO authenticated
+    USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can upload university logos" ON storage.objects;
+CREATE POLICY "Admins can upload university logos"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'university-logos' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can delete university logos" ON storage.objects;
+CREATE POLICY "Admins can delete university logos"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'university-logos' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can delete any review image" ON storage.objects;
+CREATE POLICY "Admins can delete any review image"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'review-images' AND public.is_admin());
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END
 $$;
 
-revoke execute on function public.university_impact(bigint) from public, anon;
-grant execute on function public.university_impact(bigint) to authenticated;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON universities
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON exchange_periods
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_costs
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_modules
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON credit_mappings
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON smu_modules
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_reviews
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON review_comments
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE OR REPLACE FUNCTION public.university_impact(p_university_id BIGINT)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+    IF NOT public.is_admin() THEN
+        RAISE EXCEPTION 'Only admins can do that' USING errcode = '42501';
+    END IF;
+
+    RETURN json_build_object(
+        'shortlists', (SELECT count(*) FROM public.shortlists WHERE university_id = p_university_id),
+        'budgets', (SELECT count(*) FROM public.user_budgets WHERE university_id = p_university_id),
+        'reviews', (SELECT count(*) FROM public.university_reviews WHERE university_id = p_university_id),
+        'timetables', (SELECT count(*) FROM public.timetables WHERE university_id = p_university_id)
+    );
+END
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.university_impact(BIGINT) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.university_impact(BIGINT) TO authenticated;

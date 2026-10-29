@@ -431,11 +431,12 @@ watch(
 <template>
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
-        <section class="container pt-0 pb-3">
-            <div>
-                <h1 class="h3 fw-bold text-center mb-3">Compare Universities</h1>
-                <p class="text-center mb-2">SMU Global Experience</p>
-                <p class="text-center mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link"
+
+        <section class="text-center py-5">
+            <div class="container">
+                <h1 class="display-4 fw-semibold">Compare Partner Universities</h1>
+                <p class="fs-5">SMU Global Experience</p>
+                <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
@@ -449,12 +450,12 @@ watch(
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))" 
                         class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
-                            <option value="">Choose a university</option>
+                            <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
                             </optgroup>
-                            <optgroup label="Other Universities" v-if="remainingUnis.length > 0">
+                            <optgroup label="Other Partner Universities" v-if="remainingUnis.length > 0">
                                 <option v-for="uni in remainingUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
                             </optgroup>
@@ -474,7 +475,7 @@ watch(
                         <div class="uni-logo d-flex align-items-center justify-content-center text-secondary flex-column"
                         @click="openDropdown(idx)" role="button" style="cursor: pointer;">
                             <div class="fs-3 fw-light">+</div>
-                            <span>Choose a university</span>
+                            <span>Choose a University</span>
                         </div>
                     </template>            
                 </CompareRow>
