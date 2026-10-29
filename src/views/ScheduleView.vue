@@ -61,7 +61,7 @@ async function save() {
     if(!schedule.error){
       changesMade.value = false; // hide the bar
       hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
-      await loadTimetable(); .//reload the whole view to display updated timetable
+      await loadTimetable(); //reload the whole view to display updated timetable
     } 
   } catch (e) {
     schedule.error = e.message
