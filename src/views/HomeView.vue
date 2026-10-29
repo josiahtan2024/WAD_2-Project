@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import MapPanel from '@/components/MapPanel.vue'
 import InfoPanel from '@/components/InfoPanel.vue'
@@ -8,8 +9,18 @@ import { useExchangeRatesStore } from '@/stores/exchangeRates'
 const exchangeRates = useExchangeRatesStore()
 
 const uni = useUniversitiesStore()
-const mode = ref('universities') // 'universities' | 'modules'
+const route = useRoute()
 const selected = ref(null)
+
+watch(
+  () => [route.query.university, uni.items],
+  ([universityId]) => {
+    selected.value = universityId
+      ? uni.items.find((university) => String(university.id) === String(universityId)) ?? null
+      : null
+  },
+  { immediate: true },
+)
 
 function toggleUniversity(university) {
   selected.value =
@@ -24,7 +35,6 @@ onMounted(async () => {
 
   try {
     if (!uni.items.length) await uni.load()
-    // await uni.loadMappings(route.params.id)
   } catch (e) {
     uni.error = e.message
   }
@@ -33,17 +43,14 @@ onMounted(async () => {
 
 <template>
   <section data-testid="home-page">
-    <h1 class="h3 fw-bold text-center mb-3">Plan your SMU exchange</h1>
+    <h1 class="h3 fw-bold text-center mb-3">Plan Your SMU Exchange</h1>
     <div v-if="uni.error" class="alert alert-warning" data-testid="home-error">{{ uni.error }}</div>
     <div class="row g-3">
       <div class="col-12 col-md-3">
-        <div class="btn-group w-100 mb-2" role="group" aria-label="List mode">
-          <button class="btn btn-sm" :class="mode === 'modules' ? 'btn-primary' : 'btn-outline-primary'" data-testid="home-modules-toggle" @click="mode = 'modules'">Modules</button>
-          <button class="btn btn-sm" :class="mode === 'universities' ? 'btn-primary' : 'btn-outline-primary'" data-testid="home-universities-toggle" @click="mode = 'universities'">Universities</button>
-        </div>
+        <h2 class="h5 fw-semibold mb-2">Partner Universities</h2>
         <div v-if="uni.loading" class="text-muted">Loading...</div>
-        <ul v-else-if="mode === 'universities'" class="list-group" data-testid="home-university-list">
-          <li v-if="!uni.items.length" class="list-group-item text-muted">No universities yet.</li>
+        <ul v-else class="list-group" data-testid="home-university-list">
+          <li v-if="!uni.items.length" class="list-group-item text-muted">No partner universities yet.</li>
 
 
           <li v-for="u in uni.items" :key="u.id"
@@ -54,10 +61,6 @@ onMounted(async () => {
               @click="toggleUniversity(u)"
               @keydown.enter.prevent="toggleUniversity(u)"
               @keydown.space.prevent="toggleUniversity(u)">{{ u.name }}</li>
-        </ul>
-        <ul v-else class="list-group" data-testid="home-module-list">
-          <li v-if="!uni.modules.length" class="list-group-item text-muted">No modules yet.</li>
-          <li v-for="m in uni.modules" :key="m.id" class="list-group-item">{{ m.code }} {{ m.name }}</li>
         </ul>
       </div>
       <div class="col-12 col-md-6">

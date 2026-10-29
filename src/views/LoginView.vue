@@ -28,7 +28,7 @@ async function submit() {
 <template>
   <section class="row justify-content-center" data-testid="login-page">
     <div class="col-12 col-md-6 col-lg-4">
-      <h1 class="h3 fw-bold text-center mb-3">Log in</h1>
+      <h1 class="h3 fw-bold text-center mb-3">Log In</h1>
       <form @submit.prevent="submit">
         <div class="mb-3">
           <label class="form-label" for="login-email">Email</label>
@@ -40,10 +40,10 @@ async function submit() {
         </div>
         <div v-if="error" class="alert alert-danger" data-testid="login-error">{{ error }}</div>
         <button class="btn btn-primary w-100" :disabled="loading" data-testid="login-submit-btn">
-          {{ loading ? 'Logging in...' : 'Log in' }}
+          {{ loading ? 'Logging In...' : 'Log In' }}
         </button>
       </form>
-      <p class="mt-3 mb-0">No account? <RouterLink to="/signup">Sign up</RouterLink></p>
+      <p class="mt-3 mb-0">No account? <RouterLink to="/signup">Sign Up</RouterLink></p>
     </div>
   </section>
 </template>
