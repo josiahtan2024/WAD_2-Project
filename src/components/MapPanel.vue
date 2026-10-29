@@ -93,6 +93,7 @@ markers.set(u.id, marker)
   })
 
   updateSelectedMarker()
+  focusSelectedUniversity()
 }
 
 onMounted(() => {

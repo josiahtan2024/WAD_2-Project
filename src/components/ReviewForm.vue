@@ -12,7 +12,7 @@ const props = defineProps({
 })
 // UniversityView still listens for `submit`. It is declared so Vue doesn't attach that
 // handler to the <form> itself; posting happens here, through the store.
-const emit = defineEmits(['submit', 'saved', 'cancel'])
+const emit = defineEmits(['submit', 'saved', 'success', 'cancel'])
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -45,25 +45,27 @@ function reset() {
 }
 
 async function submit() {
-  if (reviews.saving) return
+  if (props.submitting || reviews.saving) return
   error.value = ''
-  const text = body.value.trim()
   if (!rating.value) {
     error.value = 'Pick an overall rating.'
     return
   }
-  if (!text) {
+  if (!body.value.trim()) {
     error.value = 'Write a few words about your exchange.'
     return
   }
+  const text = body.value.trim()
   const draft = { rating: rating.value, body: text, topics, image: image.value, removeImage: removeImage.value }
   try {
     if (editing.value) {
       await reviews.update(props.review.id, draft)
+      emit('success', 'Your review was updated successfully.')
       emit('saved')
     } else {
       await reviews.post(route.params.id, draft)
       reset()
+      emit('success', 'Your review was posted successfully.')
     }
   } catch (e) {
     error.value = e.message
@@ -73,13 +75,13 @@ async function submit() {
 
 <template>
   <p v-if="!loggedIn" class="mt-3 text-muted" data-testid="review-login-prompt">
-    <RouterLink to="/login">Log in</RouterLink> to post a review.
+    <RouterLink to="/login">Log In</RouterLink> to post a review.
   </p>
   <p v-else-if="alreadyReviewed" class="mt-3 text-muted" data-testid="review-already-posted">
     You have already reviewed this university. You can edit or delete your review above.
   </p>
   <form v-else-if="canShow" class="mt-3" data-testid="review-form" @submit.prevent="submit">
-    <h3 class="h6 fw-bold">{{ editing ? 'Edit your review' : 'Write a review' }}</h3>
+    <h3 class="h6 fw-bold">{{ editing ? 'Edit Your Review' : 'Write a Review' }}</h3>
     <StarRating v-model="rating" label="Overall rating" testid="review-rating" />
     <div class="row row-cols-1 row-cols-md-2 g-1 my-1">
       <div v-for="t in REVIEW_TOPICS" :key="t.key" class="col">
@@ -104,7 +106,7 @@ async function submit() {
     <div v-if="error" class="alert alert-danger py-2" data-testid="review-form-error">{{ error }}</div>
     <div class="d-flex gap-2">
       <button class="btn btn-primary" :disabled="submitting || reviews.saving" data-testid="review-submit-btn">
-        {{ submitting || reviews.saving ? 'Saving...' : editing ? 'Save changes' : 'Post review' }}
+        {{ submitting || reviews.saving ? 'Saving...' : editing ? 'Save Changes' : 'Post Review' }}
       </button>
       <button v-if="editing" type="button" class="btn btn-outline-secondary" data-testid="review-cancel-btn" @click="emit('cancel')">Cancel</button>
     </div>

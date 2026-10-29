@@ -11,36 +11,41 @@ const collapsed = ref(props.action!='Insert'); // LEAVE IT OPEN BY DEFAULT IF US
 </script>
 <template>
     
-    <div class='alert' :class="`alert-${props.color}`">
-      <div  class="d-flex justify-content-center">
-        <div class="text-center" @click="collapsed=!collapsed"><h3 >
-        To {{props.action}} Modules:</h3></div>
-        <div class="position-absolute top-0 end-0 m-2">
-          <button :class="`btn btn-sm border-2 btn-outline-${props.color}`" type="button" @click="collapsed=!collapsed">
-            <template v-if="collapsed">
-              &#9660;
-            </template>
-            <template v-else>
-              &#9650;
-            </template>
-          </button>
-           
-        </div>
+    <section class="schedule-instructions rounded-4 p-3 p-md-4 mb-4" :class="`schedule-instructions-${props.color}`">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <button class="btn btn-link p-0 text-decoration-none text-start text-body fw-bold" type="button" :aria-expanded="!collapsed" @click="collapsed=!collapsed">
+          <span class="h5 mb-0">{{ props.action }} Modules</span>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" type="button" :aria-expanded="!collapsed" :aria-label="collapsed ? `Expand ${props.action} instructions` : `Collapse ${props.action} instructions`" @click="collapsed=!collapsed">
+          <i :class="collapsed ? 'bi bi-chevron-down' : 'bi bi-chevron-up'" aria-hidden="true"></i>
+        </button>
       </div>
       <div class="flex-column mx-xs-auto mx-sm-0" :class="{'d-flex':!collapsed,'d-none':collapsed}">
         <template v-for="(ins,i) in props.instructions" :key="i">
             <div class="d-flex flex-row align-items-center mb-2">
-                <div class="rounded p-2 border border-dark-subtle me-2 fw-bold">{{ i+1 }}</div>
+                <div class="instruction-number rounded-circle me-2 fw-bold">{{ i+1 }}</div>
                 <div>{{ins}}</div>
-                <template v-if="i==0"><i class="bi bi-info-circle-fill ms-2 text-info" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data"></i></template>
+                <template v-if="i==0"><button class="btn btn-link p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data" aria-controls="mod-data" aria-label="Open module reference"><i class="bi bi-info-circle-fill text-primary" aria-hidden="true"></i></button></template>
             </div>
         </template>
         <slot name="form"></slot>
       </div>
-    </div>
+    </section>
 </template>
 <style scoped>
-h3{
-  cursor: pointer;
+.schedule-instructions {
+  background: #f8f9fc;
+  border: 1px solid #e8eaf0;
+}
+.schedule-instructions-danger {
+  border-color: #f1c6cb;
+  background: #fff8f8;
+}
+.instruction-number {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  background: #e9edf5;
 }
 </style>

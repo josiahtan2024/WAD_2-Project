@@ -169,7 +169,7 @@ defineEmits(['toggle-shortlist'])
       :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
       @click="$emit('toggle-shortlist', university)"
     >
-      {{ shortlisted ? 'Remove from shortlist' : 'Add to shortlist' }}
+      {{ shortlisted ? 'Remove From Shortlist' : 'Add to Shortlist' }}
     </button>
   </div>
   <span class="university-region ms-auto flex-shrink-0 small"

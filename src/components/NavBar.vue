@@ -72,7 +72,7 @@ async function logout() {
               data-testid="nav-universities"
               @click="closeMobileMenu"
             >
-              Universities
+              Partner Universities
             </RouterLink>
           </li>
 
@@ -145,7 +145,7 @@ async function logout() {
                 data-testid="nav-preview-toggle"
                 @click="auth.togglePreview()"
               >
-                {{ auth.previewAsStudent ? 'Back to staff view' : 'View as student' }}
+                {{ auth.previewAsStudent ? 'Back to Staff View' : 'View as Student' }}
               </button>
             </template>
 
@@ -154,7 +154,7 @@ async function logout() {
               @click="logout"
               data-testid="nav-logout-btn"
             >
-              Log out
+              Log Out
             </button>
 
           </template>
@@ -167,7 +167,7 @@ async function logout() {
               data-testid="nav-login-link"
               @click="closeMobileMenu"
             >
-              Log in
+              Log In
             </RouterLink>
 
             <RouterLink

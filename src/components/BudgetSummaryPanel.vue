@@ -26,7 +26,7 @@ const emit = defineEmits(['use-published-estimates'])
             <div class="card border-0 shadow-sm rounded-4 mb-4">
               <div class="card-body p-4">
                 <p class="text-secondary small mb-1">
-                  Your estimated exchange budget
+                  Your Estimated Exchange Budget
                 </p>
 
                 <h2 class="display-6 fw-bold mb-1">
@@ -34,7 +34,7 @@ const emit = defineEmits(['use-published-estimates'])
                 </h2>
 
                 <p class="text-secondary small mb-0">
-                  For {{ durationMonths }} month<span
+                  For {{ durationMonths }} Month<span
                     v-if="Number(durationMonths) !== 1"
                   >s</span>
                 </p>
@@ -42,12 +42,12 @@ const emit = defineEmits(['use-published-estimates'])
                 <hr />
 
                 <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Monthly budget</span>
+                  <span class="text-secondary">Monthly Budget</span>
                   <strong>{{ formatMoney(monthlyBudget) }}</strong>
                 </div>
 
                 <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Exchange duration</span>
+                  <span class="text-secondary">Exchange Duration</span>
                   <strong>
                     {{ durationMonths }}
                     month<span v-if="Number(durationMonths) !== 1">s</span>
@@ -97,7 +97,7 @@ const emit = defineEmits(['use-published-estimates'])
                 >
                   <div>
                     <h2 class="h5 fw-bold mb-1">
-                      Estimated university costs
+                      Estimated University Costs
                     </h2>
 
                     <p class="small text-secondary mb-0">
@@ -106,7 +106,7 @@ const emit = defineEmits(['use-published-estimates'])
                   </div>
 
                   <span class="badge text-bg-light border">
-                    Published estimate
+                      Published Estimate
                   </span>
                 </div>
 
@@ -130,8 +130,8 @@ const emit = defineEmits(['use-published-estimates'])
                       { label: 'Accommodation', value: publishedCost.accommodation },
                       { label: 'Food', value: publishedCost.food },
                       { label: 'Transport', value: publishedCost.transport },
-                      { label: 'Personal expenses', value: publishedCost.personal_expenses },
-                      { label: 'Other expenses', value: publishedCost.other_expenses }
+                      { label: 'Personal Expenses', value: publishedCost.personal_expenses },
+                      { label: 'Other Expenses', value: publishedCost.other_expenses }
                     ]"
                     :key="item.label"
                     class="d-flex justify-content-between gap-3 mb-3"
@@ -150,7 +150,7 @@ const emit = defineEmits(['use-published-estimates'])
                   <hr />
 
                   <div class="d-flex justify-content-between gap-3 mb-2">
-                    <span class="fw-semibold">Estimated monthly total</span>
+                    <span class="fw-semibold">Estimated Monthly Total</span>
                     <strong>
                       {{
                         publishedMonthlyCost === null
@@ -162,7 +162,7 @@ const emit = defineEmits(['use-published-estimates'])
 
                   <div class="d-flex justify-content-between gap-3">
                     <span class="fw-semibold">
-                      Estimated total for your period
+                      Estimated Total for Your Period
                     </span>
 
                     <strong class="text-primary text-end">
@@ -179,7 +179,7 @@ const emit = defineEmits(['use-published-estimates'])
                     class="d-flex justify-content-between gap-3 mt-2"
                   >
                     <span class="small text-secondary">
-                      Approximate SGD total
+                      Approximate SGD Total
                     </span>
 
                     <span class="small fw-semibold">
@@ -208,7 +208,7 @@ const emit = defineEmits(['use-published-estimates'])
               class="card border-0 shadow-sm rounded-4"
             >
               <div class="card-body p-4">
-                <h2 class="h5 fw-bold mb-3">Budget comparison</h2>
+                <h2 class="h5 fw-bold mb-3">Budget Comparison</h2>
 
                 <div class="d-flex justify-content-between gap-3 mb-3">
                   <span class="text-secondary">Your budget</span>
@@ -218,7 +218,7 @@ const emit = defineEmits(['use-published-estimates'])
                 </div>
 
                 <div class="d-flex justify-content-between gap-3 mb-3">
-                  <span class="text-secondary">Published estimate</span>
+                  <span class="text-secondary">Published Estimate</span>
                   <strong class="text-end">
                     {{ formatMoney(publishedTotalCost) }}
                   </strong>

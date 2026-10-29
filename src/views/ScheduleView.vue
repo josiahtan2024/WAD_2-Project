@@ -210,41 +210,32 @@ onMounted(async () => {
 
 <template>
   <section data-testid="schedule-page">
-    <div class="card top-0 z-3" :class="{'position-sticky':changesMade}">
-      <div class="card-body align-items-center">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 fw-bold mb-0">Weekly schedule : {{ uni.scheduleUniName || "" }}</h1>
-        <template v-if="changesMade">
-        <div class="changes-pill">
-
-        
-        <button class="btn btn-danger" :disabled="discarding" data-testid="schedule-save-btn" @click="discardChange()">
-          {{ discarding ? 'Discarding..' : 'Discard Changes' }}
+    <div class="schedule-header mb-3" :class="{ 'schedule-header-sticky': changesMade }">
+      <h1 class="h3 fw-bold text-center mb-0">Weekly Schedule: {{ uni.scheduleUniName || "" }}</h1>
+      <div v-if="changesMade" class="d-flex justify-content-end flex-wrap gap-2 mt-3">
+        <button class="btn btn-outline-danger" :disabled="discarding" data-testid="schedule-discard-btn" @click="discardChange()">
+          {{ discarding ? 'Discarding...' : 'Discard Changes' }}
         </button>
         <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save()">
-          {{ saving ? 'Saving...' : 'Save schedule' }}
+          {{ saving ? 'Saving...' : 'Save Schedule' }}
         </button>
-        </div>
-        </template>
-        </div>
       </div>
     </div>
-    <div v-if="schedule.error" class="alert alert-danger" data-testid="schedule-error">{{ schedule.error }}</div>
-    <div v-if="saved" class="alert alert-success" data-testid="schedule-saved">Schedule saved.</div>
-    <div v-if="schedule.loading" class="text-muted" data-testid="schedule-loading">Loading schedule...</div>
+    <div v-if="schedule.error" class="alert alert-danger rounded-4" role="alert" data-testid="schedule-error">{{ schedule.error }}</div>
+    <div v-if="saved" class="alert alert-success rounded-4" role="status" data-testid="schedule-saved">Schedule saved.</div>
+    <div v-if="schedule.loading" class="text-muted py-3" role="status" data-testid="schedule-loading">Loading schedule...</div>
 
-    <div class="card my-3">
-      <div class="card-body">
-        <div class="row g-2 align-items-end">
+    <div class="schedule-filters rounded-4 p-3 p-md-4 mb-4">
+        <div class="row g-3 align-items-end">
           <div class="col-12 col-md-6">
-            <label for="schedule-university" class="form-label fw-semibold mb-1">University</label>
+            <label for="schedule-university" class="form-label fw-semibold">Partner University</label>
             <select id="schedule-university" class="form-select" :value="universityId ?? ''" data-testid="schedule-university-select" @change="selectUniversity($event)">
-              <option value="" disabled>Choose a university</option>
+              <option value="" disabled>Choose a University</option>
               <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
             </select>
           </div>
           <div v-if="universityId" class="col-12 col-md-6">
-            <label for="schedule-period" class="form-label fw-semibold mb-1">Exchange period</label>
+            <label for="schedule-period" class="form-label fw-semibold">Exchange Period</label>
             <select id="schedule-period" class="form-select" :value="periodId ?? ''" data-testid="schedule-period-select" @change="selectPeriod($event)">
               <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
                 {{ p.period_name }} ({{ formatDate(p.start_date) }} – {{ formatDate(p.end_date) }}){{ schedule.savedPeriodIds.includes(p.id) ? ' · saved' : '' }}
@@ -259,12 +250,11 @@ onMounted(async () => {
           </p>
         </div>
         <p v-else-if="!universityOptions.length" class="text-muted mt-3 mb-0" data-testid="schedule-no-universities">
-          <RouterLink to="/universities">Shortlist a university</RouterLink> or <RouterLink to="/courses">add courses to your cart</RouterLink> to start planning.
+          <RouterLink to="/universities">Shortlist a Partner University</RouterLink> or <RouterLink to="/courses">Add Courses to Your Cart</RouterLink> to start planning.
         </p>
         <p v-else class="text-muted mt-3 mb-0" data-testid="schedule-choose-university">
           Choose a university to plan its schedule.
         </p>
-      </div>
     </div>
 
     <template v-if="universityId">
@@ -274,38 +264,29 @@ onMounted(async () => {
     <template v-if="hasSchedule">
       <div class="row justify-content-center">
 
-        <div class="btn-group w-50 my-3" role="group" aria-label="Basic radio toggle button group">
+        <div class="btn-group w-100 my-3 schedule-mode-toggle" role="group" aria-label="Schedule mode">
           <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
-          <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
+          <label class="btn btn-outline-primary" for="view">View Schedule</label>
           
           <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
-          <label class="btn btn-outline-dark w-20   " for="edit">Edit Schedule</label>
+          <label class="btn btn-outline-primary" for="edit">Edit Schedule</label>
         
         </div>
       </div>
       
      </template>
     <template v-else-if="!hasSchedule && !showGrid">
-        <div class="alert alert-info row justify-content-between align-items-center w-75 mx-auto" role="alert">
-          <div class="col-md-8 text-center p-1">
+        <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" role="alert">
+          <div class="text-center p-1">
             You have no schedules planned for this university.
           </div>
-          <div class="btn btn-outline-info col-md-3" id="create-schedule-btn" @click="openScheduleBlock()">
-            
+          <button type="button" class="btn btn-outline-primary flex-shrink-0" id="create-schedule-btn" @click="openScheduleBlock()">
             {{editSchedule?'Loading..':'New Schedule'}}
-          </div>
+          </button>
           
         </div>
     </template>
 
-    <template>
-       <button class="btn btn-danger" data-testid="schedule-save-btn" @click="discardChange">
-        Discard Changes
-      </button>
-      <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save">
-        {{ saving ? 'Saving...' : 'Save schedule' }}
-      </button>
-    </template>
     <template v-if="showGrid">
 
       <InstructionAlert action="Insert" color="info"  :instructions="instructionsInsert" @select-mod="onSelectMod()" id="instructionSelect">
@@ -351,7 +332,7 @@ onMounted(async () => {
           </div>
           <div class="row justify-content-center mt-3">
             <div class="col-6 col-md-4">
-              <button class="btn btn-outline-danger w-100" @click="removeModules()"> {{ !deleteStatus?"Delete from Schedule":"Deleting.."  }}</button>
+              <button class="btn btn-outline-danger w-100" type="button" :disabled="deleteStatus || !deleteModules.length" @click="removeModules()"> {{ !deleteStatus?"Delete from Schedule":"Deleting…"  }}</button>
             </div>
           </div>
 
@@ -388,15 +369,15 @@ onMounted(async () => {
     </template>
 
     </div>
-    <div class="module-pill btn rounded-pill btn-outline-info text-end" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data" aria-expanded="false">
-	  <i class="bi bi-info-circle-fill p-1"></i>
-
-    <span>Module Reference</span>
-    </div>
+    <button class="module-pill btn btn-outline-primary rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#mod-data" aria-expanded="false" aria-controls="mod-data">
+      <i class="bi bi-info-circle-fill p-1" aria-hidden="true"></i>
+      <span>Module Reference</span>
+    </button>
     <!-- `collapse` lets Bootstrap animate both opening and closing -->
     <div class="module-pill module-table collapse" id="mod-data">
       <div class="p-3">
       <table class="table table-border mb-0">
+        <caption class="visually-hidden">Modules included in this schedule</caption>
         <template v-for="mod in schedule.moduleData" :key="mod.id">
           <tr class="border-bottom">
             <td class="fw-bold module-code">{{mod.module_code}}</td>
@@ -412,6 +393,25 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.schedule-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 0.75rem rgba(11, 35, 72, 0.12);
+}
+
+.schedule-filters {
+  background: #f8f9fc;
+  border: 1px solid #e8eaf0;
+}
+
+.schedule-mode-toggle {
+  max-width: 32rem;
+}
+
 .module-pill{
   position: fixed;
   right:2em;

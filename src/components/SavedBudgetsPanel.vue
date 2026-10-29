@@ -59,7 +59,7 @@ function resetFilters() {
       </div>
 
       <div v-else-if="props.budgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-        <h3 class="h5 fw-bold">No budgets yet</h3>
+        <h3 class="h5 fw-bold">No Budgets Yet</h3>
         <p class="text-secondary mb-3">Create your first exchange budget to start planning your expenses.</p>
         <button type="button" class="btn btn-primary" @click="emit('create')">Create Your First Budget</button>
       </div>
@@ -68,36 +68,36 @@ function resetFilters() {
         <div class="budget-filters rounded-4 p-3 p-md-4 mb-4">
           <div class="row g-3 align-items-end">
             <div class="col-12 col-lg-5">
-              <label for="budgetSearch" class="form-label fw-semibold">Search budgets</label>
-              <input id="budgetSearch" v-model="searchQuery" type="search" class="form-control" placeholder="Search university, country, region or period" />
+              <label for="budgetSearch" class="form-label fw-semibold">Search Budgets</label>
+              <input id="budgetSearch" v-model="searchQuery" type="search" class="form-control" placeholder="Search University, Country, Region or Period" />
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
-              <label for="budgetRegion" class="form-label fw-semibold">Filter by region</label>
+              <label for="budgetRegion" class="form-label fw-semibold">Filter by Region</label>
               <select id="budgetRegion" v-model="regionFilter" class="form-select">
-                <option value="">All regions</option>
+                <option value="">All Regions</option>
                 <option v-for="region in props.regions" :key="region" :value="region">{{ region }}</option>
               </select>
             </div>
             <div class="col-12 col-sm-6 col-lg-4">
-              <label for="budgetSort" class="form-label fw-semibold">Sort by</label>
+              <label for="budgetSort" class="form-label fw-semibold">Sort By</label>
               <select id="budgetSort" v-model="sortBy" class="form-select">
-                <option value="recent">Recently added</option>
-                <option value="name">University name (A–Z)</option>
+                <option value="recent">Recently Added</option>
+                <option value="name">University Name (A–Z)</option>
                 <option value="country">Country (A–Z)</option>
-                <option value="cost">Total cost (low to high)</option>
+                <option value="cost">Total Cost (Low to High)</option>
               </select>
             </div>
           </div>
-          <div class="d-flex flex-column align-items-start gap-2 mt-3">
-            <button v-if="searchQuery || regionFilter || sortBy !== 'recent'" type="button" class="btn btn-sm btn-outline-secondary" @click="resetFilters">Reset search and filters</button>
+          <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
             <span class="small text-secondary">Showing {{ props.filteredBudgets.length }} of {{ props.budgets.length }} budget<span v-if="props.budgets.length !== 1">s</span></span>
+            <button v-if="searchQuery || regionFilter || sortBy !== 'recent'" type="button" class="btn btn-sm btn-outline-secondary" @click="resetFilters">Reset Search and Filters</button>
           </div>
         </div>
 
         <div v-if="props.filteredBudgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-          <h3 class="h5 fw-bold">No matching budgets</h3>
+          <h3 class="h5 fw-bold">No Matching Budgets</h3>
           <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
-          <button type="button" class="btn btn-outline-primary" @click="resetFilters">Clear filters</button>
+          <button type="button" class="btn btn-outline-primary" @click="resetFilters">Clear Filters</button>
         </div>
 
         <div v-else class="table-responsive">

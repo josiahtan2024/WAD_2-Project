@@ -131,11 +131,11 @@ onMounted(async () => {
       @dismiss-success="successMessage = ''"
     />
     <div class="d-flex flex-column gap-3 mb-3">
-    <h1 class="h3 fw-bold text-center mb-0">Your shortlist</h1>
+    <h1 class="h3 fw-bold text-center mb-0">Your Shortlist</h1>
 
     <div class="d-flex justify-content-end align-items-center gap-2">
       <label for="shortlist-sort" class="visually-hidden">
-        Sort shortlist
+        Sort Shortlist
       </label>
 
       <select
@@ -143,9 +143,9 @@ onMounted(async () => {
         v-model="sortBy"
         class="form-select form-select-sm shortlist-sort"
       >
-        <option value="name">Name</option>
-        <option value="country">Country</option>
-        <option value="added">Recently added</option>
+        <option value="name">University Name (A–Z)</option>
+        <option value="country">Country (A–Z)</option>
+        <option value="added">Recently Added</option>
       </select>
 
     </div>
@@ -172,7 +172,7 @@ onMounted(async () => {
   data-testid="shortlist-empty"
 >
   Nothing shortlisted yet.
-  <RouterLink to="/universities">Browse universities</RouterLink>.
+  <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
 </p>
 <ul
   v-else-if="saved.length"
@@ -214,7 +214,7 @@ onMounted(async () => {
         class="btn btn-outline-primary"
         data-testid="shortlist-schedule-link"
       >
-        Plan schedule
+        Plan Schedule
       </RouterLink>
 
       <div class="shortlist-secondary-actions">
