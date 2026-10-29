@@ -15,6 +15,8 @@ export const useUniversitiesStore = defineStore('universities', {
   state: () => ({
     items: [], // rows from `universities`
     mappings: [], // rows from `credit_mappings` (joined with smu_modules) for one university
+    mappingsUniversityId: null,
+    mappingsLoading: false,
     allMappings: [], // rows from `credit_mappings` across every university (course search page)
     modules: [], // rows from `smu_modules`
     exchangePeriods: [], // rows from `exchange_periods` for one university (schedule page)
@@ -56,13 +58,22 @@ export const useUniversitiesStore = defineStore('universities', {
 
     /** @param {number|string} universityId Load credit mappings (with SMU course area) into `mappings`. */
     async loadMappings(universityId) {
-      const { data, error } = await supabase
-        .from('credit_mappings')
-        .select(MAPPING_SELECT)
-        .eq('university_module.university_id', universityId)
-        .order('id', { ascending: true })
-      if (error) throw error
-      this.mappings = data ?? []
+      const requestedUniversityId = String(universityId)
+      this.mappings = []
+      this.mappingsUniversityId = requestedUniversityId
+      this.mappingsLoading = true
+
+      try {
+        const { data, error } = await supabase
+          .from('credit_mappings')
+          .select(MAPPING_SELECT)
+          .eq('university_module.university_id', requestedUniversityId)
+          .order('id', { ascending: true })
+        if (error) throw error
+        if (this.mappingsUniversityId === requestedUniversityId) this.mappings = data ?? []
+      } finally {
+        if (this.mappingsUniversityId === requestedUniversityId) this.mappingsLoading = false
+      }
     },
 
     /** Load credit mappings for every university into `allMappings`. */

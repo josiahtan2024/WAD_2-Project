@@ -24,12 +24,12 @@ const impact = ref(null)
 let noticeTimer
 
 const TITLES = {
-  create: 'Add a university',
-  details: 'Edit details',
-  location: 'Edit location',
-  cost: 'Edit costs',
-  academics: 'Edit academics',
-  exchange: 'Edit exchange periods',
+  create: 'Add a University',
+  details: 'Edit Details',
+  location: 'Edit Location',
+  cost: 'Edit Costs',
+  academics: 'Edit Academics',
+  exchange: 'Edit Exchange Periods',
 }
 
 const cost = computed(() => {
@@ -116,7 +116,7 @@ watch(
 </script>
 
 <template>
-  <AdminDrawer :open="drawerOpen" :title="TITLES[section] ?? ''" :saving="admin.saving" :error="error" :submit-label="section === 'create' ? 'Add university' : 'Save'" @close="close">
+  <AdminDrawer :open="drawerOpen" :title="TITLES[section] ?? ''" :saving="admin.saving" :error="error" :submit-label="section === 'create' ? 'Add University' : 'Save'" @close="close">
     <LocationForm v-if="section === 'create'" with-name @submit="create" />
     <DetailsForm v-else-if="section === 'details'" :university="university" @submit="saveDetails" />
     <LocationForm v-else-if="section === 'location'" :university="university" @submit="saveLocation" />

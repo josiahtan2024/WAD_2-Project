@@ -4,12 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useAuthStore } from '@/stores/auth'
+import { useShortlistStore } from '@/stores/shortlist'
 
 const route = useRoute()
 const router = useRouter()
 const uni = useUniversitiesStore()
 const cart = useCourseCartStore()
 const auth = useAuthStore()
+const shortlist = useShortlistStore()
 
 // Logged-out visitors can search; the login link brings them back to the same search afterwards
 const loginLink = computed(() => ({ name: 'login', query: { redirect: route.fullPath } }))
@@ -24,11 +26,21 @@ const areaQuery = ref('')
 const school = ref('')
 const onlyMapped = ref(true)
 const moduleQuery = ref('')
+const hasActiveFilters = computed(() =>
+  universityId.value !== '' || selectedAreaId.value !== null || areaQuery.value.trim() ||
+  school.value || !onlyMapped.value || moduleQuery.value.trim()
+)
 
 const compareText = (a, b) => (a ?? '').localeCompare(b ?? '', 'en', { sensitivity: 'base' })
 const matches = (text, query) => (text ?? '').toLowerCase().includes(query.trim().toLowerCase())
 
 const universities = computed(() => [...uni.items].sort((a, b) => compareText(a.name, b.name)))
+const shortlistedUniversities = computed(() =>
+  universities.value.filter((university) => shortlist.items.some((item) => item.university_id === university.id))
+)
+const otherUniversities = computed(() =>
+  universities.value.filter((university) => !shortlist.items.some((item) => item.university_id === university.id))
+)
 const universityName = (id) => uni.items.find((u) => u.id === Number(id))?.name ?? `University ${id}`
 
 const schools = computed(() => [...new Set(uni.modules.map((m) => m.school).filter(Boolean))].sort(compareText))
@@ -103,6 +115,15 @@ function selectArea(area) {
   moduleQuery.value = ''
 }
 
+function clearFilters() {
+  universityId.value = ''
+  selectedAreaId.value = null
+  areaQuery.value = ''
+  school.value = ''
+  onlyMapped.value = true
+  moduleQuery.value = ''
+}
+
 watch([universityId, selectedAreaId], () => {
   const query = {}
   if (universityId.value !== '') query.university = universityId.value
@@ -119,6 +140,7 @@ onMounted(async () => {
       uni.modules.length ? Promise.resolve() : uni.loadModules(),
       uni.allMappings.length ? Promise.resolve() : uni.loadAllMappings(),
       cart.ensureLoaded(),
+      auth.user ? shortlist.load().catch(() => {}) : Promise.resolve(),
     ])
   } catch (error) {
     pageError.value = error.message
@@ -130,27 +152,32 @@ onMounted(async () => {
 
 <template>
   <section data-testid="course-search-page">
-    <div class="mb-3">
-      <h1 class="h3 mb-1">Course search</h1>
+    <div class="mb-3 text-center">
+      <h1 class="h3 fw-bold mb-1">Course Search</h1>
       <p class="text-muted mb-0">
-        Pick an SMU course area to see the partner university courses mapped to it, then add the ones you want to your cart for scheduling.
+        Pick an SMU Course Area to See the Partner University Courses Mapped to It,<br />Then Add the Ones You Want to Your Cart for Scheduling.
       </p>
     </div>
 
     <div v-if="pageError" class="alert alert-danger" data-testid="course-search-error">{{ pageError }}</div>
 
     <!-- Filters -->
-    <div class="card card-body mb-3">
-      <div class="row g-2 align-items-end">
+    <div class="course-filters rounded-4 p-3 p-md-4 mb-4">
+      <div class="row g-3 align-items-end">
         <div class="col-12 col-md-4">
-          <label for="course-university" class="form-label small fw-semibold mb-1">Partner university</label>
+          <label for="course-university" class="form-label fw-semibold">Partner University</label>
           <select id="course-university" v-model="universityId" class="form-select" data-testid="course-university-select">
-            <option value="">All universities</option>
-            <option v-for="u in universities" :key="u.id" :value="u.id">{{ u.name }}</option>
+            <option value="">All Partner Universities</option>
+            <optgroup v-if="shortlistedUniversities.length" label="My Shortlist">
+              <option v-for="u in shortlistedUniversities" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </optgroup>
+            <optgroup v-if="otherUniversities.length" label="Other Partner Universities">
+              <option v-for="u in otherUniversities" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </optgroup>
           </select>
         </div>
         <div class="col-12 col-md-4">
-          <label for="course-area-search" class="form-label small fw-semibold mb-1">SMU course area</label>
+          <label for="course-area-search" class="form-label fw-semibold">SMU Course Area</label>
           <input
             id="course-area-search"
             v-model="areaQuery"
@@ -161,18 +188,22 @@ onMounted(async () => {
           />
         </div>
         <div class="col-12 col-md-4">
-          <label for="course-school" class="form-label small fw-semibold mb-1">SMU school</label>
+          <label for="course-school" class="form-label fw-semibold">SMU School</label>
           <select id="course-school" v-model="school" class="form-select" data-testid="course-school-select">
-            <option value="">All schools</option>
+            <option value="">All Schools</option>
             <option v-for="s in schools" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
         <div class="col-12">
           <div class="form-check form-switch mb-0">
             <input id="course-only-mapped" v-model="onlyMapped" class="form-check-input" type="checkbox" role="switch" />
-            <label for="course-only-mapped" class="form-check-label small">Only show course areas with mapped courses</label>
+            <label for="course-only-mapped" class="form-check-label small">Only Show Course Areas with Mapped Courses</label>
           </div>
         </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+        <span class="small text-muted" data-testid="course-area-count">{{ filteredAreas.length }} of {{ uni.modules.length }} course areas</span>
+        <button v-if="hasActiveFilters" type="button" class="btn btn-sm btn-outline-secondary" data-testid="course-clear-filters" @click="clearFilters">Reset Search and Filters</button>
       </div>
     </div>
 
@@ -183,8 +214,7 @@ onMounted(async () => {
       <div class="col-12 col-lg-4">
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Course areas</span>
-            <span class="badge text-bg-light">{{ filteredAreas.length }}</span>
+            <span class="fw-semibold">Course Areas</span>
           </div>
           <p v-if="!filteredAreas.length" class="text-muted p-3 mb-0" data-testid="course-area-empty">
             No course areas match these filters.
@@ -234,16 +264,16 @@ onMounted(async () => {
                 v-model="moduleQuery"
                 type="search"
                 class="form-control form-control-sm"
-                placeholder="Search courses by name"
-                aria-label="Search mapped courses by name"
+            placeholder="Search Courses by Name"
+            aria-label="Search Mapped Courses by Name"
                 data-testid="course-module-search"
               />
               <p class="small text-muted mt-2 mb-0">
                 {{ areaModuleCount }} course{{ areaModuleCount === 1 ? '' : 's' }}
-                {{ universityId === '' ? 'across all universities' : `at ${universityName(universityId)}` }}
+                {{ universityId === '' ? 'across all partner universities' : `at ${universityName(universityId)}` }}
               </p>
               <p v-if="!auth.user" class="small mt-2 mb-0" data-testid="course-login-hint">
-                <RouterLink :to="loginLink">Log in</RouterLink> to add courses to your cart.
+                <RouterLink :to="loginLink">Log In</RouterLink> to add courses to your cart.
               </p>
             </div>
             <p v-if="!areaModuleGroups.length" class="text-muted p-3 mb-0" data-testid="course-module-empty">
@@ -298,12 +328,12 @@ onMounted(async () => {
       <div class="col-12 col-lg-3">
         <div class="card cart-card" data-testid="course-cart">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold"><i class="bi bi-cart3 me-1" aria-hidden="true"></i> My cart</span>
+            <span class="fw-semibold"><i class="bi bi-cart3 me-1" aria-hidden="true"></i> My Cart</span>
             <span class="badge text-bg-primary" data-testid="course-cart-count">{{ cart.items.length }}</span>
           </div>
           <div v-if="auth.user && cart.error" class="alert alert-warning small m-2 mb-0 py-2" data-testid="course-cart-error">{{ cart.error }}</div>
           <p v-if="!auth.user" class="text-muted small p-3 mb-0" data-testid="course-cart-login">
-            <RouterLink :to="loginLink">Log in</RouterLink> to save courses to your cart and plan your schedule.
+            <RouterLink :to="loginLink">Log In</RouterLink> to save courses to your cart and plan your schedule.
           </p>
           <p v-else-if="!cart.items.length" class="text-muted small p-3 mb-0" data-testid="course-cart-empty">
             Your cart is empty. Add courses to plan your schedule.
@@ -339,7 +369,7 @@ onMounted(async () => {
                 class="btn btn-sm btn-primary w-100"
                 data-testid="course-cart-schedule-link"
               >
-                Plan schedule ({{ group.items.length }})
+                Plan Schedule ({{ group.items.length }})
               </RouterLink>
             </div>
             <button
@@ -348,7 +378,7 @@ onMounted(async () => {
               data-testid="course-cart-clear-btn"
               @click="clearCart()"
             >
-              Clear cart
+              Clear Cart
             </button>
           </div>
         </div>
@@ -358,6 +388,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.course-filters {
+  background: #f8f9fc;
+  border: 1px solid #e8eaf0;
+}
+
 .area-list,
 .module-list {
   max-height: 65vh;
@@ -368,8 +403,16 @@ onMounted(async () => {
   color: var(--bs-secondary-color);
 }
 
+.area-item.active,
+.area-item.active:hover,
+.area-item.active:focus {
+  background-color: #0b2348;
+  border-color: #0b2348;
+  color: #fff;
+}
+
 .area-item.active .area-school {
-  opacity: 0.85;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .min-w-0 {

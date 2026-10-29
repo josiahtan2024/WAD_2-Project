@@ -69,30 +69,30 @@ onUnmounted(() => {
 })
 
 const housingOptions = [
-  { value: 'one-room', label: 'One room', multiplier: 1 },
-  { value: 'whole-house', label: 'Whole house', multiplier: 2.2 },
-  { value: 'share', label: 'Shared accommodation', multiplier: 0.65 },
-  { value: 'studio', label: 'Studio apartment', multiplier: 1.4 },
-  { value: 'dormitory', label: 'University dormitory', multiplier: 0.7 },
+  { value: 'one-room', label: 'One Room', multiplier: 1 },
+  { value: 'whole-house', label: 'Whole House', multiplier: 2.2 },
+  { value: 'share', label: 'Shared Accommodation', multiplier: 0.65 },
+  { value: 'studio', label: 'Studio Apartment', multiplier: 1.4 },
+  { value: 'dormitory', label: 'University Dormitory', multiplier: 0.7 },
   { value: 'homestay', label: 'Homestay', multiplier: 1.1 },
 ]
 
 const foodOptions = [
-  { value: 'cook', label: 'Cook at home', multiplier: 0.7 },
-  { value: 'mixed', label: 'Mix of home cooking and eating out', multiplier: 1 },
-  { value: 'eat-out', label: 'Eat out regularly', multiplier: 1.25 },
-  { value: 'street-food', label: 'Street food / budget meals', multiplier: 0.8 },
+  { value: 'cook', label: 'Cook at Home', multiplier: 0.7 },
+  { value: 'mixed', label: 'Mix of Home Cooking and Eating Out', multiplier: 1 },
+  { value: 'eat-out', label: 'Eat Out Regularly', multiplier: 1.25 },
+  { value: 'street-food', label: 'Street Food / Budget Meals', multiplier: 0.8 },
   { value: 'restaurant', label: 'Restaurants', multiplier: 1.6 },
   { value: 'cafe', label: 'Cafes', multiplier: 1.3 },
 ]
 
 const transportOptions = [
   { value: 'bus', label: 'Bus', multiplier: 0.55 },
-  { value: 'train', label: 'Train / metro', multiplier: 0.75 },
-  { value: 'walk', label: 'Walking / cycling', multiplier: 0.2 },
-  { value: 'cab', label: 'Cab / taxi', multiplier: 1.8 },
-  { value: 'rent-car', label: 'Rental car', multiplier: 2.5 },
-  { value: 'mixed', label: 'Mixed transport', multiplier: 1 },
+  { value: 'train', label: 'Train / Metro', multiplier: 0.75 },
+  { value: 'walk', label: 'Walking / Cycling', multiplier: 0.2 },
+  { value: 'cab', label: 'Cab / Taxi', multiplier: 1.8 },
+  { value: 'rent-car', label: 'Rental Car', multiplier: 2.5 },
+  { value: 'mixed', label: 'Mixed Transport', multiplier: 1 },
 ]
 
 const selectedUniversity = computed(() =>
@@ -810,7 +810,7 @@ onMounted(async () => {
       />
 
       <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
-        No universities are available yet. Please add universities
+        No partner universities are available yet. Please add partner universities
         to your database before creating a budget.
       </div>
 

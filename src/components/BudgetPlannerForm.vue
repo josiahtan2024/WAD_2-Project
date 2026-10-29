@@ -35,7 +35,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 <form @submit.prevent="emit('submit')">
                 <div class="mb-4">
                   <label for="university" class="form-label fw-semibold">
-                    Destination university
+                    Destination University
                   </label>
 
                   <select
@@ -43,7 +43,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     v-model="selectedUniversityId"
                     class="form-select form-select-lg"
                   >
-                    <option value="">Select a university</option>
+                    <option value="">Select a University</option>
 
                     <option
                       v-for="university in universities"
@@ -72,8 +72,8 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="exchangePeriod" class="form-label fw-semibold">
-                    Exchange period
-                    <span class="optional-label">(optional)</span>
+                    Exchange Period
+                    <span class="optional-label">(Optional)</span>
                   </label>
 
                   <select
@@ -82,7 +82,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     class="form-select form-select-lg"
                     :disabled="!selectedUniversityId || exchangePeriods.length === 0"
                   >
-                    <option value="">Select a period (optional)</option>
+                    <option value="">Select a Period (Optional)</option>
 
                     <option
                       v-for="period in exchangePeriods"
@@ -139,7 +139,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="duration" class="form-label fw-semibold">
-                    Exchange duration (months)
+                    Exchange Duration (Months)
                   </label>
 
                   <input
@@ -162,7 +162,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                 <hr class="my-4" />
 
                 <div class="mb-4">
-                  <h3 class="h5 fw-bold mb-1">Monthly expenses</h3>
+                  <h3 class="h5 fw-bold mb-1">Monthly Expenses</h3>
 
                   <p class="small text-secondary mb-0">
                     All lifestyle dropdowns are optional. Leave them blank
@@ -172,8 +172,8 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-3">
                   <label for="housingType" class="form-label fw-semibold">
-                    Accommodation type
-                    <span class="optional-label">(optional)</span>
+                    Accommodation Type
+                    <span class="optional-label">(Optional)</span>
                   </label>
 
                   <select
@@ -182,7 +182,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     class="form-select form-select-lg"
                     @change="emit('update-accommodation-price')"
                   >
-                    <option value="">Select accommodation (optional)</option>
+                    <option value="">Select Accommodation (Optional)</option>
 
                     <option
                       v-for="option in housingOptions"
@@ -196,7 +196,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="accommodation" class="form-label">
-                    Monthly accommodation cost
+                    Monthly Accommodation Cost
                   </label>
 
                   <div class="input-group input-group-lg">
@@ -217,8 +217,8 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-3">
                   <label for="foodOption" class="form-label fw-semibold">
-                    Food preference
-                    <span class="optional-label">(optional)</span>
+                    Food Preference
+                    <span class="optional-label">(Optional)</span>
                   </label>
 
                   <select
@@ -227,7 +227,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     class="form-select form-select-lg"
                     @change="emit('update-food-price')"
                   >
-                    <option value="">Select food preference (optional)</option>
+                    <option value="">Select Food Preference (Optional)</option>
 
                     <option
                       v-for="option in foodOptions"
@@ -241,7 +241,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="food" class="form-label">
-                    Monthly food and groceries cost
+                    Monthly Food and Groceries Cost
                   </label>
 
                   <div class="input-group input-group-lg">
@@ -261,8 +261,8 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-3">
                   <label for="transportOption" class="form-label fw-semibold">
-                    Transport method
-                    <span class="optional-label">(optional)</span>
+                    Transport Method
+                    <span class="optional-label">(Optional)</span>
                   </label>
 
                   <select
@@ -271,7 +271,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     class="form-select form-select-lg"
                     @change="emit('update-transport-price')"
                   >
-                    <option value="">Select transport (optional)</option>
+                    <option value="">Select Transport (Optional)</option>
 
                     <option
                       v-for="option in transportOptions"
@@ -285,7 +285,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="transport" class="form-label">
-                    Monthly transport cost
+                    Monthly Transport Cost
                   </label>
 
                   <div class="input-group input-group-lg">
@@ -305,7 +305,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-3">
                   <label for="personalExpenses" class="form-label">
-                    Personal expenses
+                    Personal Expenses
                   </label>
 
                   <div class="input-group input-group-lg">
@@ -325,7 +325,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                 <div class="mb-4">
                   <label for="otherExpenses" class="form-label">
-                    Other expenses
+                    Other Expenses
                   </label>
 
                   <div class="input-group input-group-lg">
@@ -385,7 +385,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                     aria-hidden="true"
                   ></span>
 
-                  {{ saving ? 'Saving budget...' : (editingBudgetId ? 'Update Budget' : 'Create Budget') }}
+                  {{ saving ? 'Saving Budget...' : (editingBudgetId ? 'Update Budget' : 'Create Budget') }}
                 </button>
 
                 <p class="small text-secondary text-center mt-3 mb-0">

@@ -50,10 +50,10 @@ async function setPublished(published) {
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
       <span class="badge text-bg-warning me-auto">Staff</span>
       <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-edit-details" @click="emit('edit', 'details')">
-        <i class="bi bi-pencil" aria-hidden="true"></i> Edit details
+        <i class="bi bi-pencil" aria-hidden="true"></i> Edit Details
       </button>
       <button v-if="!hidden" type="button" class="btn btn-outline-secondary btn-sm" :disabled="admin.saving" data-testid="admin-hide" @click="setPublished(false)">
-        <i class="bi bi-eye-slash" aria-hidden="true"></i> Hide from students
+        <i class="bi bi-eye-slash" aria-hidden="true"></i> Hide From Students
       </button>
       <button
         type="button"

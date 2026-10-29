@@ -137,15 +137,15 @@ onMounted(async () => {
     </button>
 </div>
   <section data-testid="universities-page">
-    <h1 class="h3 fw-bold text-center mb-3">Universities</h1>
+    <h1 class="h3 fw-bold text-center mb-3">Partner Universities</h1>
     <template v-if="auth.adminActive">
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">
         <div class="form-check mb-0">
           <input id="show-hidden" v-model="showHidden" class="form-check-input" type="checkbox" data-testid="admin-show-hidden" />
-          <label class="form-check-label" for="show-hidden">Show hidden universities</label>
+          <label class="form-check-label" for="show-hidden">Show Hidden Universities</label>
         </div>
         <button type="button" class="btn btn-primary btn-sm" data-testid="admin-add-university" @click="adminSection = 'create'">
-          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add university
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add University
         </button>
       </div>
       <AdminEditor v-model:section="adminSection" @created="openCreated" />
@@ -153,9 +153,9 @@ onMounted(async () => {
     <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="uni.items.length" />
 
     <div v-if="shortlist.error" class="alert alert-warning" data-testid="shortlist-error">{{ shortlist.error }}</div>
-    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading universities...</div>
-    <div v-else-if="uni.error" class="alert alert-danger" data-testid="universities-error">Could not load universities: {{ uni.error }}</div>
-    <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No universities match your search.</p>
+    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading partner universities...</div>
+    <div v-else-if="uni.error" class="alert alert-danger" data-testid="universities-error">Could not load partner universities: {{ uni.error }}</div>
+    <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No partner universities match your search.</p>
     <div v-else class="row g-3" data-testid="universities-grid">
       <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
         <UniversityCard 

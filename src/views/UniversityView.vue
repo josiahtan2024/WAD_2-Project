@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAdminUniversitiesStore } from '@/stores/adminUniversities'
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import CreditMappingTable from '@/components/CreditMappingTable.vue'
 import ReviewCarousel from '@/components/ReviewCarousel.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
+import BudgetNotice from '@/components/BudgetNotice.vue'
 import AdminBar from '@/components/admin/AdminBar.vue'
 import AdminEditor from '@/components/admin/AdminEditor.vue'
 import AdminEditButton from '@/components/admin/AdminEditButton.vue'
@@ -18,6 +19,7 @@ import { useExchangeRatesStore } from '@/stores/exchangeRates'
 const details = ref({ languages: [], modules: [], periods: [] })
 const detailsLoading = ref(false)
 const detailsError = ref('')
+const mappingError = ref('')
 const selectedPeriodIndex = ref(0)
 
 const logoUrl = computed(() => {
@@ -43,6 +45,21 @@ const auth = useAuthStore()
 const exchangeRates = useExchangeRatesStore()
 const posting = ref(false)
 const postError = ref('')
+const reviewSuccessMessage = ref('')
+
+let reviewNoticeTimeout = null
+watch(reviewSuccessMessage, (message) => {
+  if (reviewNoticeTimeout) clearTimeout(reviewNoticeTimeout)
+  reviewNoticeTimeout = null
+  if (!message) return
+  reviewNoticeTimeout = setTimeout(() => {
+    reviewSuccessMessage.value = ''
+    reviewNoticeTimeout = null
+  }, 5000)
+})
+onUnmounted(() => {
+  if (reviewNoticeTimeout) clearTimeout(reviewNoticeTimeout)
+})
 
 const university = computed(() => uni.items.find((u) => String(u.id) === route.params.id))
 const universityCost = computed(() => {
@@ -121,6 +138,17 @@ async function loadCompareDetails(silent = false) {
   }
 }
 
+async function loadUniversityMappings(universityId) {
+  mappingError.value = ''
+  try {
+    await uni.loadMappings(universityId)
+  } catch (error) {
+    if (String(route.params.id) === String(universityId)) {
+      mappingError.value = error.message || 'Unable to load course mappings.'
+    }
+  }
+}
+
 async function afterDelete(id) {
   await router.push('/universities')
   admin.forget(id)
@@ -151,7 +179,7 @@ watch(() => route.params.id, async () => {
   exchangeRates.load()
   try {
     if (!uni.items.length) await uni.load()
-    await loadCompareDetails()
+    await Promise.all([loadCompareDetails(), loadUniversityMappings(route.params.id)])
     openRequestedEditor()
   } catch (e) {
     uni.error = e.message
@@ -161,6 +189,7 @@ watch(() => route.params.id, async () => {
 
 <template>
   <section data-testid="university-page">
+    <BudgetNotice :success-message="reviewSuccessMessage" @dismiss-success="reviewSuccessMessage = ''" />
     <div v-if="uni.loading" class="text-muted" data-testid="university-loading">Loading...</div>
     <div v-else-if="uni.error" class="alert alert-danger" data-testid="university-error">{{ uni.error }}</div>
     <p v-else-if="!university" class="text-muted" data-testid="university-not-found">University not found. <RouterLink to="/universities">Back to list</RouterLink></p>
@@ -187,7 +216,7 @@ watch(() => route.params.id, async () => {
           :href="university.website_url"
           target="_blank"
           rel="noopener noreferrer"
-        >Visit website</a>
+        >Visit Website</a>
       </header>
       <div v-if="detailsError" class="alert alert-warning" role="status">Some university comparison details could not be loaded: {{ detailsError }}</div>
       <div v-if="detailsLoading" class="text-muted mb-3" role="status">Loading university details...</div>
@@ -208,13 +237,11 @@ watch(() => route.params.id, async () => {
                 <div><dt>Timezone</dt><dd>{{ university.timezone || 'Not available' }}</dd></div>
                 <div><dt>Distance from SMU</dt><dd>{{ distanceFromSmU() }}</dd></div>
               </dl>
-              <a
+              <RouterLink
                 v-if="university.lat && university.long"
                 class="btn btn-outline-primary btn-sm mt-3"
-                :href="`https://www.google.com/maps/search/?api=1&query=${university.lat},${university.long}`"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Open map</a>
+                :to="{ name: 'home', query: { university: university.id } }"
+              >Open Map</RouterLink>
             </div>
           </section>
         </div>
@@ -302,12 +329,20 @@ watch(() => route.params.id, async () => {
       </div>
 
       <div class="row g-3">
-        <div :class="uni.mappings.length ? 'col-12 col-lg-7' : 'col-12'"><CreditMappingTable :mappings="uni.mappings" /></div>
+        <div class="col-12">
+          <div v-if="mappingError" class="alert alert-warning" role="status">{{ mappingError }}</div>
+          <p v-else-if="uni.mappingsLoading" class="text-muted" data-testid="mapping-loading">Loading course mappings...</p>
+          <CreditMappingTable v-else :mappings="uni.mappings" />
+        </div>
         <div class="col-12">
           <div v-if="reviews.error" class="alert alert-warning" data-testid="reviews-error">{{ reviews.error }}</div>
-          <ReviewCarousel :reviews="reviews.items" />
-          <div v-if="postError" class="alert alert-danger mt-2" data-testid="review-post-error">{{ postError }}</div>
-          <ReviewForm :logged-in="!!auth.user" :submitting="posting" @submit="post" />
+          <section class="card border-0 shadow-sm rounded-4" aria-label="Reviews">
+            <div class="card-body p-3 p-md-4">
+              <ReviewCarousel :reviews="reviews.items" @success="reviewSuccessMessage = $event" />
+              <div v-if="postError" class="alert alert-danger mt-2" data-testid="review-post-error">{{ postError }}</div>
+              <ReviewForm :logged-in="!!auth.user" :submitting="posting" @submit="post" @success="reviewSuccessMessage = $event" />
+            </div>
+          </section>
         </div>
       </div>
     </template>
