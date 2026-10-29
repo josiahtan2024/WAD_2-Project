@@ -1,4 +1,5 @@
 -- Run in the Supabase SQL Editor.
+-- schema.sql >> seed.sql >> polices.sql >> admin.sql
 -- Enable Row Level Security (RLS) on all tables
 ALTER TABLE universities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE university_languages ENABLE ROW LEVEL SECURITY;
@@ -13,7 +14,6 @@ ALTER TABLE user_budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE timetables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planned_modules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cart_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE university_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE review_comments ENABLE ROW LEVEL SECURITY;
 
@@ -102,17 +102,18 @@ CREATE POLICY "Authenticated users can delete their own review"
     TO authenticated
     USING ((select auth.uid()) = user_id);
 
--- Needed besides the public bucket: uploads read the new row back and deletes look rows up,
--- so without a SELECT policy removing or replacing a photo silently does nothing.
+DROP POLICY IF EXISTS "Allow public read access on review images" ON storage.objects;
 CREATE POLICY "Allow public read access on review images"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'review-images');
 
+DROP POLICY IF EXISTS "Authenticated users can upload their own review images" ON storage.objects;
 CREATE POLICY "Authenticated users can upload their own review images"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (bucket_id = 'review-images' AND (storage.foldername(name))[1] = (select auth.uid())::text);
 
+DROP POLICY IF EXISTS "Authenticated users can delete their own review images" ON storage.objects;
 CREATE POLICY "Authenticated users can delete their own review images"
     ON storage.objects FOR DELETE
     TO authenticated

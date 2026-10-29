@@ -1,4 +1,5 @@
--- Run in the Supabase SQL Editor.
+-- Run in the Supabase SQL Editor. 
+-- schema.sql >> seed.sql >> polices.sql >> admin.sql
 -- 1. Universities & Localization
 CREATE TABLE IF NOT EXISTS universities (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS universities (
     modules_url TEXT,
     logo_url TEXT,
     description TEXT,
+    published BOOLEAN NOT NULL DEFAULT TRUE,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
