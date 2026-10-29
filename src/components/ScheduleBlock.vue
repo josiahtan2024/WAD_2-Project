@@ -1,6 +1,6 @@
 <script setup>
 import { computed,ref } from 'vue';
-import { useScheduleStore } from '../stores/schedule';
+import { useScheduleStore } from '@/stores/schedule';
 const props = defineProps({'modules':Array,
 'timeSlots':Array,
 'weekDays':Array,
@@ -58,8 +58,7 @@ function selectLesson(day,time){
         startTime.value = time
         selectedDay.value = day;
         
-      } else if (startTime.value && selectedDay.value == day){ 
-        
+      }else if (startTime.value && selectedDay.value == day && time > startTime.value){ 
         endTime.value = time;
       }
       
@@ -106,30 +105,33 @@ function isBlocked(day,time){
 <template>
   <div data-testid="schedule-block">
     <template v-if="startTime > 0 && endTime > 0">
-      <div class="row my-3 mx-auto py-2 justify-content-around bg-warning align-items-center py-1 rounded-1">
+      <div class="row mx-auto p-3 justify-content-around align-items-center card shadow-sm rounded-4 mb-4">
         <div class="col-12 text-center">
           <h4>Current selection</h4>
         </div>
-        <div class="col-auto"><li class="fs-5 text-success"><strong>{{ props.selectedModule }}</strong> : <u>{{ selectedDay }}s {{ timeString(startTime) }} - {{ timeString(endTime) }}</u></li></div>
-        <div class="col-10 col-sm-7 col-md-3 btn-group mt-1">
-            <button class=" btn btn-danger" @click="isEditMode()?clearSelection():$event.stopPropagation()">Clear</button>
-            <button class="btn btn-success" @click="isEditMode()?addSelection(selectedDay,startTime,endTime,props.selectedModule):$event.stopPropagation()">Add</button>
+        <div class="d-flex justify-content-between text-bg-dark opacity-50 p-2">
+          <span>{{ props.selectedModule }} </span>
+          <span class="fw-semibold text-end">{{ selectedDay }}s {{ timeString(startTime) }} - {{ timeString(endTime) }}</span>
+        </div>
+        <div class="col-4 btn-group mt-3">
+          <button class=" btn btn-outline-danger" @click="isEditMode()?clearSelection():$event.stopPropagation()">Clear</button>
+          <button class="btn btn-outline-success" @click="isEditMode()?addSelection(selectedDay,startTime,endTime,props.selectedModule):$event.stopPropagation()">Add</button>
         </div>
       </div>
     </template>
     <template v-if="noModuleError">
-      <div class="alert bg-warning opacity-75 text-center">
+      <div class="alert opacity-75 text-center">
         No Module selected, please select a Module.
       </div>
     </template>
-    <div class="row justify-content-center">
-      <div class="col-lg-10 table-responsive">
+    <div>
+      <div class="table-responsive">
         <table class="table border">
           <thead>
             <tr class="text-center">
-              <th class="px-3">&nbsp;</th>
+              <th>&nbsp;</th>
               <template v-for="day in props.weekDays" :key="day">
-                <th class="px-3">{{ day }}</th>
+                <th>{{ day }}</th>
               </template>
             </tr>
           </thead>
@@ -138,7 +140,7 @@ function isBlocked(day,time){
               <tr>
                 <td class="timing">{{ timeString(Number(time)) }}</td>
                 <template v-for="day in props.weekDays" :key="day">
-                  <td class="px-3 slot text-center text-light fw-bold" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" style="text-wrap-style: balance;" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'bg-info':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}">
+                  <td class="slot text-center text-light fw-bold" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" style="text-wrap-style: balance;" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'block':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}">
                    {{ isBlocked(day,time).mod }}
                   </td>
                 </template>
@@ -154,8 +156,9 @@ function isBlocked(day,time){
 
 <style scoped>
 /* Optional styling can go here */
+
 tbody#window .slot:hover{
-  background-color: #1975feab
+  background-color: #0669fd3d
 ;
 }
 tbody#window .slot:focus{
@@ -166,9 +169,11 @@ tbody .timing{
   position: sticky;
   left: 0;
 }
-
+.block{
+  background-color:#05af05ac
+}
 .blocked{
-  background-color: grey;
+  background-color: #5c738ec2;
   border: none;
 }
 .cross{
