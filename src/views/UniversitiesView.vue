@@ -9,6 +9,7 @@ import UniversityCard from '@/components/UniversityCard.vue'
 import AdminEditor from '@/components/admin/AdminEditor.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { calculateMonthlyCost } from '@/lib/universityCost'
+import BudgetNotice from '@/components/BudgetNotice.vue'
 
 const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()
@@ -17,6 +18,9 @@ const auth = useAuthStore()
 const router = useRouter()
 const adminSection = ref(null)
 const showHidden = ref(true)
+const availableUniversities = computed(() => uni.items.filter((university) =>
+  university.published !== false || (auth.adminActive && showHidden.value)
+))
 
 // Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
 function getMonthlyCostSGD(university) {
@@ -39,7 +43,7 @@ function getMonthlyCostSGD(university) {
 }
 const results = computed(() => {
   const keyword = uni.query.trim().toLowerCase()
-  const filtered = uni.items.filter((university) => {
+  const filtered = availableUniversities.value.filter((university) => {
     const fields = [
       university.name,
       university.country,
@@ -50,8 +54,7 @@ const results = computed(() => {
         String(value ?? '').toLowerCase().includes(keyword))
     
     const matchesRegion = !uni.filters.region || university.region === uni.filters.region
-    const visible = university.published !== false || (auth.adminActive && showHidden.value)
-    return matchesKeyword && matchesRegion && visible
+    return matchesKeyword && matchesRegion
   })
 
   return filtered.sort((a, b) => {
@@ -75,7 +78,7 @@ const results = computed(() => {
 })
 
 })
-const regions = computed(() => Array.from(new Set(uni.items.map((u) => u.region))).sort())
+const regions = computed(() => Array.from(new Set(availableUniversities.value.map((u) => u.region))).sort())
 const currentPage = ref(1)
 const pageSize = 6
 const pageCount = computed(() => Math.ceil(results.value.length / pageSize))
@@ -127,36 +130,34 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="exchangeRates.error" class="alert alert-warning">
-  Unable to load SGD exchange rates.
-    <button
-      class="btn btn-link btn-sm"
-      @click="exchangeRates.load()"
-    >
-      Retry
-    </button>
-</div>
+  <BudgetNotice
+    :data-testid="shortlist.error ? 'shortlist-error' : uni.error ? 'universities-error' : exchangeRates.error ? 'exchange-rates-error' : undefined"
+    :error-message="shortlist.error || (uni.error ? `Could not load partner universities: ${uni.error}` : exchangeRates.error ? 'Unable to load SGD exchange rates.' : '')"
+    @dismiss-error="shortlist.error ? shortlist.error = null : uni.error ? uni.error = null : exchangeRates.error = null"
+  >
+    <template #actions>
+      <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
+    </template>
+  </BudgetNotice>
   <section data-testid="universities-page">
-    <h1 class="h3 fw-bold text-center mb-3">Universities</h1>
+    <h1 class="page-title h3 fw-bold text-center mb-3">Partner Universities</h1>
     <template v-if="auth.adminActive">
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">
         <div class="form-check mb-0">
           <input id="show-hidden" v-model="showHidden" class="form-check-input" type="checkbox" data-testid="admin-show-hidden" />
-          <label class="form-check-label" for="show-hidden">Show hidden universities</label>
+          <label class="form-check-label" for="show-hidden">Show Hidden Universities</label>
         </div>
         <button type="button" class="btn btn-primary btn-sm" data-testid="admin-add-university" @click="adminSection = 'create'">
-          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add university
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add University
         </button>
       </div>
       <AdminEditor v-model:section="adminSection" @created="openCreated" />
     </template>
-    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="uni.items.length" />
+    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
 
-    <div v-if="shortlist.error" class="alert alert-warning" data-testid="shortlist-error">{{ shortlist.error }}</div>
-    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading universities...</div>
-    <div v-else-if="uni.error" class="alert alert-danger" data-testid="universities-error">Could not load universities: {{ uni.error }}</div>
-    <p v-else-if="!results.length" class="text-muted" data-testid="universities-empty">No universities match your search.</p>
-    <div v-else class="row g-3" data-testid="universities-grid">
+    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading partner universities...</div>
+    <p v-else-if="!uni.error && !results.length" class="text-muted" data-testid="universities-empty">No partner universities match your search.</p>
+    <div v-else-if="!uni.error" class="row g-3" data-testid="universities-grid">
       <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
         <UniversityCard 
         :university="u" 

@@ -14,7 +14,9 @@ const auth = useAuthStore()
 
 // TODO TO-DO FIX SCALING AND RESPONSIVE UI
 // Universities
-const universities = ref([])
+const allUniversities = ref([])
+const universities = computed(() => allUniversities.value
+    .filter(uni => auth.adminActive || uni.published !== false))
 const uniIsLoading = ref(true)
 async function fetchUniversities() {
     uniIsLoading.value = true
@@ -31,7 +33,7 @@ async function fetchUniversities() {
 
         if (error) throw error
 
-        universities.value = data.map(uni => {
+        allUniversities.value = data.map(uni => {
             const languages = uni.university_languages?.map(l => l.instruction_language).join(', ') || '-'
             const cost = uni.university_costs || {}
             const modulesCount = uni.university_modules?.length || 0
@@ -64,6 +66,7 @@ async function fetchUniversities() {
             return {
                 id: uni.id,
                 name: uni.name,
+                published: uni.published,
                 logo: logoURL,
                 website: uni.website_url,
                 location: {
@@ -96,6 +99,11 @@ async function fetchUniversities() {
                 }
             }
         }).sort((a, b) => a.name.localeCompare(b.name))
+        if (!auth.adminActive) {
+            uniSlots.value = uniSlots.value.map((id) =>
+                allUniversities.value.some((university) => university.id === id && university.published !== false) ? id : null
+            )
+        }
     } catch (error) {
         console.error('Error fetching universities from Supabase:', error.message)
     } finally {
@@ -156,6 +164,9 @@ async function toggleShortlist(uniId) {
         })
     }
 
+    const university = universities.value.find((item) => item.id === uniId)
+    if (!university || (!auth.adminActive && university.published === false)) return
+
     if (shortlistLoadingIds.value[uniId]) return 
     shortlistLoadingIds.value[uniId] = true
 
@@ -212,6 +223,13 @@ function getStoredCompareSlots() {
 const uniSlots = ref(getStoredCompareSlots())
 const uniCurrencies = ref(['home', 'home', 'home'])
 const uniProgrammes = ref([0, 0, 0])
+
+watch(() => auth.adminActive, (adminActive) => {
+    if (adminActive) return
+    uniSlots.value = uniSlots.value.map((id) =>
+        universities.value.some((university) => university.id === id) ? id : null
+    )
+})
 
 const unisToCompare = computed (() => {
     return uniSlots.value.map(id => {
@@ -431,11 +449,12 @@ watch(
 <template>
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
-        <section class="container pt-0 pb-3">
-            <div>
-                <h1 class="h3 fw-bold text-center mb-3">Compare Universities</h1>
-                <p class="text-center mb-2">SMU Global Experience</p>
-                <p class="text-center mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link"
+
+        <section class="text-center py-5">
+            <div class="container">
+                <h1 class="page-title display-4 fw-semibold">Compare Partner Universities</h1>
+                <p class="fs-5">SMU Global Experience</p>
+                <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
@@ -447,14 +466,14 @@ watch(
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
-                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))" 
-                        class="form-select fs-5 fw-semibold py-3 ps-3 custom-select-blue text-truncate">
-                            <option value="">Choose a university</option>
+                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
+                        class="form-select compare-university-select" data-testid="compare-university-select">
+                            <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
                             </optgroup>
-                            <optgroup label="Other Universities" v-if="remainingUnis.length > 0">
+                            <optgroup label="Other Partner Universities" v-if="remainingUnis.length > 0">
                                 <option v-for="uni in remainingUnis" :key="uni.id" :value="uni.id"
                                 :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
                             </optgroup>
@@ -474,7 +493,7 @@ watch(
                         <div class="uni-logo d-flex align-items-center justify-content-center text-secondary flex-column"
                         @click="openDropdown(idx)" role="button" style="cursor: pointer;">
                             <div class="fs-3 fw-light">+</div>
-                            <span>Choose a university</span>
+                            <span>Choose a University</span>
                         </div>
                     </template>            
                 </CompareRow>
@@ -876,9 +895,6 @@ header, footer {
 .custom-hover-link:hover {
     text-decoration: underline !important;
 }
-.form-select:hover {
-    outline: 1px solid black;
-}
 .sticky-uni-selector {
     position: sticky;
     top: var(--app-navbar-height);
@@ -886,9 +902,6 @@ header, footer {
     background-color: white;
     padding-top: 12px;
     padding-bottom: 12px;
-}
-.custom-select-blue {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%230d6efd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 /* md breakpoint - tablet */
 @media (max-width: 991.98px) {
@@ -909,25 +922,6 @@ header, footer {
 }
 /* below md breakpoint - bottom border only */
 @media (max-width: 767.98px) {
-    .form-select {
-        border: none;
-        border-bottom: 1px solid var(--bs-border-color);
-        border-radius: 0;
-        padding-left: 0 !important;
-        outline: none;
-    }
-
-    .form-select:hover {
-        outline: none;
-        border-bottom: 1px solid black;
-    }
-
-    .form-select:focus {
-        border: 1px solid transparent !important;
-        border-bottom: 1px solid black !important;
-        border-radius: 0.375rem !important;
-    }
-
     .uni-logo {
         height: 120px;
     }

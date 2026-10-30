@@ -91,7 +91,7 @@ const estimatedMonthlyCost = computed(() => {
         class="btn btn-primary btn-sm"
         data-testid="info-details-link"
       >
-        View details
+        View Details
       </RouterLink>
     </template>
   </div>

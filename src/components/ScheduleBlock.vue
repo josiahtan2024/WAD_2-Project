@@ -138,7 +138,7 @@ function isBlocked(day,time){
           <tbody id="window">
             <template v-for="time in props.timeSlots" :key="time">
               <tr>
-                <td class="timing">{{ timeString(Number(time)) }}</td>
+                <th class="timing" scope="row">{{ timeString(Number(time)) }}</th>
                 <template v-for="day in props.weekDays" :key="day">
                   <td class="slot text-center text-light fw-bold" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" style="text-wrap-style: balance;" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'block':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}">
                    {{ isBlocked(day,time).mod }}
@@ -161,13 +161,19 @@ tbody#window .slot:hover{
   background-color: #0669fd3d
 ;
 }
-tbody#window .slot:focus{
-  background-color: green;
+tbody#window .slot-selected,
+tbody#window .slot-selected:hover {
+  background-color: #cfe2ff;
 }
 
 tbody .timing{
   position: sticky;
   left: 0;
+  z-index: 1;
+  min-width: 5rem;
+  background: #f8f9fc;
+  color: #495057;
+  font-weight: 600;
 }
 .block{
   background-color:#05af05ac

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth'
 import BudgetNotice from '@/components/BudgetNotice.vue'
 import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
 import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
@@ -8,13 +9,29 @@ import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'
 import BudgetPlannerForm from '@/components/BudgetPlannerForm.vue'
 import BudgetDetailsDialog from '@/components/BudgetDetailsDialog.vue'
 
-const universities = ref([])
+const auth = useAuthStore()
+const allUniversities = ref([])
+const universities = computed(() => allUniversities.value.filter((university) =>
+  auth.adminActive || university.published !== false
+))
 const exchangePeriods = ref([])
 const publishedCost = ref(null)
 
 const selectedUniversityId = ref('')
 const selectedPeriodId = ref('')
 const durationMonths = ref(1)
+
+watch(() => auth.adminActive, (adminActive) => {
+  if (adminActive) return
+  const selected = allUniversities.value.find((university) =>
+    String(university.id) === String(selectedUniversityId.value)
+  )
+  if (selected?.published === false) {
+    selectedUniversityId.value = ''
+    selectedPeriodId.value = ''
+    publishedCost.value = null
+  }
+})
 
 const housingType = ref('')
 const foodOption = ref('')
@@ -43,6 +60,12 @@ const budgetToRead = ref(null)
 
 const errorMessage = ref('')
 const successMessage = ref('')
+const visibleSavedBudgets = computed(() => auth.adminActive
+  ? savedBudgets.value
+  : savedBudgets.value.filter((budget) => universities.value.some((university) =>
+      String(university.id) === String(budget.university_id)
+    ))
+)
 
 // Automatically dismiss success/error notifications after five seconds.
 // Users can also close either notification immediately with its X button.
@@ -69,30 +92,30 @@ onUnmounted(() => {
 })
 
 const housingOptions = [
-  { value: 'one-room', label: 'One room', multiplier: 1 },
-  { value: 'whole-house', label: 'Whole house', multiplier: 2.2 },
-  { value: 'share', label: 'Shared accommodation', multiplier: 0.65 },
-  { value: 'studio', label: 'Studio apartment', multiplier: 1.4 },
-  { value: 'dormitory', label: 'University dormitory', multiplier: 0.7 },
+  { value: 'one-room', label: 'One Room', multiplier: 1 },
+  { value: 'whole-house', label: 'Whole House', multiplier: 2.2 },
+  { value: 'share', label: 'Shared Accommodation', multiplier: 0.65 },
+  { value: 'studio', label: 'Studio Apartment', multiplier: 1.4 },
+  { value: 'dormitory', label: 'University Dormitory', multiplier: 0.7 },
   { value: 'homestay', label: 'Homestay', multiplier: 1.1 },
 ]
 
 const foodOptions = [
-  { value: 'cook', label: 'Cook at home', multiplier: 0.7 },
-  { value: 'mixed', label: 'Mix of home cooking and eating out', multiplier: 1 },
-  { value: 'eat-out', label: 'Eat out regularly', multiplier: 1.25 },
-  { value: 'street-food', label: 'Street food / budget meals', multiplier: 0.8 },
+  { value: 'cook', label: 'Cook at Home', multiplier: 0.7 },
+  { value: 'mixed', label: 'Mix of Home Cooking and Eating Out', multiplier: 1 },
+  { value: 'eat-out', label: 'Eat Out Regularly', multiplier: 1.25 },
+  { value: 'street-food', label: 'Street Food / Budget Meals', multiplier: 0.8 },
   { value: 'restaurant', label: 'Restaurants', multiplier: 1.6 },
   { value: 'cafe', label: 'Cafes', multiplier: 1.3 },
 ]
 
 const transportOptions = [
   { value: 'bus', label: 'Bus', multiplier: 0.55 },
-  { value: 'train', label: 'Train / metro', multiplier: 0.75 },
-  { value: 'walk', label: 'Walking / cycling', multiplier: 0.2 },
-  { value: 'cab', label: 'Cab / taxi', multiplier: 1.8 },
-  { value: 'rent-car', label: 'Rental car', multiplier: 2.5 },
-  { value: 'mixed', label: 'Mixed transport', multiplier: 1 },
+  { value: 'train', label: 'Train / Metro', multiplier: 0.75 },
+  { value: 'walk', label: 'Walking / Cycling', multiplier: 0.2 },
+  { value: 'cab', label: 'Cab / Taxi', multiplier: 1.8 },
+  { value: 'rent-car', label: 'Rental Car', multiplier: 2.5 },
+  { value: 'mixed', label: 'Mixed Transport', multiplier: 1 },
 ]
 
 const selectedUniversity = computed(() =>
@@ -108,13 +131,13 @@ const selectedPeriod = computed(() =>
 )
 
 const availableBudgetRegions = computed(() =>
-  [...new Set(savedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
+  [...new Set(visibleSavedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b)),
 )
 
 const filteredBudgets = computed(() => {
   const query = budgetSearchQuery.value.trim().toLocaleLowerCase()
-  const filtered = savedBudgets.value.filter(budget => {
+  const filtered = visibleSavedBudgets.value.filter(budget => {
     const matchesRegion =
       !selectedRegionFilter.value || budget.university_region === selectedRegionFilter.value
     const searchableText = [
@@ -343,12 +366,12 @@ function updateTransportPrice() {
 async function loadUniversities() {
   const { data, error } = await supabase
     .from('universities')
-    .select('id, name, country, state, city, region, website_url')
+    .select('id, name, country, state, city, region, website_url, published')
     .order('name')
 
   if (error) throw error
 
-  universities.value = data || []
+  allUniversities.value = data || []
   selectedUniversityId.value = ''
 }
 
@@ -750,7 +773,7 @@ onMounted(async () => {
   <main class="container px-0">
     <div class="mb-3">
 
-      <h1 class="h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
+      <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
 
       <p class="text-secondary text-center mb-0">
         Estimate your exchange expenses, compare published costs,
@@ -797,7 +820,7 @@ onMounted(async () => {
         v-model:search-query="budgetSearchQuery"
         v-model:region-filter="selectedRegionFilter"
         v-model:sort-by="budgetSortBy"
-        :budgets="savedBudgets"
+        :budgets="visibleSavedBudgets"
         :filtered-budgets="filteredBudgets"
         :regions="availableBudgetRegions"
         :loading="budgetsLoading"
@@ -810,7 +833,7 @@ onMounted(async () => {
       />
 
       <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
-        No universities are available yet. Please add universities
+        No partner universities are available yet. Please add partner universities
         to your database before creating a budget.
       </div>
 

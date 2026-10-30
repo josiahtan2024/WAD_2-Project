@@ -22,8 +22,9 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
           <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
           <div class="flex-grow-1">
-            <h2 class="h6 fw-bold mb-1">Something went wrong</h2>
+            <h2 class="h6 fw-bold mb-1">Something Went Wrong</h2>
             <p class="mb-0">{{ errorMessage }}</p>
+            <slot name="actions" />
           </div>
           <button type="button" class="btn-close" aria-label="Dismiss error message" @click="emit('dismiss-error')"></button>
         </div>
@@ -37,8 +38,9 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
           <div class="notice-icon notice-icon-success" aria-hidden="true">✓</div>
           <div class="flex-grow-1">
-            <h2 class="h6 fw-bold mb-1">Successfully completed</h2>
+            <h2 class="h6 fw-bold mb-1">Successfully Completed</h2>
             <p class="mb-0">{{ successMessage }}</p>
+            <slot name="actions" />
           </div>
           <button type="button" class="btn-close" aria-label="Dismiss success message" @click="emit('dismiss-success')"></button>
         </div>

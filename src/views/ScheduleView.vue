@@ -5,9 +5,12 @@ import { useScheduleStore } from '@/stores/schedule'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useShortlistStore } from '@/stores/shortlist'
+import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 import ModuleTable from '@/components/ModuleTable.vue'
+import BudgetNotice from '@/components/BudgetNotice.vue'
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,11 +18,15 @@ const schedule = useScheduleStore()
 const uni = useUniversitiesStore()
 const cart = useCourseCartStore()
 const shortlist = useShortlistStore()
+const auth = useAuthStore()
 
 // The timetable being planned comes from the URL: /schedule/2?period=4 is university 2, exchange period 4.
 // Each university + period pair is its own timetable. Both are null on plain /schedule.
 const universityId = computed(() => route.params.universityId ? Number(route.params.universityId) : null)
 const periodId = computed(() => route.query.period ? Number(route.query.period) : null)
+const selectedPeriodName = computed(() =>
+  uni.exchangePeriods.find((period) => period.id === periodId.value)?.period_name || 'this exchange period'
+)
 let loadedUniversityId = null // whose name, mappings and periods are loaded
 
 // Dropdown options: shortlisted universities plus any university the student has carted courses for
@@ -31,17 +38,33 @@ const universityOptions = computed(() => {
   if (universityId.value) ids.add(universityId.value)
   return [...ids]
     .map((id) => ({ id, name: uni.items.find((u) => u.id === id)?.name ?? `University ${id}` }))
+    .filter((university) => auth.adminActive || uni.items.some((item) =>
+      item.id === university.id && item.published !== false
+    ))
     .sort((a, b) => a.name.localeCompare(b.name))
 })
 const saving = ref(false)
 const discarding = ref(false);
 const saved = ref(false)
+const scheduleDeleted = ref(false)
+const deleteScheduleOpen = ref(false)
+const deletingSchedule = ref(false)
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const timeLimit = [28800,64800] // 8am to 6pm in seconds
 const timeSlots = ref ([]);
 const deleteModules = ref([]);
 const deleteStatus = ref(false);
 const selectedModule = ref('');
+const scheduleBlockKey = ref(0)
+const moduleReferenceHovered = ref(false)
+const moduleReferenceFocused = ref(false)
+const moduleReferencePinned = ref(false)
+const moduleReferenceSupportsHover = window.matchMedia('(hover: hover)').matches
+const moduleReferenceOpen = computed(() =>
+  moduleReferenceHovered.value || (moduleReferenceSupportsHover
+    ? moduleReferenceFocused.value
+    : moduleReferencePinned.value)
+)
 const hasSchedule = ref(false);
 const editSchedule = ref(false);
 const showGrid = ref(false)
@@ -52,6 +75,7 @@ const instructionsDelete = ['Select your Module(s)',"Click 'Delete from Schedule
 async function save() {
   saving.value = true
   saved.value = false
+  scheduleDeleted.value = false
   schedule.error = null
   // update when a timetable row already exists (even if all its modules were removed), else create one
   const mode = schedule.studentTimeTableId?'update':'insert';
@@ -69,12 +93,45 @@ async function save() {
     saving.value = false
   }
 }
+async function deleteSelectedSchedule() {
+  deletingSchedule.value = true
+  schedule.error = null
+  try {
+    await schedule.deleteForPeriod(universityId.value, periodId.value)
+    deleteScheduleOpen.value = false
+    hasSchedule.value = false
+    showGrid.value = false
+    editSchedule.value = false
+    changesMade.value = false
+    selectedModule.value = ''
+    deleteModules.value = []
+    scheduleBlockKey.value += 1
+    saved.value = false
+    scheduleDeleted.value = true
+  } catch (error) {
+    deleteScheduleOpen.value = false
+    schedule.error = error.message || 'Unable to delete this schedule.'
+  } finally {
+    deletingSchedule.value = false
+  }
+}
 function loadTimeSlots() {
   let ts = []
   for(let t = timeLimit[0];t<timeLimit[1]+1;t+=1800){
     ts.push(t);
   }
   return ts;
+}
+function toggleModuleReference() {
+  if (!moduleReferenceSupportsHover) {
+    moduleReferencePinned.value = !moduleReferencePinned.value
+  }
+}
+function closeModuleReferenceOnFocusOut(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    moduleReferenceFocused.value = false
+    if (!moduleReferenceSupportsHover) moduleReferencePinned.value = false
+  }
 }
 function openScheduleBlock(){
   editSchedule.value=true;
@@ -152,8 +209,12 @@ function resetView(){
   hasSchedule.value = false;
   changesMade.value = false;
   saved.value = false;
+  scheduleDeleted.value = false;
   selectedModule.value = '';
   deleteModules.value = [];
+  schedule.currentSchedule = {};
+  schedule.studentTimeTableId = null;
+  schedule.exchangePeriodId = null;
   schedule.error = null;
 }
 
@@ -163,11 +224,13 @@ async function loadTimetable(){
   resetView()
   if (!id) {
     loadedUniversityId = null
+    schedule.savedPeriodIds = []
     uni.scheduleUniName = null
     return
   }
   try {
     if (loadedUniversityId !== id) {
+      schedule.savedPeriodIds = []
       uni.scheduleUniName = null
       await uni.loadMappings(id)
 
@@ -185,7 +248,7 @@ async function loadTimetable(){
     await schedule.load(id,true,periodId.value)
     await cart.ensureLoaded() // the cart comes from Supabase, so wait for it before reading it
     addCartModules()
-    hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
+    hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0 || schedule.studentTimeTableId !== null;
 
   } catch (e) {
     schedule.error = e.message
@@ -233,22 +296,19 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-    <div v-if="schedule.error" class="alert alert-danger" data-testid="schedule-error">{{ schedule.error }}</div>
-    <div v-if="saved" class="alert alert-success" data-testid="schedule-saved">Schedule saved.</div>
-    <div v-if="schedule.loading" class="text-muted" data-testid="schedule-loading">Loading schedule...</div>
+    <div v-if="schedule.loading" class="text-muted py-3" role="status" data-testid="schedule-loading">Loading schedule...</div>
 
-    <div class="card my-3">
-      <div class="card-body">
-        <div class="row g-2 align-items-end">
+    <div class="filter-panel mb-4">
+        <div class="row g-3 align-items-end">
           <div class="col-12 col-md-6">
-            <label for="schedule-university" class="form-label fw-semibold mb-1">University</label>
+            <label for="schedule-university" class="form-label fw-semibold">Partner University</label>
             <select id="schedule-university" class="form-select" :value="universityId ?? ''" data-testid="schedule-university-select" @change="selectUniversity($event)">
-              <option value="" disabled>Choose a university</option>
+              <option value="" disabled>Choose a University</option>
               <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
             </select>
           </div>
-          <div v-if="universityId" class="col-12 col-md-6">
-            <label for="schedule-period" class="form-label fw-semibold mb-1">Exchange period</label>
+          <div v-if="universityId && universityOptions.some((university) => university.id === universityId)" class="col-12 col-md-6">
+            <label for="schedule-period" class="form-label fw-semibold">Exchange Period</label>
             <select id="schedule-period" class="form-select" :value="periodId ?? ''" data-testid="schedule-period-select" @change="selectPeriod($event)">
               <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
                 {{ p.period_name }} ({{ formatDate(p.start_date) }} – {{ formatDate(p.end_date) }}){{ schedule.savedPeriodIds.includes(p.id) ? ' · saved' : '' }}
@@ -257,18 +317,17 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-if="universityId">
+        <div v-if="universityId && universityOptions.some((university) => university.id === universityId)">
           <p v-if="schedule.moduleData.length" class="mt-3 mb-0" data-testid="schedule-module-count">
             {{ schedule.moduleData.length }} module{{ schedule.moduleData.length === 1 ? '' : 's' }} available from your cart and saved schedule.
           </p>
         </div>
         <p v-else-if="!universityOptions.length" class="text-muted mt-3 mb-0" data-testid="schedule-no-universities">
-          <RouterLink to="/universities">Shortlist a university</RouterLink> or <RouterLink to="/courses">add courses to your cart</RouterLink> to start planning.
+          <RouterLink to="/universities">Shortlist a Partner University</RouterLink> or <RouterLink to="/courses">Add Courses to Your Cart</RouterLink> to start planning.
         </p>
         <p v-else class="text-muted mt-3 mb-0" data-testid="schedule-choose-university">
           Choose a university to plan its schedule.
         </p>
-      </div>
     </div>
 
   <template v-if="universityId">
@@ -428,7 +487,40 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.module-pill{
+.schedule-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 0.75rem rgba(11, 35, 72, 0.12);
+}
+
+.schedule-filters {
+  background: #f8f9fc;
+  border: 1px solid #e8eaf0;
+}
+
+.schedule-mode-toggle {
+  max-width: 32rem;
+}
+
+.schedule-module-controls :deep(.schedule-instructions) {
+  box-shadow: 0 0.125rem 0.5rem rgba(11, 35, 72, 0.06);
+}
+
+.module-select-chip,
+.module-delete-chip {
+  display: flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.module-reference {
   position: fixed;
   right:2em;
   bottom: 2rem;
@@ -443,8 +535,17 @@ onMounted(async () => {
   padding: 0; /* padding lives on the inner wrapper so the panel can shrink fully to 0 */
   max-width: min(26rem, calc(100vw - 4em));
 }
-.module-table.collapsing{
-  overflow: hidden;
+.module-reference-panel{
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: min(55vh, 32rem);
+  overflow-y: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 0.5rem 1.5rem rgba(11, 35, 72, 0.18);
 }
 /* codes in an even-width column, names left-aligned and wrapping onto a second line when long */
 .module-code{
@@ -456,8 +557,16 @@ onMounted(async () => {
   text-align: left;
   vertical-align: top;
 }
-#mod-data{
-  background-color: rgba(255, 255, 255,0.5);
-  border-radius: 1rem;
+.module-reference-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--app-border);
+}
+.module-reference-row:last-child { border-bottom: 0; }
+@media (max-width: 575.98px) {
+  .module-reference { right: 0.75rem; bottom: 0.75rem; }
+  .module-reference-trigger { padding: 0.65rem 0.85rem; }
 }
 </style>

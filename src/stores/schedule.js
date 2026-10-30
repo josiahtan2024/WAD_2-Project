@@ -105,9 +105,10 @@ export const useScheduleStore = defineStore('schedule', {
           .eq('exchange_period_id', periodId)
 
           if (error) throw error
-          if (!data || data.length == 0){ // Student doesn't have timetable record for shortlisted university
-            
-            this.loading=false;
+          if (!data || data.length === 0) {
+            // A new, unsaved schedule has no row to reload. Clear locally added modules.
+            this.currentSchedule = {}
+            this.studentTimeTableId = null
             return;
           }
           if(isInitial){
@@ -159,6 +160,25 @@ export const useScheduleStore = defineStore('schedule', {
       }
     
       // 2. Insert the currentSchedule record fresh into the database 
+    },
+    /** Delete one saved timetable for this user, university, and exchange period. */
+    async deleteForPeriod(uniId, exchangePeriodId) {
+      const { data, error } = await supabase
+        .from('timetables')
+        .delete()
+        .eq('user_id', currentUserId.value)
+        .eq('university_id', uniId)
+        .eq('exchange_period_id', exchangePeriodId)
+        .select('id, exchange_period_id')
+
+      if (error) throw error
+
+      this.savedPeriodIds = this.savedPeriodIds.filter((periodId) => periodId !== Number(exchangePeriodId))
+      this.currentSchedule = {}
+      this.studentTimeTableId = null
+      this.exchangePeriodId = null
+      this.universityId = Number(uniId)
+      return data?.length ?? 0
     },
     async insertTimetable(uniId,exchangePeriodId){
       // every timetable belongs to one exchange period (timetables.exchange_period_id is NOT NULL)

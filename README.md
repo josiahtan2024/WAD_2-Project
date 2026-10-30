@@ -1,10 +1,11 @@
 # SMU Exchange Planner
 
-SMU Exchange Planner helps students explore partner universities and prepare for an exchange. Browse university information, estimate expenses, compare options, read student reviews, and plan a weekly schedule.
+SMUXchange helps SMU students explore partner universities and prepare for an exchange. University information and planning tools come together to help students compare destinations, consider courses and costs, and build a plan for their exchange.
 
 ## Features
 
 - **Explore universities:** Search by keyword, filter by region, sort by name, country, or estimated cost, and open a university profile.
+- **Learn about the project:** Visit the About Us page from the site footer to learn about the exchange-planning problem SMUXchange addresses, the tools it provides, and how to get started.
 - **Review university details:** See university information, estimated costs, and student reviews. Signed-in users can submit a review.
 - **Shortlist options:** Save universities to a personal shortlist for later planning.
 - **Compare universities:** Review shortlisted choices side by side.
@@ -17,11 +18,13 @@ SMU Exchange Planner helps students explore partner universities and prepare for
 ## How to use the app
 
 1. Open **Universities** and search, filter by region, or sort the list.
-2. Select a university to view its profile, estimated costs, credit mappings between partner and SMU courses, and student reviews.
-3. Sign up or log in to add universities to your shortlist, write a review, or save planning information.
-4. Open **Compare** to compare your shortlisted universities.
-5. Use the university's schedule page to view or edit your weekly plan, then select **Save schedule**.
-6. Open **Cost Estimator** to enter your exchange duration and monthly expenses. Save your budget and adjust it as your plans change.
+2. Select a university to view its profile, estimated costs, credit mappings between partner and SMU courses, exchange periods, and student reviews.
+3. Sign up or log in to shortlist universities, write a review, and save your plans.
+4. Open **Compare** to review shortlisted universities side by side.
+5. Search for courses and add the courses you are considering to your cart. Check the credit mappings as you plan.
+6. Open **Schedule** to select a university and exchange period, create or edit a weekly timetable using courses in your cart, and save it.
+7. Open **Cost Estimator** to enter your exchange duration and monthly expenses, then save and refine your budget.
+8. Select **About Us** in the footer for an overview of the project and a quick guide to using the site.
 
 ## Tech stack
 
