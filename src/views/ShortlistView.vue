@@ -164,10 +164,11 @@ onMounted(async () => {
 
 <p
   v-else-if="!saved.length && !pageError"
-  class="text-muted"
+  class="text-muted text-center"
   data-testid="shortlist-empty"
 >
   Nothing shortlisted yet.
+  <br />
   <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
 </p>
 <ul
