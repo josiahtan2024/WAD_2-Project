@@ -8,7 +8,7 @@ const currentUserId = computed(() => {
   if (!user) {return 0}
   return user.id
 })
-  
+
 
 
 // planned_modules.start_time / end_time are TIME columns ("10:00:00"); the grid works in seconds since midnight (36000)

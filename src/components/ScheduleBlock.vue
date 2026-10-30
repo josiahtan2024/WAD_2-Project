@@ -1,6 +1,6 @@
 <script setup>
 import { computed,ref } from 'vue';
-import { useScheduleStore } from '../stores/schedule';
+import { useScheduleStore } from '@/stores/schedule';
 const props = defineProps({'modules':Array,
 'timeSlots':Array,
 'weekDays':Array,
@@ -58,8 +58,7 @@ function selectLesson(day,time){
         startTime.value = time
         selectedDay.value = day;
         
-      } else if (startTime.value && selectedDay.value == day){ 
-        
+      }else if (startTime.value && selectedDay.value == day && time > startTime.value){ 
         endTime.value = time;
       }
       
@@ -106,32 +105,33 @@ function isBlocked(day,time){
 <template>
   <div data-testid="schedule-block">
     <template v-if="startTime > 0 && endTime > 0">
-      <div class="schedule-selection rounded-4 p-3 my-3">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-          <div>
-            <h2 class="h6 fw-bold mb-1">Current Selection</h2>
-            <p class="mb-0"><strong>{{ props.selectedModule }}</strong><span class="mx-2 text-secondary">·</span>{{ selectedDay }}s, {{ timeString(startTime) }}–{{ timeString(endTime) }}</p>
-          </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" type="button" @click="isEditMode()?clearSelection():$event.stopPropagation()">Clear</button>
-            <button class="btn btn-primary" type="button" @click="isEditMode()?addSelection(selectedDay,startTime,endTime,props.selectedModule):$event.stopPropagation()">Add to Schedule</button>
-          </div>
+      <div class="row mx-auto p-3 justify-content-around align-items-center card shadow-sm rounded-4 mb-4">
+        <div class="col-12 text-center">
+          <h4>Current selection</h4>
+        </div>
+        <div class="d-flex justify-content-between text-bg-dark opacity-50 p-2">
+          <span>{{ props.selectedModule }} </span>
+          <span class="fw-semibold text-end">{{ selectedDay }}s {{ timeString(startTime) }} - {{ timeString(endTime) }}</span>
+        </div>
+        <div class="col-4 btn-group mt-3">
+          <button class=" btn btn-outline-danger" @click="isEditMode()?clearSelection():$event.stopPropagation()">Clear</button>
+          <button class="btn btn-outline-success" @click="isEditMode()?addSelection(selectedDay,startTime,endTime,props.selectedModule):$event.stopPropagation()">Add</button>
         </div>
       </div>
     </template>
     <template v-if="noModuleError">
-      <div class="alert alert-warning rounded-4 text-center" role="status">
+      <div class="alert opacity-75 text-center">
         No Module selected, please select a Module.
       </div>
     </template>
-    <div class="row justify-content-center">
-      <div class="col-12 table-responsive schedule-table-wrap rounded-4 p-2 p-md-3">
-        <table class="table table-bordered align-middle mb-0 schedule-table">
+    <div>
+      <div class="table-responsive">
+        <table class="table border">
           <thead>
             <tr class="text-center">
-              <th class="px-3 schedule-time-heading" scope="col">Time</th>
+              <th>&nbsp;</th>
               <template v-for="day in props.weekDays" :key="day">
-                <th class="px-3" scope="col">{{ day }}</th>
+                <th>{{ day }}</th>
               </template>
             </tr>
           </thead>
@@ -140,7 +140,7 @@ function isBlocked(day,time){
               <tr>
                 <th class="timing" scope="row">{{ timeString(Number(time)) }}</th>
                 <template v-for="day in props.weekDays" :key="day">
-                  <td class="slot text-center fw-semibold" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'slot-selected':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}" :role="isEditMode() ? 'button' : undefined" :tabindex="isEditMode() ? 0 : undefined" :aria-label="`${day} ${timeString(Number(time))}${isBlocked(day,time).blocked ? ', occupied' : ', available'}`" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" @keydown.enter.prevent="isEditMode() && selectLesson(day,time)" @keydown.space.prevent="isEditMode() && selectLesson(day,time)">
+                  <td class="slot text-center text-light fw-bold" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" style="text-wrap-style: balance;" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'block':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}">
                    {{ isBlocked(day,time).mod }}
                   </td>
                 </template>
@@ -155,34 +155,11 @@ function isBlocked(day,time){
 
 
 <style scoped>
-.schedule-selection {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
-}
-.schedule-table-wrap {
-  background: #fff;
-  border: 1px solid #e8eaf0;
-}
-.schedule-table {
-  min-width: 44rem;
-  border-color: #e8eaf0;
-}
-.schedule-table thead th {
-  background: #f8f9fc;
-  white-space: nowrap;
-}
-tbody#window .slot {
-  min-width: 5rem;
-  height: 2.25rem;
-  background: #fff;
-  cursor: crosshair;
-  transition: background-color .15s ease;
-}
-tbody#window .slot:hover,
-tbody#window .slot:focus-visible {
-  background-color: #e8f0ff;
-  outline: 2px solid #0d6efd;
-  outline-offset: -2px;
+/* Optional styling can go here */
+
+tbody#window .slot:hover{
+  background-color: #0669fd3d
+;
 }
 tbody#window .slot-selected,
 tbody#window .slot-selected:hover {
@@ -198,11 +175,12 @@ tbody .timing{
   color: #495057;
   font-weight: 600;
 }
-
+.block{
+  background-color:#05af05ac
+}
 .blocked{
-  background-color: #e9ecef !important;
-  color: #495057;
-  cursor: not-allowed !important;
+  background-color: #5c738ec2;
+  border: none;
 }
 .cross{
   cursor: pointer;

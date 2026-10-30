@@ -108,7 +108,9 @@ const cartGroups = computed(() =>
 
 // Cart changes go to Supabase; a failure is shown from cart.error, so it is not re-thrown here
 async function addToCart(mapping) {
-  try { await cart.add(mapping) } catch { /* shown via cart.error */ }
+  try { 
+    if (cart.items.length==cart.maxLimit){alert(`You have reached the limit of ${cart.maxLimit} modules for exchange. Please remove current modules from cart to add.`); return;}
+    await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
 async function removeFromCart(universityModuleId) {
   try { await cart.remove(universityModuleId) } catch { /* shown via cart.error */ }
