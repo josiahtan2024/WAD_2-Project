@@ -8,6 +8,7 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
+import ModuleTable from '@/components/ModuleTable.vue'
 import BudgetNotice from '@/components/BudgetNotice.vue'
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
@@ -67,10 +68,10 @@ const moduleReferenceOpen = computed(() =>
 const hasSchedule = ref(false);
 const editSchedule = ref(false);
 const showGrid = ref(false)
+const showFloatingTable = ref(false);
 const changesMade = ref(false)
 const instructionsInsert = ['Select a Module','Select the Start Time and End Time on the Grid',"Click 'Add' and repeat for next module"];
-const instructionsDelete = ['Select your Module(s)',"Click 'Delete from Schedule'","If updating module timings: Repeat Steps 1 and 2 under Insert/Update Modules"];
-
+const instructionsDelete = ['Select your Module(s)',"Click 'Delete from Schedule'","If updating module timings: Perform steps under 'To Insert/Update Modules' after deletions"];
 async function save() {
   saving.value = true
   saved.value = false
@@ -83,8 +84,9 @@ async function save() {
     saved.value = !schedule.error
     if(!schedule.error){
       changesMade.value = false; // hide the bar
-      hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0 || schedule.studentTimeTableId !== null;
-    }
+      hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0;
+      await loadTimetable(); //reload the whole view to display updated timetable
+    } 
   } catch (e) {
     schedule.error = e.message
   } finally {
@@ -168,19 +170,15 @@ function addCartModules(){
   })))
 }
 async function discardChange(){
-  discarding.value = true
-  schedule.error = null
-  try {
-    await schedule.load(universityId.value, false, periodId.value)
-    if (schedule.error) return
-    hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0 || schedule.studentTimeTableId !== null
-    changesMade.value = false
-    selectedModule.value = ''
-    deleteModules.value = []
-    scheduleBlockKey.value += 1
-  } finally {
-    discarding.value = false
-  }
+  await schedule.load(universityId.value,false,periodId.value) // reset the currentSchedule record
+  discarding.value=true; // show discarding text
+  
+  setTimeout(()=>{
+    changesMade.value=false;
+    discarding.value=false; // revert to original button form
+  },700);
+  
+
 }
 
 function formatDate(date){
@@ -281,37 +279,21 @@ onMounted(async () => {
 
 <template>
   <section data-testid="schedule-page">
-    <BudgetNotice
-      :data-testid="schedule.error ? 'schedule-error' : scheduleDeleted ? 'schedule-deleted' : saved ? 'schedule-saved' : undefined"
-      :error-message="schedule.error || ''"
-      :success-message="scheduleDeleted ? 'Schedule for this exchange period was deleted.' : saved ? 'Schedule saved.' : ''"
-      @dismiss-error="schedule.error = null"
-      @dismiss-success="saved = false; scheduleDeleted = false"
-    />
-    <DeleteConfirmDialog
-      :open="deleteScheduleOpen"
-      :title="`Delete ${selectedPeriodName} schedule for ${universityOptions.find((university) => university.id === universityId)?.name || 'this university'}?`"
-      action-label="Delete Schedule"
-      working-label="Deleting schedule..."
-      :working="deletingSchedule"
-      data-testid="schedule-delete-confirm"
-      @cancel="deleteScheduleOpen = false"
-      @confirm="deleteSelectedSchedule"
-    >
-      <template #description>
-        This permanently deletes the timetable and its modules for the selected exchange period. Schedules for other exchange periods will remain.
-        <span v-if="changesMade"> Any unsaved changes to the current timetable will also be discarded.</span>
-      </template>
-    </DeleteConfirmDialog>
-    <div class="schedule-header mb-3" :class="{ 'schedule-header-sticky': changesMade }">
-      <h1 class="page-title h3 fw-bold text-center mb-0">Weekly Schedule: {{ universityOptions.find((university) => university.id === universityId)?.name || "" }}</h1>
-      <div v-if="changesMade" class="d-flex justify-content-end flex-wrap gap-2 mt-3">
-        <button class="btn btn-outline-danger" :disabled="discarding" data-testid="schedule-discard-btn" @click="discardChange()">
-          {{ discarding ? 'Discarding...' : 'Discard Changes' }}
-        </button>
-        <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save()">
-          {{ saving ? 'Saving...' : 'Save Schedule' }}
-        </button>
+    <div class="card top-0 z-3" :class="{'position-sticky':changesMade}">
+ <div class="card-body">
+        <div class="d-flex flex-column align-items-end-lg align-items-center-xs" :class="{'justify-content-center':!changesMade,'justify-content-between':changesMade}">
+          <h1 class="h3 fw-bold text-center mb-3">Weekly Schedule</h1><h1 :class="{'d-block':changesMade}" class="text-primary h3 fw-bold text-center mb-3">{{ uni.scheduleUniName?`${uni.scheduleUniName}`:"" }}</h1>
+          <template v-if="changesMade">
+          <div class="changes-pill btn-group w-lg-50 mx-auto" role="group">
+            <button class="btn btn-danger" :disabled="discarding" data-testid="schedule-save-btn" @click="discardChange()">
+              {{ discarding ? 'Discarding..' : 'Discard Changes' }}
+            </button>
+            <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save()">
+              {{ saving ? 'Saving...' : 'Save Schedule' }}
+            </button>
+          </div>
+          </template>
+        </div>
       </div>
     </div>
     <div v-if="schedule.loading" class="text-muted py-3" role="status" data-testid="schedule-loading">Loading schedule...</div>
@@ -348,169 +330,158 @@ onMounted(async () => {
         </p>
     </div>
 
-    <p v-if="universityId && !universityOptions.some((university) => university.id === universityId)" class="text-muted" data-testid="schedule-university-unavailable">
-      This university is hidden from students and is unavailable for scheduling.
-    </p>
-    <template v-if="universityId && universityOptions.some((university) => university.id === universityId)">
+  <template v-if="universityId">
     <div class="container-fluid">
-  
-
-    <template v-if="hasSchedule">
-      <div class="row justify-content-center">
-
-        <div class="btn-group w-100 my-3 schedule-mode-toggle" role="group" aria-label="Schedule mode">
-          <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
-          <label class="btn btn-outline-primary" for="view">View Schedule</label>
-          
-          <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
-          <label class="btn btn-outline-primary" for="edit">Edit Schedule</label>
-        
-        </div>
-      </div>
-      
-     </template>
-    <template v-else-if="!hasSchedule && !showGrid">
-        <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" role="alert">
-          <div class="text-center p-1">
-            You have no schedules planned for this university.
-          </div>
-          <button type="button" class="btn btn-outline-primary flex-shrink-0" id="create-schedule-btn" @click="openScheduleBlock()">
-            {{editSchedule?'Loading..':'New Schedule'}}
-          </button>
-          
-        </div>
-    </template>
-
-    <div class="row g-3 align-items-start">
-    <div v-if="showGrid && !hasSchedule" class="col-12 col-lg-4 schedule-module-controls">
-
-      <InstructionAlert action="Insert" color="info"  :instructions="instructionsInsert" @select-mod="onSelectMod()" id="instructionSelect">
-        <template v-slot:form>
+      <div class="row">
+        <template v-if="hasSchedule">
           <div class="row justify-content-center">
-            
-              <template v-for="mod in schedule.moduleData" :key="mod.id">
-                <div class="col-6 col-sm-4">
-                  
-                  <input type="radio" :value="mod.module_name" class = 'btn-check' :id="`${mod.id}-1`" v-model="selectedModule">
-                  <label class="btn btn-outline-primary w-100 px-1 module-select-chip" :for="`${mod.id}-1`">{{ mod.module_code }}
-                  </label>
-                </div>
-              </template>
-              <!-- modules from the cart appear here, so the empty message and the link to add more sit here too -->
-              <p v-if="!schedule.moduleData.length" class="text-muted text-center m-0" data-testid="schedule-no-modules">
-                No modules in your cart for this university yet. Add some to start planning.
-              </p>
-              <div class="col-12 text-center mt-2">
-                <RouterLink :to="{ name: 'courses', query: { university: universityId } }" data-testid="schedule-add-courses-link">
-                  Add courses from Course search
-                </RouterLink>
-              </div>
-          </div>
-        </template>
 
-      </InstructionAlert>
-    </div>
-    <div v-if="editSchedule && hasSchedule" class="col-12 col-lg-4 schedule-module-controls">
-      <InstructionAlert action="Delete"  color="danger"  :instructions="instructionsDelete" id="instructionDelete">
-        <template v-slot:form>
-          <div class="row justify-content-center mb-1">
-              <template v-for="mod in schedule.moduleData" :key="mod.id">
-                <div class="col-6 col-lg-6 text-center align-items-center">
-                  <input type="checkbox" :value="mod.module_name" class="btn-check" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
-                  <label class="btn btn-sm btn-outline-danger w-100 module-delete-chip" :for="`${mod.id}-2`">{{ mod.module_code }}</label>
-                </div>
-              </template>
-            
-          </div>
-          <div class="row justify-content-center mt-3">
-            <div class="col-12">
-              <button class="btn btn-outline-danger w-100 py-2" type="button" :disabled="deleteStatus || !deleteModules.length" @click="removeModules()">{{ !deleteStatus ? 'Delete from Schedule' : 'Deleting…' }}</button>
-            </div>
-          </div>
-
-        </template>
-      </InstructionAlert>
-      <InstructionAlert action="Insert/Update" :modules="schedule.moduleData" color="info"  :instructions="instructionsInsert" id="instructionSelect" >
-          <template v-slot:form>
-            <div class="row justify-content-center">
+            <div class="btn-group w-50 my-3" role="group" aria-label="Basic radio toggle button group">
+              <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
+              <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
               
-                <template v-for="mod in schedule.moduleData" :key="mod.id">
-                  <div class="col-6 col-sm-4">
-                    
-                    <input type="radio" :value="mod.module_name" class = 'btn-check' :id="mod.id" v-model="selectedModule">
-                    <label class="btn btn-outline-primary w-100 px-1 module-select-chip" :for="mod.id">{{ mod.module_code }}
-                    </label>
-                  </div>
-                </template>
-                <p v-if="!schedule.moduleData.length" class="text-muted text-center m-0" data-testid="schedule-no-modules">
-                  No modules in your cart for this university yet. Add some to start planning.
-                </p>
-                <div class="col-12 text-center mt-2">
-                  <RouterLink :to="{ name: 'courses', query: { university: universityId } }" data-testid="schedule-add-courses-link">
-                    Add courses from Course search
-                  </RouterLink>
-                </div>
+              <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
+              <label class="btn btn-outline-dark w-20   " for="edit">Edit Schedule</label>
+            
+            </div>
+          </div>
+          
+        </template>
+        <template v-else-if="!hasSchedule && !showGrid">
+            <div class="alert row justify-content-between align-items-center w-75 mx-auto" role="alert">
+              <div class="col-md-8 text-center p-1">
+                You have no schedules planned for this university. Click on <span class="text-primary fw-bold">'New Schedule'</span> to start.
+              </div>
+              <div class="btn btn-outline-primary col-md-3" id="create-schedule-btn" @click="openScheduleBlock()">
+                
+                {{editSchedule?'Loading..':'New Schedule'}}
+              </div>
+              
             </div>
         </template>
-      </InstructionAlert>
-      <button
-        v-if="hasSchedule || schedule.savedPeriodIds.includes(periodId)"
-        class="btn btn-outline-danger w-100 mb-3"
-        type="button"
-        :disabled="deletingSchedule || saving"
-        data-testid="schedule-delete-btn"
-        @click="deleteScheduleOpen = true"
-      >
-        Delete This Schedule
-      </button>
-    </div>
 
-    <div v-if="showGrid || hasSchedule" class="col-12" :class="{ 'col-lg-8': (showGrid && !hasSchedule) || (editSchedule && hasSchedule) }">
-      <ScheduleBlock
-        :key="scheduleBlockKey"
-        :modules="schedule.moduleData"
-        :time-slots="timeSlots"
-        :week-days="weekDays"
-        :current-schedule="schedule.currentSchedule"
-        :selected-module="selectedModule"
-        :mode="hasSchedule && !editSchedule ? 'view' : 'edit'"
-        @insertModule="changesMade = true"
-      />
-    </div>
-    </div>
+        <template>
+          <button class="btn btn-danger" data-testid="schedule-save-btn" @click="discardChange">
+            Discard Changes
+          </button>
+          <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save">
+            {{ saving ? 'Saving...' : 'Save schedule' }}
+          </button>
+        </template>
+        <template v-if="showGrid">
+          <div class="col-md-6">
+            <InstructionAlert action="Insert" :instructions="instructionsInsert" @select-mod="onSelectMod()" id="instructionSelect" :modules="schedule.moduleData">
+              <template v-slot:form>
+                <div class="row justify-content-center">
+                  
+                    <template v-for="mod in schedule.moduleData" :key="mod.id">
+                      <div class="col-4 my-1">
+                        
+                        <input type="radio" :value="mod.module_name" class = 'btn-check' :id="`${mod.id}-1`" v-model="selectedModule">
+                        <label class= 'btn btn-outline-dark w-100 px-1' :for="`${mod.id}-1`" >{{ mod.module_code }}
+                        </label>
+                      </div>
+                    </template>
+                    <!-- modules from the cart appear here, so the empty message and the link to add more sit here too -->
+                    <p v-if="!schedule.moduleData.length" class="text-muted text-center m-0 card-footer" data-testid="schedule-no-modules">
+                      No modules in your cart for this university yet. Add some to start planning.
+                    </p>
+                    <div class="col-12 text-center mt-2">
+                      <RouterLink :to="{ name: 'courses', query: { university: universityId } }" data-testid="schedule-add-courses-link">
+                        Add courses from Course search
+                      </RouterLink>
+                    </div>
+                </div>
+              </template>
 
-    </div>
-    <div
-      class="module-reference"
-      @mouseenter="moduleReferenceHovered = true"
-      @mouseleave="moduleReferenceHovered = false"
-      @focusin="moduleReferenceFocused = true"
-      @focusout="closeModuleReferenceOnFocusOut"
-    >
-      <button
-        id="module-reference-trigger"
-        class="btn btn-outline-primary rounded-pill module-reference-trigger"
-        type="button"
-        :aria-expanded="moduleReferenceOpen"
-        aria-controls="mod-data"
-        @click="toggleModuleReference"
-      >
-        <i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>
-        <span>Module Reference</span>
-      </button>
-    <div v-if="moduleReferenceOpen" class="module-reference-panel" id="mod-data" role="region" aria-labelledby="module-reference-trigger">
-      <div class="p-3">
-        <h2 class="h6 fw-bold mb-2">Modules included in this schedule</h2>
-        <div role="list">
-          <div v-for="mod in schedule.moduleData" :key="mod.id" class="module-reference-row" role="listitem">
-            <strong class="module-code">{{ mod.module_code }}</strong>
-            <span class="module-name">{{ mod.module_name }}</span>
+            </InstructionAlert>
           </div>
-        </div>
+          <div class="col-md-6">
+            <ScheduleBlock :modules="schedule.moduleData" :time-slots="timeSlots" :week-days="weekDays" :selected-module="selectedModule" mode="edit" @insertModule="changesMade=true"></ScheduleBlock>
+          </div>
+
+        </template>
+        <template v-else-if="editSchedule && hasSchedule">
+          <div class="col-md-6">
+            <ModuleTable></ModuleTable>
+            <InstructionAlert action="Delete" :instructions="instructionsDelete" id="instructionDelete">
+              <template v-slot:form>
+                <div class="d-flex mx-auto">
+                    <template v-for="mod in schedule.moduleData" :key="mod.id">
+                      <div class="text-center align-items-center p-1">
+                        <input type="checkbox" :value="mod.module_name" class="form-check-input" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
+                        
+                        <label class= 'px-1 form-check-label' :for="`${mod.id}-2`"  >{{ mod.module_code }}</label>
+                      </div>
+                    </template>
+                  
+                </div>
+                <div class="row justify-content-center mt-3">
+                  <div class="col-6 col-md-4">
+                    <button class="btn btn-outline-danger w-100" @click="removeModules()"> {{ !deleteStatus?"Delete from Schedule":"Deleting.."  }}</button>
+                  </div>
+                </div>
+
+              </template>
+            </InstructionAlert>
+            <InstructionAlert action="Insert/Update" :modules="schedule.moduleData"  :instructions="instructionsInsert" id="instructionSelect" >
+                <template v-slot:form>
+                  <div class="row justify-content-center">
+                    
+                      <template v-for="mod in schedule.moduleData" :key="mod.id">
+                        <div class="col-4 my-1">
+                          
+                          <input type="radio" :value="mod.module_name" class = 'btn-check' :id="mod.id" v-model="selectedModule">
+                          <label class= 'btn btn-outline-dark w-100 px-1 text-break' :for="mod.id">{{ mod.module_code }}
+                          </label>
+                        </div>
+                      </template>
+                      <p v-if="!schedule.moduleData.length" class="text-muted text-center m-0" data-testid="schedule-no-modules">
+                        No modules in your cart for this university yet. Add some to start planning.
+                      </p>
+                      <div class="col-12 text-center mt-2">
+                        <RouterLink :to="{ name: 'courses', query: { university: universityId } }" data-testid="schedule-add-courses-link">
+                          Add courses from Course search
+                        </RouterLink>
+                      </div>
+                  </div>
+              </template>
+            </InstructionAlert>
+          </div>
+          <div class="col-md-6 p-0">
+            <ScheduleBlock :modules="schedule.moduleData" :time-slots="timeSlots" :week-days="weekDays" :current-schedule="schedule.currentSchedule" :selected-module="selectedModule" mode="edit" @insertModule="changesMade=true"></ScheduleBlock>
+          </div>
+        </template>
+
+        <template v-else-if="!editSchedule && hasSchedule ">
+          <div class="col-md-6">
+            <ModuleTable></ModuleTable>
+          </div>
+          <div class="col-md-6 p-0">
+            <ScheduleBlock :modules="schedule.moduleData" :time-slots="timeSlots" :week-days="weekDays" :current-schedule="schedule.currentSchedule" mode="view"></ScheduleBlock>
+          </div>
+        </template>
       </div>
     </div>
+    <div class="module-pill btn rounded-pill btn-outline-info text-end d-block d-md-none"  @click="showFloatingTable=!showFloatingTable">
+      <i class="bi bi-info-circle-fill p-1"></i>
+
+      <span>Module Reference</span>
     </div>
-    </template>
+    <!-- `collapse` lets Bootstrap animate both opening and closing -->
+    <div class="module-table d-block d-md-none"  id="mod-data">
+      <div class="p-3" :hidden="showFloatingTable">
+      <table class="table table-border mb-0">
+        
+          <tr v-for="mod in schedule.moduleData" :key="mod.id" class="border-bottom d-flex justify-content-between">
+            <td class="module-name text-secondary">{{ mod.module_name }}</td>
+            <td class="fw-semibold module-code text-end">{{mod.module_code}}</td>
+          </tr>
+        
+      </table>
+      </div>
+    </div>
+  </template>
 
   </section>
 </template>
@@ -552,8 +523,17 @@ onMounted(async () => {
 .module-reference {
   position: fixed;
   right:2em;
-  bottom: 1rem;
-  z-index: 1045;
+  bottom: 2rem;
+  width: fit-content;
+  padding: 1rem;
+}
+/* no fixed height on the panel: Bootstrap's collapse animates its height when opening and closing */
+.module-table{
+  position: fixed;
+  right: 2em;
+  bottom:6rem;
+  padding: 0; /* padding lives on the inner wrapper so the panel can shrink fully to 0 */
+  max-width: min(26rem, calc(100vw - 4em));
 }
 .module-reference-panel{
   position: absolute;
