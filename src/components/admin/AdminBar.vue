@@ -44,16 +44,22 @@ async function setPublished(published) {
         <span v-if="missing.length"> Still missing: {{ missing.join(', ') }}.</span>
         <span v-else> Everything is filled in, so it is ready to publish.</span>
       </div>
-      <button type="button" class="btn btn-warning btn-sm" :disabled="admin.saving" data-testid="admin-publish" @click="setPublished(true)">Publish</button>
     </div>
 
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-      <span class="badge text-bg-warning me-auto">Staff</span>
       <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-edit-details" @click="emit('edit', 'details')">
         <i class="bi bi-pencil" aria-hidden="true"></i> Edit Details
       </button>
-      <button v-if="!hidden" type="button" class="btn btn-outline-secondary btn-sm" :disabled="admin.saving" data-testid="admin-hide" @click="setPublished(false)">
-        <i class="bi bi-eye-slash" aria-hidden="true"></i> Hide From Students
+      <button
+        type="button"
+        class="btn btn-sm"
+        :class="hidden ? 'admin-publish-btn' : 'btn-outline-secondary'"
+        :disabled="admin.saving"
+        :data-testid="hidden ? 'admin-publish' : 'admin-hide'"
+        @click="setPublished(hidden)"
+      >
+        <i :class="hidden ? 'bi bi-eye' : 'bi bi-eye-slash'" aria-hidden="true"></i>
+        {{ hidden ? 'Publish' : 'Hide From Students' }}
       </button>
       <button
         type="button"
@@ -69,3 +75,25 @@ async function setPublished(published) {
     <div v-if="error" class="text-danger small text-end mt-1" role="alert" data-testid="admin-bar-error">{{ error }}</div>
   </div>
 </template>
+
+<style scoped>
+.admin-publish-btn {
+  color: #d39e00;
+  border-color: #d39e00;
+  background-color: #fff;
+}
+
+.admin-publish-btn:hover,
+.admin-publish-btn:active {
+  color: #fff;
+  border-color: #e0a800;
+  background-color: #e0a800;
+}
+
+.admin-publish-btn:focus-visible {
+  color: #fff;
+  border-color: #e0a800;
+  background-color: #e0a800;
+  box-shadow: 0 0 0 0.2rem rgba(211, 158, 0, 0.25);
+}
+</style>

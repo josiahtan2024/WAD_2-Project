@@ -4,7 +4,7 @@
       <div class="row align-items-center g-4 g-xl-5">
         <div class="col-12 col-lg-7">
           <p class="text-uppercase fw-bold small mb-3 about-eyebrow"><span class="about-eyebrow-mark"></span> About SMUXchange</p>
-          <h1 class="display-5 fw-bold mb-3">Your next chapter starts with a good plan.</h1>
+          <h1 class="page-title display-5 fw-bold mb-3">Your next chapter starts with a good plan.</h1>
           <p class="lead mb-4 about-intro">
             Choosing where to study abroad is exciting. Bringing all the important details together
             should be easier. SMUXchange gives SMU students one place to explore options and plan ahead.

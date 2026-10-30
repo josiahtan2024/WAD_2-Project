@@ -24,6 +24,7 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
           <div class="flex-grow-1">
             <h2 class="h6 fw-bold mb-1">Something Went Wrong</h2>
             <p class="mb-0">{{ errorMessage }}</p>
+            <slot name="actions" />
           </div>
           <button type="button" class="btn-close" aria-label="Dismiss error message" @click="emit('dismiss-error')"></button>
         </div>
@@ -39,6 +40,7 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
           <div class="flex-grow-1">
             <h2 class="h6 fw-bold mb-1">Successfully Completed</h2>
             <p class="mb-0">{{ successMessage }}</p>
+            <slot name="actions" />
           </div>
           <button type="button" class="btn-close" aria-label="Dismiss success message" @click="emit('dismiss-success')"></button>
         </div>

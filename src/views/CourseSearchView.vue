@@ -5,6 +5,7 @@ import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useAuthStore } from '@/stores/auth'
 import { useShortlistStore } from '@/stores/shortlist'
+import BudgetNotice from '@/components/BudgetNotice.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,7 +35,10 @@ const hasActiveFilters = computed(() =>
 const compareText = (a, b) => (a ?? '').localeCompare(b ?? '', 'en', { sensitivity: 'base' })
 const matches = (text, query) => (text ?? '').toLowerCase().includes(query.trim().toLowerCase())
 
-const universities = computed(() => [...uni.items].sort((a, b) => compareText(a.name, b.name)))
+const universities = computed(() => [...uni.items]
+  .filter((university) => auth.adminActive || university.published !== false)
+  .sort((a, b) => compareText(a.name, b.name)))
+const visibleUniversityIds = computed(() => new Set(universities.value.map((university) => university.id)))
 const shortlistedUniversities = computed(() =>
   universities.value.filter((university) => shortlist.items.some((item) => item.university_id === university.id))
 )
@@ -47,9 +51,11 @@ const schools = computed(() => [...new Set(uni.modules.map((m) => m.school).filt
 
 // Mappings limited to the chosen university (or all universities)
 const mappingsInScope = computed(() =>
-  universityId.value === ''
-    ? uni.allMappings
-    : uni.allMappings.filter((m) => m.university_module?.university_id === universityId.value)
+  uni.allMappings.filter((mapping) => {
+    const mappedUniversityId = mapping.university_module?.university_id
+    if (!visibleUniversityIds.value.has(mappedUniversityId)) return false
+    return universityId.value === '' || mappedUniversityId === universityId.value
+  })
 )
 
 // Number of mapped foreign courses for each SMU course area id
@@ -96,6 +102,7 @@ const areaModuleCount = computed(() => areaModuleGroups.value.reduce((n, g) => n
 const cartGroups = computed(() =>
   Object.entries(cart.byUniversity)
     .map(([id, items]) => ({ universityId: Number(id), name: universityName(id), items }))
+    .filter((group) => visibleUniversityIds.value.has(group.universityId))
     .sort((a, b) => compareText(a.name, b.name))
 )
 
@@ -152,17 +159,20 @@ onMounted(async () => {
 
 <template>
   <section data-testid="course-search-page">
+    <BudgetNotice
+      :data-testid="pageError ? 'course-search-error' : undefined"
+      :error-message="pageError"
+      @dismiss-error="pageError = ''"
+    />
     <div class="mb-3 text-center">
-      <h1 class="h3 fw-bold mb-1">Course Search</h1>
+      <h1 class="page-title h3 fw-bold mb-1">Course Search</h1>
       <p class="text-muted mb-0">
-        Pick an SMU Course Area to See the Partner University Courses Mapped to It,<br />Then Add the Ones You Want to Your Cart for Scheduling.
+        Pick an SMU Course Area to See the Partner University Courses Mapped to It,<br class="d-none d-md-block" /> Then Add the Ones You Want to Your Cart for Scheduling.
       </p>
     </div>
 
-    <div v-if="pageError" class="alert alert-danger" data-testid="course-search-error">{{ pageError }}</div>
-
     <!-- Filters -->
-    <div class="course-filters rounded-4 p-3 p-md-4 mb-4">
+    <div class="filter-panel mb-4">
       <div class="row g-3 align-items-end">
         <div class="col-12 col-md-4">
           <label for="course-university" class="form-label fw-semibold">Partner University</label>
@@ -388,11 +398,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.course-filters {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
-}
-
 .area-list,
 .module-list {
   max-height: 65vh;
