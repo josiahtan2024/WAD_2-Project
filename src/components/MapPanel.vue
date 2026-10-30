@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-// Leaflet (https://leafletjs.com), BSD-2. Map tiles (c) OpenStreetMap contributors.
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 
 const props = defineProps({
   universities: {
@@ -14,47 +16,66 @@ const props = defineProps({
     default: null,
   },
 })
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'reset'])
 
 const el = ref(null)
 let map
-let layer
+let clusterGroup
 
 const markers = new Map()
+const DEFAULT_CENTER = [20, 0]
+const DEFAULT_ZOOM = 1.5
+
+function resetMap() {
+  if (!map) return
+
+  map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, {
+    animate: true,
+    duration: 1.4,
+  })
+
+  emit('reset')
+}
+
+function createUniversityIcon(isSelected = false) {
+  return L.divIcon({
+    className: 'university-marker-wrapper',
+    html: `<div class="university-marker ${isSelected ? 'selected' : ''}"></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  })
+}
 
 function updateSelectedMarker() {
   markers.forEach((marker, id) => {
-    const isSelected = id === props.selectedId
+    const isSelected = String(id) === String(props.selectedId)
 
-    marker.setStyle({
-      color: isSelected ? '#ffffff' : '#1f4e9c',
-      weight: isSelected ? 3 : 2,
-      opacity: 1,
-      fillColor: isSelected ? '#7dd3fc' : '#1f4e9c',
-      fillOpacity: isSelected ? 1 : 0.8,
-    })
-
-    marker.setRadius(isSelected ? 11 : 9)
+    marker.setIcon(createUniversityIcon(isSelected))
+    marker.setZIndexOffset(isSelected ? 1000 : 0)
   })
-  markers.get(props.selectedId)?.bringToFront()
 }
 
 function focusSelectedUniversity() {
   if (!map || props.selectedId == null) return
 
-  const marker = markers.get(props.selectedId)
+  const marker = markers.get(String(props.selectedId))
   if (!marker) return
 
-  map.flyTo(marker.getLatLng(), 15, {
-    animate: true,
-    duration: 1.5,
+  const latLng = marker.getLatLng()
+
+  // Zoom in to the selected university, even if it is clustered.
+  clusterGroup.zoomToShowLayer(marker, () => {
+    map.flyTo(latLng, 15, {
+      animate: true,
+      duration: 1.8,
+    })
   })
 }
 
 function draw() {
-  if (!map || !layer) return
+  if (!map || !clusterGroup) return
 
-  layer.clearLayers()
+  clusterGroup.clearLayers()
   markers.clear()
 
   props.universities.forEach((u) => {
@@ -77,34 +98,58 @@ function draw() {
     const tooltip = document.createElement('span')
     tooltip.textContent = u.name ?? ''
 
-    const marker = L.circleMarker([lat, lng], {
-  radius: 9,
-  color: '#1f4e9c',
-  weight: 2,
-  fillColor: '#1f4e9c',
-  fillOpacity: 0.8,
-})
-  .on('click', () => emit('select', u))
-  .bindTooltip(tooltip)
-  .addTo(layer)
+    const marker = L.marker([lat, lng], {
+      icon: createUniversityIcon(
+        String(u.id) === String(props.selectedId)
+      ),
+    })
+      .bindTooltip(tooltip)
+      .on('click', () => emit('select', u))
 
-markers.set(u.id, marker)
-
+    clusterGroup.addLayer(marker)
+    markers.set(String(u.id), marker)
   })
 
   updateSelectedMarker()
-  focusSelectedUniversity()
 }
 
 onMounted(() => {
-  map = L.map(el.value).setView([30, 20], 2)
+  map = L.map(el.value, {
+    minZoom: 1,
+    worldCopyJump: true,
+  }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map)
-  layer = L.layerGroup().addTo(map)
+
+  clusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 70,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    spiderfyOnMaxZoom: true,
+    animate: true,
+  })
+
+  map.addLayer(clusterGroup)
+
   draw()
+
+  // Only focus if a selectedId is explicitly passed on load, otherwise keep the default reset view
+  if (props.selectedId != null) {
+    focusSelectedUniversity()
+  } else {
+    resetMap()
+  }
 })
-watch(() => props.universities, draw)
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+})
+
 watch(
   () => props.selectedId,
   () => {
@@ -112,13 +157,107 @@ watch(
     focusSelectedUniversity()
   }
 )
-onBeforeUnmount(() => map?.remove())
+
+watch(
+  () => props.universities,
+  draw,
+  { deep: true }
+)
 </script>
 
 <template>
-  <div ref="el" class="map-panel rounded" data-testid="map-panel"></div>
+  <div class="map-container">
+    <div ref="el" class="map-panel rounded" data-testid="map-panel"></div>
+
+    <button
+      type="button"
+      class="map-reset-button"
+      @click="resetMap"
+      aria-label="Reset map to world view"
+      title="Reset map"
+    >
+      <i class="bi bi-globe"></i>
+      Reset map
+    </button>
+  </div>
 </template>
 
 <style scoped>
-.map-panel { height: 420px; width: 100%; }
+.map-container {
+  position: relative;
+  width: 100%;
+}
+
+.map-panel {
+  height: 420px;
+  width: 100%;
+}
+
+:deep(.university-marker-wrapper) {
+  background: transparent;
+  border: none;
+}
+
+:deep(.university-marker) {
+  width: 18px;
+  height: 18px;
+  background: #1f4e9c;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+}
+
+:deep(.university-marker.selected) {
+  width: 22px;
+  height: 22px;
+  background: #7dd3fc;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 3px #1f4e9c;
+}
+
+:deep(.marker-cluster) {
+  background-clip: padding-box;
+  border-radius: 20px;
+}
+
+:deep(.marker-cluster-small),
+:deep(.marker-cluster-medium),
+:deep(.marker-cluster-large) {
+  background-color: rgba(31, 78, 156, 0.3);
+}
+
+:deep(.marker-cluster-small div),
+:deep(.marker-cluster-medium div),
+:deep(.marker-cluster-large div) {
+  background-color: #1f4e9c;
+  color: white;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.map-reset-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  color: #1f4e9c;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.map-reset-button:hover {
+  background: #f0f5ff;
+}
 </style>

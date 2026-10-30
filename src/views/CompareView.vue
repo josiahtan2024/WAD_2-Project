@@ -320,7 +320,10 @@ async function createMap(idx) {
 
     element.innerHTML = ''
     const { lat, lon } = uni.location.coordinates
-    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
+    const map = L.map(element, { 
+        scrollWheelZoom: false,
+        dragging: !L.Browser.mobile 
+    }).setView([lat, lon], 14)
 
     map.on('click', () => {
         const googleMapsUrl =
@@ -329,6 +332,7 @@ async function createMap(idx) {
     })
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map)
 
