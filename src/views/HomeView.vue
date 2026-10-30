@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import MapPanel from '@/components/MapPanel.vue'
 import InfoPanel from '@/components/InfoPanel.vue'
@@ -13,6 +13,7 @@ const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const selected = ref(null)
 const visibleUniversities = computed(() =>
   auth.adminActive ? uni.items : uni.items.filter((university) => university.published !== false)
@@ -33,6 +34,13 @@ function toggleUniversity(university) {
     selected.value?.id === university.id
       ? null
       : university
+}
+
+function handleReset() {
+  selected.value = null
+  if (route.query.university) {
+    router.replace({ query: { ...route.query, university: undefined } })
+  }
 }
 
 onMounted(async () => {
@@ -79,7 +87,8 @@ onMounted(async () => {
         <MapPanel
         :universities="visibleUniversities"
         :selected-id="selected?.id ?? null"
-        @select="toggleUniversity"/></div>
+        @select="toggleUniversity"
+        @reset="handleReset"/></div>
       <div class="col-12 col-md-3"><InfoPanel :university="selected" /></div>
     </div>
   </section>

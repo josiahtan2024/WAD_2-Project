@@ -29,32 +29,28 @@ DROP POLICY IF EXISTS "Allow public read access on university_languages" ON univ
 CREATE POLICY "Public can read details of visible university_languages"
     ON university_languages FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_languages.university_id)
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_languages.university_id AND (u.published OR public.is_admin()))
     );
 
 DROP POLICY IF EXISTS "Allow public read access on exchange_periods" ON exchange_periods;
 CREATE POLICY "Public can read details of visible exchange_periods"
     ON exchange_periods FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM universities u WHERE u.id = exchange_periods.university_id)
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = exchange_periods.university_id AND (u.published OR public.is_admin()))
     );
 
 DROP POLICY IF EXISTS "Allow public read access on university_costs" ON university_costs;
 CREATE POLICY "Public can read details of visible university_costs"
     ON university_costs FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_costs.university_id)
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_costs.university_id AND (u.published OR public.is_admin()))
     );
 
 DROP POLICY IF EXISTS "Allow public read access on university_modules" ON university_modules;
 CREATE POLICY "Public can read details of visible university_modules"
     ON university_modules FOR SELECT
     USING (
-        EXISTS (
-            SELECT 1 FROM universities u
-            WHERE u.id = university_modules.university_id
-              AND (u.published = true OR public.is_admin())
-        )
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_modules.university_id AND (u.published OR public.is_admin()))
     );
 
 DROP POLICY IF EXISTS "Allow public read access on credit_mappings" ON credit_mappings;
@@ -63,7 +59,8 @@ CREATE POLICY "Public can read mappings of visible universities"
     USING (
         EXISTS (
             SELECT 1 FROM university_modules m
-            WHERE m.id = credit_mappings.university_module_id
+            JOIN universities u ON u.id = m.university_id
+            WHERE m.id = credit_mappings.university_module_id AND (u.published OR public.is_admin())
         )
     );
 
@@ -71,35 +68,17 @@ DROP POLICY IF EXISTS "Allow public read access on university_reviews" ON univer
 CREATE POLICY "Public can read reviews of visible universities"
     ON university_reviews FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_reviews.university_id)
+        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_reviews.university_id AND (u.published OR public.is_admin()))
     );
 
 DROP POLICY IF EXISTS "Allow public read access on review_comments" ON review_comments;
 CREATE POLICY "Public can read comments of visible reviews"
     ON review_comments FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM university_reviews r WHERE r.id = review_comments.review_id)
-    );
-
-DROP POLICY IF EXISTS "Users can manage their own shortlists" ON shortlists;
-DROP POLICY IF EXISTS "Users can shortlist visible universities" ON shortlists;
-CREATE POLICY "Users can shortlist visible universities"
-    ON shortlists FOR ALL
-    TO authenticated
-    USING (
-        (select auth.uid()) = user_id
-        AND EXISTS (
-            SELECT 1 FROM universities u
-            WHERE u.id = shortlists.university_id
-              AND (u.published = true OR public.is_admin())
-        )
-    )
-    WITH CHECK (
-        (select auth.uid()) = user_id
-        AND EXISTS (
-            SELECT 1 FROM universities u
-            WHERE u.id = shortlists.university_id
-              AND (u.published = true OR public.is_admin())
+        EXISTS (
+            SELECT 1 FROM university_reviews r
+            JOIN universities u ON u.id = r.university_id
+            WHERE r.id = review_comments.review_id AND (u.published OR public.is_admin())
         )
     );
 

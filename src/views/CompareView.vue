@@ -15,8 +15,9 @@ const auth = useAuthStore()
 // TODO TO-DO FIX SCALING AND RESPONSIVE UI
 // Universities
 const allUniversities = ref([])
-const universities = computed(() => allUniversities.value
-    .filter(uni => auth.adminActive || uni.published !== false))
+const universities = computed(() => {
+    return allUniversities.value.filter(uni => auth.adminActive || uni.published !== false)
+})
 const uniIsLoading = ref(true)
 async function fetchUniversities() {
     uniIsLoading.value = true
@@ -319,7 +320,10 @@ async function createMap(idx) {
 
     element.innerHTML = ''
     const { lat, lon } = uni.location.coordinates
-    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
+    const map = L.map(element, { 
+        scrollWheelZoom: false,
+        dragging: !L.Browser.mobile 
+    }).setView([lat, lon], 14)
 
     map.on('click', () => {
         const googleMapsUrl =
@@ -328,6 +332,7 @@ async function createMap(idx) {
     })
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map)
 
@@ -452,7 +457,7 @@ watch(
 
         <section class="text-center py-5">
             <div class="container">
-                <h1 class="page-title display-4 fw-semibold">Compare Partner Universities</h1>
+                <h1 class="display-4 fw-semibold">Compare Partner Universities</h1>
                 <p class="fs-5">SMU Global Experience</p>
                 <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
@@ -467,7 +472,7 @@ watch(
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
-                        class="form-select compare-university-select" data-testid="compare-university-select">
+                        class="form-select fs-5 fw-semibold py-3 ps-3 text-truncate compare-university-select" data-testid="compare-university-select">
                             <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
@@ -895,6 +900,9 @@ header, footer {
 .custom-hover-link:hover {
     text-decoration: underline !important;
 }
+.form-select:hover {
+    outline: 1px solid #173b78;
+}
 .sticky-uni-selector {
     position: sticky;
     top: var(--app-navbar-height);
@@ -922,6 +930,25 @@ header, footer {
 }
 /* below md breakpoint - bottom border only */
 @media (max-width: 767.98px) {
+    .form-select {
+        border: none;
+        border-bottom: 1px solid var(--bs-border-color);
+        border-radius: 0;
+        padding-left: 0 !important;
+        outline: none;
+    }
+
+    .form-select:hover {
+        outline: none;
+        border-bottom: 1px solid black;
+    }
+
+    .form-select:focus {
+        border: 1px solid transparent !important;
+        border-bottom: 1px solid black !important;
+        border-radius: 0.375rem !important;
+    }
+
     .uni-logo {
         height: 120px;
     }
