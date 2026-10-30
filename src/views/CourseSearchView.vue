@@ -117,11 +117,20 @@ const cartGroups = computed(() =>
 )
 const countItems = (groups) => groups.reduce((n, group) => n + group.items.length, 0)
 const hiddenCartCount = computed(() => countItems(allCartGroups.value) - countItems(cartGroups.value))
+// After Show all, offer to go back to just the picked university (only if other universities are in the cart)
+const canHideOtherCarts = computed(() =>
+  showAllCart.value && universityId.value !== '' &&
+  allCartGroups.value.some((group) => group.universityId !== universityId.value)
+)
 
 // Cart changes go to Supabase; a failure is shown from cart.error, so it is not re-thrown here
 async function addToCart(mapping) {
   try { 
-    if (cart.items.length==cart.maxLimit){alert(`You have reached the limit of ${cart.maxLimit} modules for exchange. Please remove current modules from cart to add.`); return;}
+    const uniId = mapping.university_module.university_id
+    if (cart.forUniversity(uniId).length >= cart.maxLimit) {
+      alert(`You have reached the limit of ${cart.maxLimit} modules for ${universityName(uniId)}. Please remove a module from this university's cart to add another.`)
+      return
+    }
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
 async function removeFromCart(universityModuleId) {
@@ -403,6 +412,10 @@ onMounted(async () => {
             <p v-if="hiddenCartCount" class="small text-muted mb-2" data-testid="course-cart-hidden">
               +{{ hiddenCartCount }} course{{ hiddenCartCount === 1 ? '' : 's' }} for other universities ·
               <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-all" @click="showAllCart = true">Show all</button>
+            </p>
+            <p v-else-if="canHideOtherCarts" class="small text-muted mb-2" data-testid="course-cart-showing-all">
+              Showing all universities ·
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-less" @click="showAllCart = false">Show Less</button>
             </p>
             <button
               v-if="cartGroups.length"

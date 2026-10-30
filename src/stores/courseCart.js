@@ -50,7 +50,7 @@ function toItem(row) {
 export const useCourseCartStore = defineStore('courseCart', {
   state: () => ({
     items: [],
-    maxLimit:5, // business rule to ensure student maps no more than 5 modules for exchange
+    maxLimit: 10, // business rule: a student maps no more than 10 modules per exchange university
     loadedUserId: null, // whose cart `items` holds
     pendingIds: [], // universityModuleIds being added or removed (disables their buttons)
     loading: false,
