@@ -47,7 +47,6 @@ async function setPublished(published) {
     </div>
 
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-      <span class="badge text-bg-warning me-auto">Staff</span>
       <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-edit-details" @click="emit('edit', 'details')">
         <i class="bi bi-pencil" aria-hidden="true"></i> Edit Details
       </button>
