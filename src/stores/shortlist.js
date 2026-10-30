@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
+import { useUniversitiesStore } from '@/stores/universities'
 
 function getUserId() {
   const user = useAuthStore().user
@@ -37,6 +38,11 @@ export const useShortlistStore = defineStore('shortlist', {
       this.error = null
       try {
         const userId = getUserId()
+        const auth = useAuthStore()
+        const university = useUniversitiesStore().items.find((item) => item.id === universityId)
+        if (!auth.adminActive && university?.published === false) {
+          throw new Error('This university is hidden from students and cannot be shortlisted.')
+        }
         const { data, error } = await supabase
           .from('shortlists')
           .insert({ user_id: userId, university_id: universityId })

@@ -16,7 +16,7 @@ function clearFilters() {
 </script>
 
 <template>
-  <div class="university-filters rounded-4 p-3 p-md-4 mb-4" data-testid="filter-bar">
+  <div class="filter-panel university-filters mb-4" data-testid="filter-bar">
     <div class="row g-3 align-items-end">
       <div class="col-12 col-lg-5">
         <label for="universitySearch" class="form-label fw-semibold">Search Partner Universities</label>
@@ -46,10 +46,3 @@ function clearFilters() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.university-filters {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
-}
-</style>

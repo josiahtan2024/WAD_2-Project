@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth'
 import BudgetNotice from '@/components/BudgetNotice.vue'
 import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
 import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
@@ -8,13 +9,29 @@ import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'
 import BudgetPlannerForm from '@/components/BudgetPlannerForm.vue'
 import BudgetDetailsDialog from '@/components/BudgetDetailsDialog.vue'
 
-const universities = ref([])
+const auth = useAuthStore()
+const allUniversities = ref([])
+const universities = computed(() => allUniversities.value.filter((university) =>
+  auth.adminActive || university.published !== false
+))
 const exchangePeriods = ref([])
 const publishedCost = ref(null)
 
 const selectedUniversityId = ref('')
 const selectedPeriodId = ref('')
 const durationMonths = ref(1)
+
+watch(() => auth.adminActive, (adminActive) => {
+  if (adminActive) return
+  const selected = allUniversities.value.find((university) =>
+    String(university.id) === String(selectedUniversityId.value)
+  )
+  if (selected?.published === false) {
+    selectedUniversityId.value = ''
+    selectedPeriodId.value = ''
+    publishedCost.value = null
+  }
+})
 
 const housingType = ref('')
 const foodOption = ref('')
@@ -43,6 +60,12 @@ const budgetToRead = ref(null)
 
 const errorMessage = ref('')
 const successMessage = ref('')
+const visibleSavedBudgets = computed(() => auth.adminActive
+  ? savedBudgets.value
+  : savedBudgets.value.filter((budget) => universities.value.some((university) =>
+      String(university.id) === String(budget.university_id)
+    ))
+)
 
 // Automatically dismiss success/error notifications after five seconds.
 // Users can also close either notification immediately with its X button.
@@ -108,13 +131,13 @@ const selectedPeriod = computed(() =>
 )
 
 const availableBudgetRegions = computed(() =>
-  [...new Set(savedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
+  [...new Set(visibleSavedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b)),
 )
 
 const filteredBudgets = computed(() => {
   const query = budgetSearchQuery.value.trim().toLocaleLowerCase()
-  const filtered = savedBudgets.value.filter(budget => {
+  const filtered = visibleSavedBudgets.value.filter(budget => {
     const matchesRegion =
       !selectedRegionFilter.value || budget.university_region === selectedRegionFilter.value
     const searchableText = [
@@ -343,12 +366,12 @@ function updateTransportPrice() {
 async function loadUniversities() {
   const { data, error } = await supabase
     .from('universities')
-    .select('id, name, country, state, city, region, website_url')
+    .select('id, name, country, state, city, region, website_url, published')
     .order('name')
 
   if (error) throw error
 
-  universities.value = data || []
+  allUniversities.value = data || []
   selectedUniversityId.value = ''
 }
 
@@ -750,7 +773,7 @@ onMounted(async () => {
   <main class="container px-0">
     <div class="mb-3">
 
-      <h1 class="h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
+      <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
 
       <p class="text-secondary text-center mb-0">
         Estimate your exchange expenses, compare published costs,
@@ -797,7 +820,7 @@ onMounted(async () => {
         v-model:search-query="budgetSearchQuery"
         v-model:region-filter="selectedRegionFilter"
         v-model:sort-by="budgetSortBy"
-        :budgets="savedBudgets"
+        :budgets="visibleSavedBudgets"
         :filtered-budgets="filteredBudgets"
         :regions="availableBudgetRegions"
         :loading="budgetsLoading"

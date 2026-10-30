@@ -50,7 +50,11 @@ DROP POLICY IF EXISTS "Allow public read access on university_modules" ON univer
 CREATE POLICY "Public can read details of visible university_modules"
     ON university_modules FOR SELECT
     USING (
-        EXISTS (SELECT 1 FROM universities u WHERE u.id = university_modules.university_id)
+        EXISTS (
+            SELECT 1 FROM universities u
+            WHERE u.id = university_modules.university_id
+              AND (u.published = true OR public.is_admin())
+        )
     );
 
 DROP POLICY IF EXISTS "Allow public read access on credit_mappings" ON credit_mappings;
@@ -75,6 +79,28 @@ CREATE POLICY "Public can read comments of visible reviews"
     ON review_comments FOR SELECT
     USING (
         EXISTS (SELECT 1 FROM university_reviews r WHERE r.id = review_comments.review_id)
+    );
+
+DROP POLICY IF EXISTS "Users can manage their own shortlists" ON shortlists;
+DROP POLICY IF EXISTS "Users can shortlist visible universities" ON shortlists;
+CREATE POLICY "Users can shortlist visible universities"
+    ON shortlists FOR ALL
+    TO authenticated
+    USING (
+        (select auth.uid()) = user_id
+        AND EXISTS (
+            SELECT 1 FROM universities u
+            WHERE u.id = shortlists.university_id
+              AND (u.published = true OR public.is_admin())
+        )
+    )
+    WITH CHECK (
+        (select auth.uid()) = user_id
+        AND EXISTS (
+            SELECT 1 FROM universities u
+            WHERE u.id = shortlists.university_id
+              AND (u.published = true OR public.is_admin())
+        )
     );
 
 CREATE POLICY "Admins can add universities"

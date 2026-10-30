@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
+import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
 import BudgetNotice from '@/components/BudgetNotice.vue'
 
@@ -31,6 +32,7 @@ onUnmounted(() => {
 const shortlist = useShortlistStore()
 
 const uni = useUniversitiesStore()
+const auth = useAuthStore()
 
 const sortBy = ref('added')
 const currentPage = ref(1)
@@ -48,6 +50,7 @@ const saved = computed(() => {
         : null
     })
     .filter(Boolean)
+    .filter((university) => auth.adminActive || university.published !== false)
 
   const compareName = (a, b) =>
     (a.name ?? '').localeCompare(b.name ?? '', 'en', {
@@ -125,13 +128,14 @@ onMounted(async () => {
 <template>
   <section data-testid="shortlist-page">
     <BudgetNotice
-      :error-message="errorMessage"
+      :data-testid="shortlist.error || pageError ? 'shortlist-error' : undefined"
+      :error-message="errorMessage || shortlist.error || pageError"
       :success-message="successMessage"
-      @dismiss-error="errorMessage = ''"
+      @dismiss-error="errorMessage = ''; shortlist.error = null; pageError = ''"
       @dismiss-success="successMessage = ''"
     />
     <div class="d-flex flex-column gap-3 mb-3">
-    <h1 class="h3 fw-bold text-center mb-0">Your Shortlist</h1>
+    <h1 class="page-title h3 fw-bold text-center mb-0">Your Shortlist</h1>
 
     <div class="d-flex justify-content-end align-items-center gap-2">
       <label for="shortlist-sort" class="visually-hidden">
@@ -150,14 +154,6 @@ onMounted(async () => {
 
     </div>
   </div>
-<div
-  v-if="shortlist.error || pageError"
-  class="alert alert-danger"
-  data-testid="shortlist-error"
->
-  {{ shortlist.error || pageError }}
-</div>
-
 <div
   v-if="pageLoading || shortlist.loading"
   class="text-muted"

@@ -5,8 +5,10 @@ import { useScheduleStore } from '@/stores/schedule'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useShortlistStore } from '@/stores/shortlist'
+import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
+import BudgetNotice from '@/components/BudgetNotice.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +16,7 @@ const schedule = useScheduleStore()
 const uni = useUniversitiesStore()
 const cart = useCourseCartStore()
 const shortlist = useShortlistStore()
+const auth = useAuthStore()
 
 // The timetable being planned comes from the URL: /schedule/2?period=4 is university 2, exchange period 4.
 // Each university + period pair is its own timetable. Both are null on plain /schedule.
@@ -30,6 +33,9 @@ const universityOptions = computed(() => {
   if (universityId.value) ids.add(universityId.value)
   return [...ids]
     .map((id) => ({ id, name: uni.items.find((u) => u.id === id)?.name ?? `University ${id}` }))
+    .filter((university) => auth.adminActive || uni.items.some((item) =>
+      item.id === university.id && item.published !== false
+    ))
     .sort((a, b) => a.name.localeCompare(b.name))
 })
 const saving = ref(false)
@@ -210,8 +216,15 @@ onMounted(async () => {
 
 <template>
   <section data-testid="schedule-page">
+    <BudgetNotice
+      :data-testid="saved ? 'schedule-saved' : schedule.error ? 'schedule-error' : undefined"
+      :error-message="schedule.error || ''"
+      :success-message="saved ? 'Schedule saved.' : ''"
+      @dismiss-error="schedule.error = null"
+      @dismiss-success="saved = false"
+    />
     <div class="schedule-header mb-3" :class="{ 'schedule-header-sticky': changesMade }">
-      <h1 class="h3 fw-bold text-center mb-0">Weekly Schedule: {{ uni.scheduleUniName || "" }}</h1>
+      <h1 class="page-title h3 fw-bold text-center mb-0">Weekly Schedule: {{ universityOptions.find((university) => university.id === universityId)?.name || "" }}</h1>
       <div v-if="changesMade" class="d-flex justify-content-end flex-wrap gap-2 mt-3">
         <button class="btn btn-outline-danger" :disabled="discarding" data-testid="schedule-discard-btn" @click="discardChange()">
           {{ discarding ? 'Discarding...' : 'Discard Changes' }}
@@ -221,11 +234,9 @@ onMounted(async () => {
         </button>
       </div>
     </div>
-    <div v-if="schedule.error" class="alert alert-danger rounded-4" role="alert" data-testid="schedule-error">{{ schedule.error }}</div>
-    <div v-if="saved" class="alert alert-success rounded-4" role="status" data-testid="schedule-saved">Schedule saved.</div>
     <div v-if="schedule.loading" class="text-muted py-3" role="status" data-testid="schedule-loading">Loading schedule...</div>
 
-    <div class="schedule-filters rounded-4 p-3 p-md-4 mb-4">
+    <div class="filter-panel mb-4">
         <div class="row g-3 align-items-end">
           <div class="col-12 col-md-6">
             <label for="schedule-university" class="form-label fw-semibold">Partner University</label>
@@ -234,7 +245,7 @@ onMounted(async () => {
               <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
             </select>
           </div>
-          <div v-if="universityId" class="col-12 col-md-6">
+          <div v-if="universityId && universityOptions.some((university) => university.id === universityId)" class="col-12 col-md-6">
             <label for="schedule-period" class="form-label fw-semibold">Exchange Period</label>
             <select id="schedule-period" class="form-select" :value="periodId ?? ''" data-testid="schedule-period-select" @change="selectPeriod($event)">
               <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
@@ -244,7 +255,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-if="universityId">
+        <div v-if="universityId && universityOptions.some((university) => university.id === universityId)">
           <p v-if="schedule.moduleData.length" class="mt-3 mb-0" data-testid="schedule-module-count">
             {{ schedule.moduleData.length }} module{{ schedule.moduleData.length === 1 ? '' : 's' }} available from your cart and saved schedule.
           </p>
@@ -257,7 +268,10 @@ onMounted(async () => {
         </p>
     </div>
 
-    <template v-if="universityId">
+    <p v-if="universityId && !universityOptions.some((university) => university.id === universityId)" class="text-muted" data-testid="schedule-university-unavailable">
+      This university is hidden from students and is unavailable for scheduling.
+    </p>
+    <template v-if="universityId && universityOptions.some((university) => university.id === universityId)">
     <div class="container-fluid">
   
 

@@ -61,7 +61,10 @@ onUnmounted(() => {
   if (reviewNoticeTimeout) clearTimeout(reviewNoticeTimeout)
 })
 
-const university = computed(() => uni.items.find((u) => String(u.id) === route.params.id))
+const university = computed(() => {
+  const item = uni.items.find((u) => String(u.id) === route.params.id)
+  return item && (auth.adminActive || item.published !== false) ? item : undefined
+})
 const universityCost = computed(() => {
   const cost = university.value?.university_costs
   return Array.isArray(cost) ? cost[0] : cost
@@ -189,18 +192,23 @@ watch(() => route.params.id, async () => {
 
 <template>
   <section data-testid="university-page">
-    <BudgetNotice :success-message="reviewSuccessMessage" @dismiss-success="reviewSuccessMessage = ''" />
+    <BudgetNotice
+      :data-testid="uni.error ? 'university-error' : undefined"
+      :error-message="uni.error || ''"
+      :success-message="reviewSuccessMessage"
+      @dismiss-error="uni.error = null"
+      @dismiss-success="reviewSuccessMessage = ''"
+    />
     <div v-if="uni.loading" class="text-muted" data-testid="university-loading">Loading...</div>
-    <div v-else-if="uni.error" class="alert alert-danger" data-testid="university-error">{{ uni.error }}</div>
-    <p v-else-if="!university" class="text-muted" data-testid="university-not-found">University not found. <RouterLink to="/universities">Back to list</RouterLink></p>
-    <template v-else>
+    <p v-else-if="!uni.error && !university" class="text-muted" data-testid="university-not-found">University not found. <RouterLink to="/universities">Back to list</RouterLink></p>
+    <template v-else-if="!uni.error">
       <template v-if="auth.adminActive">
         <AdminBar :university="university" :details="details" @edit="editing = $event" @changed="loadCompareDetails(true)" />
         <AdminEditor v-model:section="editing" :university="university" :details="details" @changed="loadCompareDetails(true)" @deleted="afterDelete" />
       </template>
       <header class="university-header d-flex flex-column align-items-center text-center gap-2 mb-4">
         <div class="university-heading">
-          <h1 class="h3 fw-bold mb-2">{{ university.name }}</h1>
+          <h1 class="page-title h3 fw-bold mb-2">{{ university.name }}</h1>
           <p class="text-muted mb-0">
             {{ university.city }}, {{ university.country }}
           </p>
