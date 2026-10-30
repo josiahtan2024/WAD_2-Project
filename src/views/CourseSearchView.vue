@@ -99,12 +99,24 @@ const areaModuleGroups = computed(() => {
 
 const areaModuleCount = computed(() => areaModuleGroups.value.reduce((n, g) => n + g.rows.length, 0))
 
-const cartGroups = computed(() =>
+const allCartGroups = computed(() =>
   Object.entries(cart.byUniversity)
     .map(([id, items]) => ({ universityId: Number(id), name: universityName(id), items }))
     .filter((group) => visibleUniversityIds.value.has(group.universityId))
     .sort((a, b) => compareText(a.name, b.name))
 )
+
+// With a university picked, the cart shows only that university's courses (Show all reveals the rest)
+const showAllCart = ref(false)
+watch(universityId, () => { showAllCart.value = false })
+const cartFiltered = computed(() => universityId.value !== '' && !showAllCart.value)
+const cartGroups = computed(() =>
+  cartFiltered.value
+    ? allCartGroups.value.filter((group) => group.universityId === universityId.value)
+    : allCartGroups.value
+)
+const countItems = (groups) => groups.reduce((n, group) => n + group.items.length, 0)
+const hiddenCartCount = computed(() => countItems(allCartGroups.value) - countItems(cartGroups.value))
 
 // Cart changes go to Supabase; a failure is shown from cart.error, so it is not re-thrown here
 async function addToCart(mapping) {
@@ -116,7 +128,8 @@ async function removeFromCart(universityModuleId) {
   try { await cart.remove(universityModuleId) } catch { /* shown via cart.error */ }
 }
 async function clearCart() {
-  try { await cart.clear() } catch { /* shown via cart.error */ }
+  // while filtered to one university, only clear what is shown
+  try { await cart.clear(cartFiltered.value ? universityId.value : undefined) } catch { /* shown via cart.error */ }
 }
 
 function selectArea(area) {
@@ -351,6 +364,9 @@ onMounted(async () => {
             Your cart is empty. Add courses to plan your schedule.
           </p>
           <div v-else class="card-body">
+            <p v-if="!cartGroups.length" class="text-muted small mb-2" data-testid="course-cart-empty-university">
+              No courses in your cart for {{ universityName(universityId) }} yet.
+            </p>
             <div v-for="group in cartGroups" :key="group.universityId" class="mb-3" data-testid="course-cart-group">
               <div class="fw-semibold small mb-1">{{ group.name }}</div>
               <ul class="list-unstyled mb-2">
@@ -384,13 +400,18 @@ onMounted(async () => {
                 Plan Schedule ({{ group.items.length }})
               </RouterLink>
             </div>
+            <p v-if="hiddenCartCount" class="small text-muted mb-2" data-testid="course-cart-hidden">
+              +{{ hiddenCartCount }} course{{ hiddenCartCount === 1 ? '' : 's' }} for other universities ·
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-all" @click="showAllCart = true">Show all</button>
+            </p>
             <button
+              v-if="cartGroups.length"
               type="button"
               class="btn btn-sm btn-outline-secondary w-100"
               data-testid="course-cart-clear-btn"
               @click="clearCart()"
             >
-              Clear Cart
+              {{ cartFiltered ? `Clear ${universityName(universityId)}` : 'Clear Cart' }}
             </button>
           </div>
         </div>
