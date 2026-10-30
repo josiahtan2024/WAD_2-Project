@@ -74,12 +74,11 @@ test.describe('reviews', () => {
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
   })
 
-  test('a second review for the same university is refused', async ({ page }) => {
+  test('once you have reviewed, the post form is replaced by a note', async ({ page }) => {
     await postReview(page, 'First review')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
-    await postReview(page, 'Second review')
-    await expect(page.getByTestId('review-form-error')).toContainText('already reviewed')
-    await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
+    await expect(page.getByTestId('review-already-posted')).toBeVisible()
+    await expect(page.getByTestId('review-body-input')).toHaveCount(0)
   })
 
   test('review text is shown as text, not as HTML', async ({ page }) => {
@@ -102,6 +101,66 @@ test.describe('reviews', () => {
     await expect(page.getByTestId('review-image').first()).toBeVisible()
   })
 
+  test('edit your review, it is marked as edited', async ({ page }) => {
+    await postReview(page, 'Original text', 2)
+    const mine = page.getByTestId('review-item').first()
+    await expect(mine.getByTestId('review-edited')).toHaveCount(0)
+
+    await mine.getByTestId('review-edit-btn').click()
+    await expect(mine.getByTestId('review-body-input')).toHaveValue('Original text')
+    await mine.getByTestId('review-rating-5').click()
+    await mine.getByTestId('review-cost_rating-4').click()
+    await mine.getByTestId('review-body-input').fill('Changed my mind, it was great')
+    await mine.getByTestId('review-submit-btn').click()
+
+    await expect(mine).toContainText('Changed my mind, it was great')
+    await expect(mine).toContainText('Cost of living 4/5')
+    await expect(mine.getByTestId('review-rating')).toHaveAttribute('aria-label', '5 out of 5')
+    await expect(mine.getByTestId('review-edited')).toBeVisible()
+    await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
+
+    await page.reload()
+    await expect(page.getByTestId('review-item').first()).toContainText('Changed my mind, it was great')
+    await expect(page.getByTestId('review-edited')).toBeVisible()
+  })
+
+  test('cancelling an edit keeps the review as it was', async ({ page }) => {
+    await postReview(page, 'Keep me')
+    const mine = page.getByTestId('review-item').first()
+    await mine.getByTestId('review-edit-btn').click()
+    await mine.getByTestId('review-body-input').fill('Discard me')
+    await mine.getByTestId('review-cancel-btn').click()
+    await expect(mine).toContainText('Keep me')
+    await expect(mine).not.toContainText('Discard me')
+    await expect(mine.getByTestId('review-edit-btn')).toBeVisible()
+  })
+
+  test('an edit still needs some text', async ({ page }) => {
+    await postReview(page, 'Needs text')
+    const mine = page.getByTestId('review-item').first()
+    await mine.getByTestId('review-edit-btn').click()
+    await mine.getByTestId('review-body-input').fill('   ')
+    await mine.getByTestId('review-submit-btn').click()
+    await expect(mine.getByTestId('review-form-error')).toContainText('few words')
+  })
+
+  test('remove or replace the photo while editing', async ({ page }) => {
+    await page.getByTestId('review-image-input').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await postReview(page, 'Photo to remove')
+    const mine = page.getByTestId('review-item').first()
+    await expect(mine.getByTestId('review-image')).toBeVisible()
+
+    await mine.getByTestId('review-edit-btn').click()
+    await mine.getByTestId('review-remove-image').check()
+    await mine.getByTestId('review-submit-btn').click()
+    await expect(mine.getByTestId('review-image')).toHaveCount(0)
+
+    await mine.getByTestId('review-edit-btn').click()
+    await mine.getByTestId('review-image-input').setInputFiles({ name: 'again.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await mine.getByTestId('review-submit-btn').click()
+    await expect(mine.getByTestId('review-image')).toBeVisible()
+  })
+
   test('add and delete a comment', async ({ page }) => {
     await postReview(page, 'Review to comment on')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
@@ -120,6 +179,7 @@ test.describe('reviews', () => {
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
     await page.getByTestId('review-delete-btn').click()
     await expect(page.getByTestId('reviews-empty')).toBeVisible()
+    await expect(page.getByTestId('review-body-input')).toBeVisible()
   })
 })
 

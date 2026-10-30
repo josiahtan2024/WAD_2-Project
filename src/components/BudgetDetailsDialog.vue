@@ -40,7 +40,7 @@ function formatPreference(value) {
             <div class="d-flex justify-content-between gap-3"><span class="text-secondary">Total budget</span><strong class="text-primary">{{ formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}</strong></div>
           </div>
 
-          <h3 class="h6 fw-bold mb-3">Monthly expenses</h3>
+          <h3 class="h6 fw-bold mb-3">Monthly Expenses</h3>
           <div v-for="expense in expenses" :key="expense.key" class="d-flex justify-content-between gap-3 mb-3">
             <span class="text-secondary">{{ expense.label }}</span>
             <strong>{{ formatMoney(budget[expense.key], budget.currency_code || 'SGD') }}</strong>

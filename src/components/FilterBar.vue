@@ -1,27 +1,48 @@
 <script setup>
-defineProps({ regions: { type: Array, default: () => [] } })
+const props = defineProps({
+  regions: { type: Array, default: () => [] },
+  resultCount: { type: Number, default: 0 },
+  totalCount: { type: Number, default: 0 },
+})
 const query = defineModel('query', { default: '' })
 const region = defineModel('region', { default: null })
 const sortBy = defineModel('sortBy', { default: 'name' })
+
+function clearFilters() {
+  query.value = ''
+  region.value = null
+  sortBy.value = 'name'
+}
 </script>
 
 <template>
-  <div class="row g-2 mb-3" data-testid="filter-bar">
-    <div class="col-12 col-md-6">
-      <input v-model="query" type="search" class="form-control" placeholder="Search by name, country or city" aria-label="Search universities" data-testid="filter-search-input" />
+  <div class="filter-panel university-filters mb-4" data-testid="filter-bar">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-lg-5">
+        <label for="universitySearch" class="form-label fw-semibold">Search Partner Universities</label>
+        <input id="universitySearch" v-model="query" type="search" class="form-control" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <label for="universityRegion" class="form-label fw-semibold">Filter by Region</label>
+        <select id="universityRegion" v-model="region" class="form-select" aria-label="Filter by Region" data-testid="filter-region-select">
+          <option :value="null">All Regions</option>
+          <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-4">
+        <label for="universitySort" class="form-label fw-semibold">Sort By</label>
+        <select id="universitySort" v-model="sortBy" class="form-select" aria-label="Sort By" data-testid="filter-sort-select">
+          <option value="name">University Name (A–Z)</option>
+          <option value="country">Country (A–Z)</option>
+          <option value="cost">Monthly Cost (Low to High)</option>
+        </select>
+      </div>
     </div>
-    <div class="col-6 col-md-3">
-      <select v-model="region" class="form-select" aria-label="Filter by region" data-testid="filter-region-select">
-        <option :value="null">All regions</option>
-        <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
-      </select>
-    </div>
-    <div class="col-6 col-md-3">
-      <select v-model="sortBy" class="form-select" aria-label="Sort by" data-testid="filter-sort-select">
-        <option value="name">Sort: Name</option>
-        <option value="country">Sort: Country</option>
-        <option value="cost">Sort: Cost</option>
-      </select>
+    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+      <span class="small text-secondary">Showing {{ props.resultCount }} of {{ props.totalCount }} partner universities</span>
+      <button v-if="query || region || sortBy !== 'name'" class="btn btn-sm btn-outline-secondary" type="button" data-testid="clear-filters-btn" @click="clearFilters">
+        Reset Search and Filters
+      </button>
     </div>
   </div>
 </template>

@@ -14,7 +14,10 @@ const auth = useAuthStore()
 
 // TODO TO-DO FIX SCALING AND RESPONSIVE UI
 // Universities
-const universities = ref([])
+const allUniversities = ref([])
+const universities = computed(() => {
+    return allUniversities.value.filter(uni => auth.adminActive || uni.published !== false)
+})
 const uniIsLoading = ref(true)
 async function fetchUniversities() {
     uniIsLoading.value = true
@@ -31,7 +34,7 @@ async function fetchUniversities() {
 
         if (error) throw error
 
-        universities.value = data.map(uni => {
+        allUniversities.value = data.map(uni => {
             const languages = uni.university_languages?.map(l => l.instruction_language).join(', ') || '-'
             const cost = uni.university_costs || {}
             const modulesCount = uni.university_modules?.length || 0
@@ -64,6 +67,7 @@ async function fetchUniversities() {
             return {
                 id: uni.id,
                 name: uni.name,
+                published: uni.published,
                 logo: logoURL,
                 website: uni.website_url,
                 location: {
@@ -96,6 +100,11 @@ async function fetchUniversities() {
                 }
             }
         }).sort((a, b) => a.name.localeCompare(b.name))
+        if (!auth.adminActive) {
+            uniSlots.value = uniSlots.value.map((id) =>
+                allUniversities.value.some((university) => university.id === id && university.published !== false) ? id : null
+            )
+        }
     } catch (error) {
         console.error('Error fetching universities from Supabase:', error.message)
     } finally {
@@ -106,9 +115,14 @@ async function fetchUniversities() {
 // Shortlist
 const shortlist = ref([])
 const shortlistIsLoading = ref(true)
+const shortlistLoadingIds = ref({})
 async function fetchShortlist() {
+    if (!auth.user) {
+        shortlistIsLoading.value = false
+        return
+    }
+
     shortlistIsLoading.value = true
-    if (!auth.user) return
 
     try {
         const { data, error } = await supabase
@@ -144,13 +158,18 @@ const isShortlisted = (uniId) => {
 }
 
 async function toggleShortlist(uniId) {
-    shortlistIsLoading.value = true
     if (!auth.user) {
         return router.push({
             name: 'login',
             query: { redirect: '/compare' }
         })
     }
+
+    const university = universities.value.find((item) => item.id === uniId)
+    if (!university || (!auth.adminActive && university.published === false)) return
+
+    if (shortlistLoadingIds.value[uniId]) return 
+    shortlistLoadingIds.value[uniId] = true
 
     try {
         if (isShortlisted(uniId)) {
@@ -178,7 +197,7 @@ async function toggleShortlist(uniId) {
     } catch (error) {
         console.error(error.message)
     } finally {
-        shortlistIsLoading.value = false
+        shortlistLoadingIds.value[uniId] = false
     }
 }
 
@@ -205,6 +224,13 @@ function getStoredCompareSlots() {
 const uniSlots = ref(getStoredCompareSlots())
 const uniCurrencies = ref(['home', 'home', 'home'])
 const uniProgrammes = ref([0, 0, 0])
+
+watch(() => auth.adminActive, (adminActive) => {
+    if (adminActive) return
+    uniSlots.value = uniSlots.value.map((id) =>
+        universities.value.some((university) => university.id === id) ? id : null
+    )
+})
 
 const unisToCompare = computed (() => {
     return uniSlots.value.map(id => {
@@ -249,20 +275,26 @@ function selectUniversity(slotIndex, uniId) {
         // Normal selection
         uniSlots.value[slotIndex] = uniId
     }
+
+    nextTick(() => {
+        selectRefs.value[slotIndex]?.blur()
+    })
 }
 
-const openDropdownIndex = ref(null)
+const selectRefs = ref([]);
 function openDropdown(idx) {
-    openDropdownIndex.value = openDropdownIndex.value === idx ? null : idx
-}
-
-function chooseUniversity(idx, universityId) {
-    selectUniversity(idx, universityId)
-    openDropdownIndex.value = null
-}
+    const selectEl = selectRefs.value[idx];
+    if (selectEl) {
+        if (typeof selectEl.showPicker === 'function') {
+            selectEl.showPicker();
+        } else {
+            selectEl.focus();
+        }
+    }
+};
 
 // Maps - Leaflet API
-// TO-DO: Implement Google Maps API for better visuals
+// TODO: Implement Google Maps API for better visuals
 const maps = ref([])
 const mapElements = ref([])
 async function createMap(idx) {
@@ -277,12 +309,21 @@ async function createMap(idx) {
         maps.value[idx] = null
     }
 
-    // No uni selected
-    if (!uni || !element || !uni.location.coordinates.lat) return
+    if (!uni || !element) return
 
+    const hasCoords = uni?.location?.coordinates?.lat && uni?.location?.coordinates?.lon
+    if (!hasCoords) {
+        element.innerHTML = `<div class="d-flex align-items-center justify-content-center
+        h-100 w-100 bg-light text-secondary small">Map unavailable.</div>`
+        return
+    }
+
+    element.innerHTML = ''
     const { lat, lon } = uni.location.coordinates
-
-    const map = L.map(element, { scrollWheelZoom: false }).setView([lat, lon], 13)
+    const map = L.map(element, { 
+        scrollWheelZoom: false,
+        dragging: !L.Browser.mobile 
+    }).setView([lat, lon], 14)
 
     map.on('click', () => {
         const googleMapsUrl =
@@ -291,6 +332,7 @@ async function createMap(idx) {
     })
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map)
 
@@ -412,11 +454,12 @@ watch(
 <template>
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
-        <section class="text-center py-3 my-5">
-            <div class="container-fluid">
-                <h1 class="display-3 fw-semibold">Compare Universities</h1>
+
+        <section class="text-center py-5">
+            <div class="container">
+                <h1 class="display-4 fw-semibold">Compare Partner Universities</h1>
                 <p class="fs-5">SMU Global Experience</p>
-                <p class="fs-5"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
+                <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
@@ -427,58 +470,19 @@ watch(
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
                 special-vfor-class="text-center d-flex flex-column" :render-dropdown="true">
                     <template #default="{ idx }">
-                        <div class="compare-uni-dropdown">
-                            <button
-                                type="button"
-                                class="form-select fs-5 fw-semibold text-start compare-uni-select"
-                                :aria-expanded="openDropdownIndex === idx"
-                                :aria-controls="`compare-uni-menu-${idx}`"
-                                @click="openDropdown(idx)"
-                            >
-                                <span class="d-block text-truncate">{{ unisToCompare[idx]?.name || 'Choose a university' }}</span>
-                            </button>
-                            <div
-                                v-if="openDropdownIndex === idx"
-                                :id="`compare-uni-menu-${idx}`"
-                                class="compare-uni-menu text-start"
-                                role="listbox"
-                                aria-label="Choose a university to compare"
-                            >
-                                <button class="compare-uni-option" type="button" @click="chooseUniversity(idx, null)">
-                                    Choose a university
-                                </button>
-                                <template v-if="shortlistedUnis.length">
-                                    <div class="compare-uni-group-label">My Shortlist</div>
-                                    <button
-                                        v-for="university in shortlistedUnis"
-                                        :key="university.id"
-                                        class="compare-uni-option"
-                                        :class="{ selected: uniSlots[idx] === university.id }"
-                                        :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === university.id)"
-                                        role="option"
-                                        :aria-selected="uniSlots[idx] === university.id"
-                                        @click="chooseUniversity(idx, university.id)"
-                                    >
-                                        {{ university.name }}
-                                    </button>
-                                </template>
-                                <template v-if="remainingUnis.length">
-                                    <div class="compare-uni-group-label">Other Universities</div>
-                                    <button
-                                        v-for="university in remainingUnis"
-                                        :key="university.id"
-                                        class="compare-uni-option"
-                                        :class="{ selected: uniSlots[idx] === university.id }"
-                                        :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === university.id)"
-                                        role="option"
-                                        :aria-selected="uniSlots[idx] === university.id"
-                                        @click="chooseUniversity(idx, university.id)"
-                                    >
-                                        {{ university.name }}
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
+                        <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
+                        @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
+                        class="form-select fs-5 fw-semibold py-3 ps-3 text-truncate compare-university-select" data-testid="compare-university-select">
+                            <option value="">Choose a University</option>
+                            <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
+                                <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
+                                :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
+                            </optgroup>
+                            <optgroup label="Other Partner Universities" v-if="remainingUnis.length > 0">
+                                <option v-for="uni in remainingUnis" :key="uni.id" :value="uni.id"
+                                :disabled="uniSlots[idx] === null && uniSlots.some((id, i) => i !== idx && id === uni.id)">{{ uni.name }}</option>
+                            </optgroup>
+                        </select>
                     </template>
                 </CompareRow>
 
@@ -494,7 +498,7 @@ watch(
                         <div class="uni-logo d-flex align-items-center justify-content-center text-secondary flex-column"
                         @click="openDropdown(idx)" role="button" style="cursor: pointer;">
                             <div class="fs-3 fw-light">+</div>
-                            <span>Choose a university</span>
+                            <span>Choose a University</span>
                         </div>
                     </template>            
                 </CompareRow>
@@ -513,8 +517,9 @@ watch(
                 special-vif-class="d-flex flex-column flex-grow-1">
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
-                            <button class="btn rounded-pill px-3" :class="isShortlisted(uni.id) ? 'btn-success' : 'btn-primary'" 
-                            :disabled="shortlistIsLoading" @click="toggleShortlist(uni.id)">
+                            <button class="btn rounded-pill px-4" :class="isShortlisted(uni.id) ? 'btn-primary' : 'btn-outline-primary'" 
+                            :disabled="shortlistLoadingIds[uni.id]" @click="toggleShortlist(uni.id)">
+                                <i class="bi d-none d-md-inline-block me-1" :class="isShortlisted(uni.id) ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
@@ -527,7 +532,7 @@ watch(
 
                 <!-- Location -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Location
                     </template>
                 </CompareRowHeader>
@@ -540,7 +545,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Location
                         </div>
@@ -549,14 +554,14 @@ watch(
 
                 <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni }">
-                        <div class="text-break">
+                        <div class="text-break fw-bold">
                             {{ formatLocation(uni.location) }}
                         </div>
                     </template>
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Region
                         </div>
@@ -572,7 +577,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Timezone
                         </div>
@@ -588,7 +593,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Distance from SG
                         </div>
@@ -605,7 +610,7 @@ watch(
 
                 <!-- Cost -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Cost
                     </template>
                 </CompareRowHeader>
@@ -627,7 +632,7 @@ watch(
                 </CompareRow>                
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Estimated Monthly Total
                         </div>
@@ -643,7 +648,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Accommodation
                         </div>
@@ -659,7 +664,7 @@ watch(
                 </CompareRow>    
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Food
                         </div>
@@ -675,7 +680,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Transport
                         </div>
@@ -691,7 +696,7 @@ watch(
                 </CompareRow>   
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Personal Expenses
                         </div>
@@ -708,13 +713,13 @@ watch(
 
                 <!-- Academics -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Academics
                     </template>
                 </CompareRowHeader>
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small pt-3">
                             Mapped Modules
                         </div>
@@ -730,7 +735,7 @@ watch(
                 </CompareRow>  
 
                 <CompareRow :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         <div class="text-secondary small mt-3 pt-3 border-top">
                             Language
                         </div>
@@ -756,7 +761,7 @@ watch(
                 
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
-                    <template #default="{ }">
+                    <template #default>
                         Exchange
                     </template>
                 </CompareRowHeader>
@@ -769,7 +774,8 @@ watch(
                                     @click="uniProgrammes[idx] = pIdx"
                                     class="btn btn-sm flex-fill text-truncate px-1"
                                     :class="uniProgrammes[idx] === pIdx ? 'btn-primary' : 'btn-outline-primary'">
-                                    {{ formatExchangeDate(period.startDate) }}
+                                    <span class="d-none d-md-inline">{{ formatExchangeDate(period.startDate) }}</span>
+                                    <span class="d-md-none d-inline">{{ formatExchangeDate(period.startDate).split(' ')[0] }}</span>
                                 </button>
                             </div>
                         </div>
@@ -814,8 +820,10 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} - 
-                            {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} </span>
+                            <span class="d-md-inline d-none mx-2">-</span>
+                            <span class="d-md-none d-inline mx-4">to</span>
+                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}</span>
                         </div>
                     </template>
                 </CompareRow>
@@ -833,7 +841,8 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0"  
                             class="text-break">
-                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }} - 
+                            {{ uni.exchange.periods[uniProgrammes[idx]].minTemp }}
+                            <span class="mx-1">-</span>
                             {{ uni.exchange.periods[uniProgrammes[idx]].maxTemp }} °C
                         </div>
                     </template>
@@ -892,7 +901,7 @@ header, footer {
     text-decoration: underline !important;
 }
 .form-select:hover {
-    outline: 1px solid black;
+    outline: 1px solid #173b78;
 }
 .sticky-uni-selector {
     position: sticky;
@@ -901,66 +910,6 @@ header, footer {
     background-color: white;
     padding-top: 12px;
     padding-bottom: 12px;
-}
-.compare-uni-dropdown {
-    position: relative;
-    width: 100%;
-}
-.sticky-uni-selector .compare-uni-select {
-    width: 100%;
-    min-width: 0;
-    font-size: clamp(0.8rem, 1.5vw, 1.25rem) !important;
-    padding: 0.75rem 2rem 0.75rem 0.75rem !important;
-}
-.compare-uni-menu {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    left: 0;
-    z-index: 1035;
-    width: 100%;
-    max-height: min(50vh, 22rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border: 1px solid #d7deea;
-    border-radius: 0.5rem;
-    background: #fff;
-    box-shadow: 0 0.5rem 1rem rgba(11, 35, 72, 0.18);
-    scrollbar-width: thin;
-    scrollbar-color: #9aa9bf #f1f5fc;
-}
-.compare-uni-group-label {
-    padding: 0.5rem 0.75rem 0.25rem;
-    color: #52627a;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-.compare-uni-option {
-    display: block;
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    border: 0;
-    background: #fff;
-    color: #0b2348;
-    text-align: left;
-    overflow-wrap: anywhere;
-}
-.compare-uni-option:hover:not(:disabled),
-.compare-uni-option.selected {
-    background: #f1f5fc;
-}
-.compare-uni-option:focus-visible {
-    position: relative;
-    z-index: 1;
-    outline: 2px solid #1f4e9c;
-    outline-offset: -2px;
-}
-.compare-uni-option:disabled {
-    color: #8793a6;
-    cursor: not-allowed;
-}
-.custom-select-blue {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%230d6efd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 /* md breakpoint - tablet */
 @media (max-width: 991.98px) {
@@ -981,11 +930,6 @@ header, footer {
 }
 /* below md breakpoint - bottom border only */
 @media (max-width: 767.98px) {
-    .sticky-uni-selector .compare-uni-select {
-        font-size: clamp(0.75rem, 3.2vw, 1rem) !important;
-        padding: 0.625rem 1.75rem 0.625rem 0.625rem !important;
-    }
-
     .form-select {
         border: none;
         border-bottom: 1px solid var(--bs-border-color);

@@ -1,10 +1,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useCourseCartStore } from '@/stores/courseCart'
 import { ref } from 'vue'
 import { Collapse } from 'bootstrap'
 
 const auth = useAuthStore()
+const cart = useCourseCartStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 
@@ -70,7 +72,7 @@ async function logout() {
               data-testid="nav-universities"
               @click="closeMobileMenu"
             >
-              Universities
+              Partner Universities
             </RouterLink>
           </li>
 
@@ -82,6 +84,18 @@ async function logout() {
               @click="closeMobileMenu"
             >
               Compare
+            </RouterLink>
+          </li>
+
+          <li class="nav-item">
+            <RouterLink
+              class="nav-link"
+              to="/courses"
+              data-testid="nav-courses"
+              @click="closeMobileMenu"
+            >
+              Courses
+              <span v-if="cart.items.length" class="badge rounded-pill text-bg-light ms-1" data-testid="nav-cart-count">{{ cart.items.length }}</span>
             </RouterLink>
           </li>
 
@@ -100,6 +114,17 @@ async function logout() {
             <li class="nav-item">
               <RouterLink
                 class="nav-link"
+                to="/schedule"
+                data-testid="nav-schedule"
+                @click="closeMobileMenu"
+              >
+                Schedule
+              </RouterLink>
+            </li>
+
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link"
                 to="/cost-estimator"
                 data-testid="nav-cost-estimator"
                 @click="closeMobileMenu"
@@ -112,14 +137,22 @@ async function logout() {
 
         <div class="d-flex gap-2">
           <template v-if="auth.user">
-
+            <template v-if="auth.isAdmin">
+              <button
+                class="btn btn-outline-light btn-sm"
+                data-testid="nav-preview-toggle"
+                @click="auth.togglePreview()"
+              >
+                {{ auth.previewAsStudent ? 'Back to Staff View' : 'View as Student' }}
+              </button>
+            </template>
 
             <button
               class="btn btn-outline-light btn-sm"
               @click="logout"
               data-testid="nav-logout-btn"
             >
-              Log out
+              Log Out
             </button>
 
           </template>
@@ -132,7 +165,7 @@ async function logout() {
               data-testid="nav-login-link"
               @click="closeMobileMenu"
             >
-              Log in
+              Log In
             </RouterLink>
 
             <RouterLink

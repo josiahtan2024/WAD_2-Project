@@ -1,15 +1,38 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
+import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
+import BudgetNotice from '@/components/BudgetNotice.vue'
 
 const pageLoading = ref(true)
 const pageError = ref('')
+const errorMessage = ref('')
+const successMessage = ref('')
+
+let noticeTimeout = null
+watch([errorMessage, successMessage], ([error, success]) => {
+  if (noticeTimeout) clearTimeout(noticeTimeout)
+  if (!error && !success) return
+
+  const errorAtSchedule = error
+  const successAtSchedule = success
+  noticeTimeout = setTimeout(() => {
+    if (errorMessage.value === errorAtSchedule) errorMessage.value = ''
+    if (successMessage.value === successAtSchedule) successMessage.value = ''
+    noticeTimeout = null
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (noticeTimeout) clearTimeout(noticeTimeout)
+})
 
 const shortlist = useShortlistStore()
 
 const uni = useUniversitiesStore()
+const auth = useAuthStore()
 
 const sortBy = ref('added')
 const currentPage = ref(1)
@@ -27,6 +50,7 @@ const saved = computed(() => {
         : null
     })
     .filter(Boolean)
+    .filter((university) => auth.adminActive || university.published !== false)
 
   const compareName = (a, b) =>
     (a.name ?? '').localeCompare(b.name ?? '', 'en', {
@@ -75,10 +99,13 @@ function getLogoUrl(path) {
 }
 
 async function remove(u) {
+  errorMessage.value = ''
+  successMessage.value = ''
   try {
     await shortlist.remove(u.id)
+    successMessage.value = `${u.name} removed from your shortlist.`
   } catch (e) {
-    shortlist.error = e.message
+    errorMessage.value = e.message || 'Unable to remove this university from your shortlist.'
   }
 }
 
@@ -100,12 +127,19 @@ onMounted(async () => {
 
 <template>
   <section data-testid="shortlist-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-    <h1 class="h3 mb-0">Your shortlist</h1>
+    <BudgetNotice
+      :data-testid="shortlist.error || pageError ? 'shortlist-error' : undefined"
+      :error-message="errorMessage || shortlist.error || pageError"
+      :success-message="successMessage"
+      @dismiss-error="errorMessage = ''; shortlist.error = null; pageError = ''"
+      @dismiss-success="successMessage = ''"
+    />
+    <div class="d-flex flex-column gap-3 mb-3">
+    <h1 class="page-title h3 fw-bold text-center mb-0">Your Shortlist</h1>
 
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex justify-content-end align-items-center gap-2">
       <label for="shortlist-sort" class="visually-hidden">
-        Sort shortlist
+        Sort Shortlist
       </label>
 
       <select
@@ -113,21 +147,13 @@ onMounted(async () => {
         v-model="sortBy"
         class="form-select form-select-sm shortlist-sort"
       >
-        <option value="name">Name</option>
-        <option value="country">Country</option>
-        <option value="added">Recently added</option>
+        <option value="name">University Name (A–Z)</option>
+        <option value="country">Country (A–Z)</option>
+        <option value="added">Recently Added</option>
       </select>
 
     </div>
   </div>
-<div
-  v-if="shortlist.error || pageError"
-  class="alert alert-danger"
-  data-testid="shortlist-error"
->
-  {{ shortlist.error || pageError }}
-</div>
-
 <div
   v-if="pageLoading || shortlist.loading"
   class="text-muted"
@@ -138,11 +164,12 @@ onMounted(async () => {
 
 <p
   v-else-if="!saved.length && !pageError"
-  class="text-muted"
+  class="text-muted text-center"
   data-testid="shortlist-empty"
 >
   Nothing shortlisted yet.
-  <RouterLink to="/universities">Browse universities</RouterLink>.
+  <br />
+  <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
 </p>
 <ul
   v-else-if="saved.length"
@@ -184,23 +211,25 @@ onMounted(async () => {
         class="btn btn-outline-primary"
         data-testid="shortlist-schedule-link"
       >
-        Plan schedule
+        Plan Schedule
       </RouterLink>
 
-      <RouterLink
-        :to="`/universities/${u.id}`"
-        class="btn btn-outline-primary"
-      >
-        Details
-      </RouterLink>
+      <div class="shortlist-secondary-actions">
+        <RouterLink
+          :to="`/universities/${u.id}`"
+          class="btn btn-outline-secondary"
+        >
+          Details
+        </RouterLink>
 
-      <button
-        class="btn btn-outline-secondary"
-        data-testid="shortlist-remove-btn"
-        @click="remove(u)"
-      >
-        Remove
-      </button>
+        <button
+          class="btn btn-outline-danger"
+          data-testid="shortlist-remove-btn"
+          @click="remove(u)"
+        >
+          Remove
+        </button>
+      </div>
     </div>
   </li>
 </ul>
@@ -307,8 +336,43 @@ onMounted(async () => {
 
 .shortlist-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
+}
+
+.shortlist-secondary-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
+.shortlist-actions .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+  .shortlist-main,
+  .shortlist-actions {
+    flex-basis: 100%;
+  }
+
+  .shortlist-actions {
+    flex-wrap: wrap;
+  }
+
+  .shortlist-actions > .btn,
+  .shortlist-secondary-actions {
+    flex: 1 0 100%;
+  }
+
+  .shortlist-secondary-actions {
+    width: 100%;
+  }
+
+  .shortlist-secondary-actions > .btn {
+    flex: 1 1 0;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -330,9 +394,6 @@ onMounted(async () => {
     font-size: 1.1rem;
   }
 
-  .shortlist-actions {
-    width: 100%;
-  }
 }
 
 .shortlist-sort {

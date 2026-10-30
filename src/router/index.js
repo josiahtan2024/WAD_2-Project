@@ -10,30 +10,31 @@ import ShortlistView from '@/views/ShortlistView.vue'
 import CompareView from '@/views/CompareView.vue'
 import ScheduleView from '@/views/ScheduleView.vue'
 import CostEstimator from '@/views/CostEstimatorView.vue'
+import CourseSearchView from '@/views/CourseSearchView.vue'
+import AboutView from '@/views/AboutView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView },
+  { path: '/about', name: 'about', component: AboutView },
   { path: '/login', name: 'login', component: LoginView },
   { path: '/signup', name: 'signup', component: SignupView },
   { path: '/universities', name: 'universities', component: UniversitiesView },
   { path: '/universities/:id', name: 'university', component: UniversityView },
   { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { requiresAuth: true } },
   { path: '/compare', name: 'compare', component: CompareView },
-  {
-    path: '/schedule/:universityId',
-    name: 'schedule',
-    component: ScheduleView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/cost-estimator',
-    name: 'cost-estimator',
-    component: CostEstimator,
-    meta: { requiresAuth: true },
-  },
+  { path: '/courses', name: 'courses', component: CourseSearchView },
+  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { requiresAuth: true }, },
+  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
 ]
 
-const router = createRouter({ history: createWebHistory(), routes })
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, _from, savedPosition) {
+    // Restore the prior position for browser back/forward; start new views at the top.
+    return savedPosition ?? { top: 0, left: 0 }
+  },
+})
 
 // Login guard: logged-out users are sent to /login and returned afterwards.
 router.beforeEach(async (to) => {
