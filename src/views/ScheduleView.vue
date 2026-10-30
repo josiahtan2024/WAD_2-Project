@@ -297,6 +297,8 @@ onMounted(async () => {
       </div>
     </div>
     <div v-if="schedule.loading" class="text-muted py-3" role="status" data-testid="schedule-loading">Loading schedule...</div>
+    <div v-if="schedule.error" class="alert alert-danger mt-3" role="alert" data-testid="schedule-error">{{ schedule.error }}</div>
+    <div v-if="saved" class="alert alert-success mt-3" role="status" data-testid="schedule-saved">Schedule saved.</div>
 
     <div class="filter-panel mb-4">
         <div class="row g-3 align-items-end">
