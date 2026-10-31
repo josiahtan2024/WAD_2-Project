@@ -29,19 +29,19 @@
 
 <style scoped>
 .app-footer {
-  color: #e8effb;
-  background: linear-gradient(120deg, #0b2348, #102d59);
+  color: #e5e7eb;
+  background: linear-gradient(120deg, #141b4d, #2c3366);
 }
 
 .footer-brand {
-  color: #fff;
+  color: #ffffff;
   font-size: 1.15rem;
   font-weight: 700;
   text-decoration: none;
 }
 
 .footer-brand:hover {
-  color: #d3e1fa;
+  color: #a4a9cf;
 }
 
 .footer-brand-mark {
@@ -50,18 +50,18 @@
   height: 2rem;
   place-items: center;
   border-radius: 0.65rem;
-  color: #0b2348;
-  background: #d8e5fa;
+  color: #141b4d;
+  background: #ffffff;
 }
 
 .footer-description {
   max-width: 34rem;
-  color: #bac9df;
+  color: #c5c9e2;
   line-height: 1.6;
 }
 
 .footer-links a {
-  color: #e8effb;
+  color: #e5e7eb;
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: none;
@@ -70,12 +70,12 @@
 
 .footer-links a:hover,
 .footer-links a.router-link-active {
-  color: #a9c8ff;
+  color: #ffffff;
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(226, 237, 255, 0.16);
-  color: #aebed5;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  color: #a4a9cf;
 }
 
 @media (max-width: 575.98px) {
