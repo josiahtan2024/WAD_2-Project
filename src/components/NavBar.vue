@@ -1,65 +1,97 @@
 <script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCourseCartStore } from '@/stores/courseCart'
-import { ref } from 'vue'
 import { Collapse } from 'bootstrap'
 
 const auth = useAuthStore()
 const cart = useCourseCartStore()
 const router = useRouter()
+
 const mobileMenuOpen = ref(false)
 
-function toggleMobileMenu() {
-  const menu = document.getElementById('nav-menu')
-  if (!menu || window.innerWidth >= 768) return
+let menuElement = null
+let collapseInstance = null
 
-  const collapse = Collapse.getOrCreateInstance(menu, { toggle: false })
-  if (menu.classList.contains('show')) {
-    collapse.hide()
-    mobileMenuOpen.value = false
-  } else {
-    collapse.show()
-    mobileMenuOpen.value = true
-  }
+function handleMenuShown() {
+  mobileMenuOpen.value = true
 }
 
-function closeMobileMenu() {
-  if (window.innerWidth >= 768) return
-
-  const menu = document.getElementById('nav-menu')
-  if (menu) Collapse.getOrCreateInstance(menu, { toggle: false }).hide()
+function handleMenuHidden() {
   mobileMenuOpen.value = false
 }
 
-async function logout() {
-  closeMobileMenu()
-  await auth.logout()
-  router.push('/login')
+function toggleMobileMenu() {
+  collapseInstance?.toggle()
 }
+
+function closeMobileMenu() {
+  if (!collapseInstance || window.innerWidth >= 992) return
+
+  collapseInstance.hide()
+}
+
+function togglePreview() {
+  auth.togglePreview()
+  closeMobileMenu()
+}
+
+async function logout() {
+  try {
+    closeMobileMenu()
+    await auth.logout()
+    await router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
+}
+
+onMounted(() => {
+  menuElement = document.getElementById('nav-menu')
+
+  if (!menuElement) return
+
+  collapseInstance = Collapse.getOrCreateInstance(menuElement, {
+    toggle: false,
+  })
+
+  menuElement.addEventListener('shown.bs.collapse', handleMenuShown)
+  menuElement.addEventListener('hidden.bs.collapse', handleMenuHidden)
+})
+
+onBeforeUnmount(() => {
+  if (!menuElement) return
+
+  menuElement.removeEventListener('shown.bs.collapse', handleMenuShown)
+  menuElement.removeEventListener('hidden.bs.collapse', handleMenuHidden)
+
+  collapseInstance?.dispose()
+  collapseInstance = null
+})
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-md border-bottom app-navbar" 
-  data-bs-theme="dark"
-  data-testid="nav-bar">
+  <nav
+    class="navbar navbar-expand-lg border-bottom app-navbar"
+    data-bs-theme="dark"
+    data-testid="nav-bar">
     <div class="container-xl">
       <RouterLink
         class="navbar-brand fw-semibold"
         to="/"
-        data-testid="nav-brand"
-      >
+        data-testid="nav-brand">
         SMUXchange
       </RouterLink>
 
       <button
         class="navbar-toggler"
         type="button"
-        aria-label="Toggle navigation"
+        aria-controls="nav-menu"
         :aria-expanded="mobileMenuOpen"
+        aria-label="Toggle navigation"
         @click="toggleMobileMenu"
-        data-testid="nav-toggle"
-      >
+        data-testid="nav-toggle">
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -70,8 +102,7 @@ async function logout() {
               class="nav-link"
               to="/universities"
               data-testid="nav-universities"
-              @click="closeMobileMenu"
-            >
+              @click="closeMobileMenu">
               Partner Universities
             </RouterLink>
           </li>
@@ -81,8 +112,7 @@ async function logout() {
               class="nav-link"
               to="/compare"
               data-testid="nav-compare"
-              @click="closeMobileMenu"
-            >
+              @click="closeMobileMenu">
               Compare
             </RouterLink>
           </li>
@@ -92,10 +122,14 @@ async function logout() {
               class="nav-link"
               to="/courses"
               data-testid="nav-courses"
-              @click="closeMobileMenu"
-            >
+              @click="closeMobileMenu">
               Courses
-              <span v-if="cart.items.length" class="badge rounded-pill text-bg-light ms-1" data-testid="nav-cart-count">{{ cart.items.length }}</span>
+              <span v-if="cart.items.length"
+                class="badge rounded-pill text-bg-light ms-1"
+                data-testid="nav-cart-count"
+                :aria-label="`${cart.items.length} courses in cart`">
+                {{ cart.items.length }}
+              </span>
             </RouterLink>
           </li>
 
@@ -105,8 +139,7 @@ async function logout() {
                 class="nav-link"
                 to="/shortlist"
                 data-testid="nav-shortlist"
-                @click="closeMobileMenu"
-              >
+                @click="closeMobileMenu">
                 Shortlist
               </RouterLink>
             </li>
@@ -116,8 +149,7 @@ async function logout() {
                 class="nav-link"
                 to="/schedule"
                 data-testid="nav-schedule"
-                @click="closeMobileMenu"
-              >
+                @click="closeMobileMenu">
                 Schedule
               </RouterLink>
             </li>
@@ -127,8 +159,7 @@ async function logout() {
                 class="nav-link"
                 to="/cost-estimator"
                 data-testid="nav-cost-estimator"
-                @click="closeMobileMenu"
-              >
+                @click="closeMobileMenu">
                 Budget
               </RouterLink>
             </li>
@@ -137,34 +168,27 @@ async function logout() {
 
         <div class="d-flex gap-2">
           <template v-if="auth.user">
-            <template v-if="auth.isAdmin">
-              <button
-                class="btn btn-outline-light btn-sm"
-                data-testid="nav-preview-toggle"
-                @click="auth.togglePreview()"
-              >
-                {{ auth.previewAsStudent ? 'Back to Staff View' : 'View as Student' }}
-              </button>
-            </template>
+            <button v-if="auth.isAdmin"
+              class="btn btn-outline-light btn-sm"
+              data-testid="nav-preview-toggle"
+              @click="togglePreview">
+              {{ auth.previewAsStudent ? 'Back to Staff View' : 'View as Student' }}
+            </button>
 
             <button
               class="btn btn-outline-light btn-sm"
-              @click="logout"
               data-testid="nav-logout-btn"
-            >
+              @click="logout">
               Log Out
             </button>
-
           </template>
 
           <template v-else>
-
             <RouterLink
               class="btn btn-outline-light btn-sm"
               to="/login"
               data-testid="nav-login-link"
-              @click="closeMobileMenu"
-            >
+              @click="closeMobileMenu">
               Log In
             </RouterLink>
 
@@ -172,9 +196,8 @@ async function logout() {
               class="btn btn-light btn-sm nav-signup"
               to="/signup"
               data-testid="nav-signup-link"
-              @click="closeMobileMenu"
-            >
-              Sign up
+              @click="closeMobileMenu">
+              Sign Up
             </RouterLink>
           </template>
         </div>

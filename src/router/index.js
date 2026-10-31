@@ -14,17 +14,17 @@ import CourseSearchView from '@/views/CourseSearchView.vue'
 import AboutView from '@/views/AboutView.vue'
 
 const routes = [
-  { path: '/', name: 'home', component: HomeView },
-  { path: '/about', name: 'about', component: AboutView },
-  { path: '/login', name: 'login', component: LoginView },
-  { path: '/signup', name: 'signup', component: SignupView },
-  { path: '/universities', name: 'universities', component: UniversitiesView },
-  { path: '/universities/:id', name: 'university', component: UniversityView },
-  { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { requiresAuth: true } },
-  { path: '/compare', name: 'compare', component: CompareView },
-  { path: '/courses', name: 'courses', component: CourseSearchView },
-  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { requiresAuth: true }, },
-  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
+  { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
+  { path: '/about', name: 'about', component: AboutView, meta: { title: 'About Us' } },
+  { path: '/login', name: 'login', component: LoginView, meta: { title: 'Login' } },
+  { path: '/signup', name: 'signup', component: SignupView, meta: { title: 'Sign Up' } },
+  { path: '/universities', name: 'universities', component: UniversitiesView, meta: { title: 'Partner Universities' } },
+  { path: '/universities/:id', name: 'university', component: UniversityView, meta: { title: 'University Details' } },
+  { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { title: 'My Shortlist', requiresAuth: true } },
+  { path: '/compare', name: 'compare', component: CompareView, meta: { title: 'Compare Universities' } },
+  { path: '/courses', name: 'courses', component: CourseSearchView, meta: { title: 'Course Search' } },
+  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { title: 'Cost Estimator', requiresAuth: true }, },
+  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { title: 'My Schedule', requiresAuth: true } },
 ]
 
 const router = createRouter({
@@ -40,9 +40,13 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   const auth = useAuthStore()
-  // TODO(student): auth.init() should restore the session before this check (see stores/auth.js)
+  await auth.init()
   if (!auth.user) return { name: 'login', query: { redirect: to.fullPath } }
   return true
+})
+
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} | SMUXchange` : 'SMUXchange'
 })
 
 export default router
