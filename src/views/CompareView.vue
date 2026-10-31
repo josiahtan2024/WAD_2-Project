@@ -12,7 +12,6 @@ import CompareRowHeader from '@/components/CompareRowHeader.vue'
 const router = useRouter()
 const auth = useAuthStore()
 
-// TODO TO-DO FIX SCALING AND RESPONSIVE UI
 // Universities
 const allUniversities = ref([])
 const universities = computed(() => {
@@ -320,10 +319,14 @@ async function createMap(idx) {
 
     element.innerHTML = ''
     const { lat, lon } = uni.location.coordinates
+
+    const isMobile = window.innerWidth < 768
+    const zoomLevel = isMobile ? 13 : 14
+
     const map = L.map(element, { 
         scrollWheelZoom: false,
         dragging: !L.Browser.mobile 
-    }).setView([lat, lon], 14)
+    }).setView([lat, lon], zoomLevel)
 
     map.on('click', () => {
         const googleMapsUrl =
@@ -332,8 +335,7 @@ async function createMap(idx) {
     })
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+        maxZoom: 19
     }).addTo(map)
 
     L.marker([lat, lon]).addTo(map).bindPopup(uni.name)
@@ -342,6 +344,7 @@ async function createMap(idx) {
 
     requestAnimationFrame(() => {
         map.invalidateSize()
+        map.setView([lat, lon], zoomLevel)
     })
 }
 
@@ -455,16 +458,16 @@ watch(
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
 
-        <section class="text-center py-5">
-            <div class="container">
-                <h1 class="display-4 fw-semibold">Compare Partner Universities</h1>
-                <p class="fs-5">SMU Global Experience</p>
-                <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
+        <section class="compare-hero text-center">
+            <div class="container-fluid">
+                <h1 class="compare-hero-title fw-semibold mb-3">Compare Partner Universities</h1>
+                <p class="compare-hero-subtitle mb-3">SMU Global Experience</p>
+                <p class="compare-hero-subtitle mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
 
-        <section class="container pb-5 mb-5">
+        <section class="container-fluid pb-5">
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"
@@ -472,7 +475,7 @@ watch(
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
-                        class="form-select fs-5 fw-semibold py-3 ps-3 text-truncate compare-university-select" data-testid="compare-university-select">
+                        class="compare-select form-select fw-semibold text-truncate compare-university-select" data-testid="compare-university-select">
                             <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
@@ -533,7 +536,7 @@ watch(
                 <!-- Location -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
                     <template #default>
-                        Location
+                        <span class="compare-row-header">Location</span>
                     </template>
                 </CompareRowHeader>
 
@@ -611,7 +614,7 @@ watch(
                 <!-- Cost -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
                     <template #default>
-                        Cost
+                        <span class="compare-row-header">Cost</span>
                     </template>
                 </CompareRowHeader>
 
@@ -714,7 +717,7 @@ watch(
                 <!-- Academics -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
                     <template #default>
-                        Academics
+                        <span class="compare-row-header">Academics</span>
                     </template>
                 </CompareRowHeader>
 
@@ -762,7 +765,7 @@ watch(
                 <!-- Exchange -->
                 <CompareRowHeader :unis-to-compare="unisToCompare">
                     <template #default>
-                        Exchange
+                        <span class="compare-row-header">Exchange</span>
                     </template>
                 </CompareRowHeader>
 
@@ -820,10 +823,13 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }} </span>
-                            <span class="d-md-inline d-none mx-2">-</span>
-                            <span class="d-md-none d-inline mx-4">to</span>
-                            <span class="d-block d-md-inline">{{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}</span>
+                            <span class="text-nowrap me-1">
+                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
+                            </span>
+                            <span class="text-nowrap">
+                                <span class="me-1">-</span>
+                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            </span>
                         </div>
                     </template>
                 </CompareRow>
@@ -872,10 +878,35 @@ watch(
 </template>
 
 <style scoped>
-header, footer {
-    background-color: #181e4a;
-    color: #ffffff;
-    text-align: center;
+.compare-hero {
+    margin-top: 3.75rem;
+    margin-bottom: 2.75rem;
+}
+.compare-hero-title {
+    font-size: 3.5rem;
+}
+.compare-hero-subtitle {
+    font-size: 1.25rem;
+}
+.compare-select {
+    font-size: 1.25rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    padding-left: 1rem;
+}
+.compare-row-header {
+    font-size: 2rem;
+}
+.compare-select:hover {
+    outline: 1px solid #173b78;
+}
+.sticky-uni-selector {
+    position: sticky;
+    top: var(--app-navbar-height);
+    z-index: 1030;
+    background-color: white;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 .uni-logo {
     height: 200px;
@@ -900,36 +931,47 @@ header, footer {
 .custom-hover-link:hover {
     text-decoration: underline !important;
 }
-.form-select:hover {
-    outline: 1px solid #173b78;
-}
-.sticky-uni-selector {
-    position: sticky;
-    top: var(--app-navbar-height);
-    z-index: 1030;
-    background-color: white;
-    padding-top: 12px;
-    padding-bottom: 12px;
-}
-/* md breakpoint - tablet */
+
 @media (max-width: 991.98px) {
+    .compare-hero-title {
+        font-size: 3rem;
+    }
+    .compare-row-header {
+        font-size: 1.75rem;
+    }
     .uni-logo {
         height: 150px;
     }
-
     .uni-logo img {
         width: 150px;
         height: 150px;
         max-width: 100%;
         max-height: 100%;
     }
-
     .uni-map {
-        height: 150px;
+        height: 175px;
     }
 }
-/* below md breakpoint - bottom border only */
+
 @media (max-width: 767.98px) {
+    .compare-hero {
+        margin-top: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .compare-hero-title {
+        font-size: 2.5rem;
+    }
+    .compare-hero-subtitle {
+        font-size: 1.125rem;
+    }
+    .compare-select {
+        font-size: 1.0625rem;
+        padding-top: 0.625rem;
+        padding-bottom: 0.625rem;
+    }
+    .compare-row-header {
+        font-size: 1.5rem;
+    }
     .form-select {
         border: none;
         border-bottom: 1px solid var(--bs-border-color);
@@ -937,60 +979,67 @@ header, footer {
         padding-left: 0 !important;
         outline: none;
     }
-
     .form-select:hover {
         outline: none;
         border-bottom: 1px solid black;
     }
-
     .form-select:focus {
         border: 1px solid transparent !important;
         border-bottom: 1px solid black !important;
         border-radius: 0.375rem !important;
     }
-
     .uni-logo {
         height: 120px;
     }
-
     .uni-logo img {
         width: 120px;
         height: 120px;
         max-width: 100%;
         max-height: 100%;
     }
-
     .uni-map {
-        height: 130px;
+        height: 160px;
     }
-
     .sticky-uni-selector {
         padding-top: 4px !important;
         padding-bottom: 4px !important;
     }
-
     .w-md-down-100 {
         display: flex !important;
         width: 100% !important;
     }
+
+    :deep(.leaflet-marker-icon) {
+        width: 20px !important;
+        height: 32px !important;
+        margin-left: -10px !important;
+        margin-top: -32px !important;
+    }
+    :deep(.leaflet-marker-shadow) {
+        width: 32px !important;
+        height: 32px !important;
+        margin-left: -10px !important;
+        margin-top: -32px !important;
+    }
+    :deep(.leaflet-control-zoom) {
+        transform: scale(0.75);
+        transform-origin: top left;
+    }
 }
-/* xs breakpoint - mobile */
+
 @media (max-width: 575.98px) {
     .uni-logo {
         height: 100px;
     }
-
     .uni-logo img {
         width: 100px;
         height: 100px;
         max-width: 100%;
         max-height: 100%;
     }
-
     .uni-map {
-        height: 120px;
+        height: 150px;
     }
-
     .sticky-uni-selector {
         padding-top: 4px !important;
         padding-bottom: 4px !important;
