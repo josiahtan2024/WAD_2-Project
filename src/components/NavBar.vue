@@ -166,13 +166,21 @@ onBeforeUnmount(() => {
           </template>
         </ul>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center flex-wrap">
           <template v-if="auth.user">
+            <!-- Admin mode indicator -->
+            <span v-if="auth.isAdmin"
+              class="admin-mode-indicator"
+              :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'">
+              {{ auth.adminActive ? 'Admin Mode' : 'Student Preview' }}
+            </span>
+
+            <!-- Admin preview toggle -->
             <button v-if="auth.isAdmin"
               class="btn btn-outline-light btn-sm"
               data-testid="nav-preview-toggle"
               @click="togglePreview">
-              {{ auth.previewAsStudent ? 'Back to Staff View' : 'View as Student' }}
+              {{ auth.previewAsStudent ? 'Exit Preview' : 'Preview as Student' }}
             </button>
 
             <button
@@ -205,3 +213,20 @@ onBeforeUnmount(() => {
     </div>
   </nav>
 </template>
+
+<style scoped>
+.admin-mode-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--app-gray-blue);
+  border-radius: 999px;
+  background: var(--app-blue);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+</style>
