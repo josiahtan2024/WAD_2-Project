@@ -1,4 +1,3 @@
-
 :root {
   /* Brand colours */
   --bs-primary: #2c3366;
@@ -85,6 +84,15 @@ button,
   --bs-btn-active-color: #fff;
   --bs-btn-active-bg: var(--app-navy);
   --bs-btn-active-border-color: var(--app-navy);
+}
+
+/* Links */
+.link-primary {
+  color: var(--app-blue) !important;
+}
+
+.link-primary:hover {
+  color: var(--app-blue) !important;
 }
 
 /* Shared overlays and dialogs */

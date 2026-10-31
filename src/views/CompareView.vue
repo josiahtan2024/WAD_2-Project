@@ -520,9 +520,9 @@ watch(
                 special-vif-class="d-flex flex-column flex-grow-1">
                     <template #default="{ uni }">
                         <div class="border-top pt-3">
-                            <button class="btn rounded-pill px-4" :class="isShortlisted(uni.id) ? 'btn-primary' : 'btn-outline-primary'" 
+                            <button class="btn rounded-pill px-3 px-sm-4" :class="isShortlisted(uni.id) ? 'btn-primary' : 'btn-outline-primary'" 
                             :disabled="shortlistLoadingIds[uni.id]" @click="toggleShortlist(uni.id)">
-                                <i class="bi d-none d-md-inline-block me-1" :class="isShortlisted(uni.id) ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
+                                <i class="bi d-none d-sm-inline-block me-1" :class="isShortlisted(uni.id) ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
                                 {{ isShortlisted(uni.id) ? 'Shortlisted' : 'Shortlist' }}
                             </button>
                         </div>
