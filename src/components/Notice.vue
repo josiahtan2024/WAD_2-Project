@@ -52,7 +52,7 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 <style scoped>
 .notice-wrap {
   position: fixed;
-  top: 1rem;
+  top: calc(var(--app-navbar-height) + 0.75rem);
   left: 50%;
   transform: translateX(-50%);
   width: min(42rem, calc(100vw - 2rem));
@@ -90,6 +90,13 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 .notice-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
 .notice-enter-from,
 .notice-leave-to { opacity: 0; transform: translateY(-0.5rem); }
+
+@media (max-width: 991.98px) {
+  .notice-wrap {
+    top: auto;
+    bottom: 1rem;
+  }
+}
 
 @keyframes notice-enter {
   from { opacity: 0; transform: translateY(-0.5rem); }

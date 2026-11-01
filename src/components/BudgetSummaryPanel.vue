@@ -29,7 +29,7 @@ const emit = defineEmits(['use-published-estimates'])
                   Your Estimated Exchange Budget
                 </p>
 
-                <h2 class="display-6 fw-bold mb-1">
+                <h2 class="display-6 fw-bold mb-1" data-testid="budget-total">
                   {{ formatMoney(totalExchangeBudget) }}
                 </h2>
 
