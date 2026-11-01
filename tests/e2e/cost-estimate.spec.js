@@ -7,10 +7,10 @@ test.describe('cost estimate', () => {
   })
 
   test('shows the published monthly estimate in local currency and SGD', async ({ page }) => {
-    await expect(page.getByText('Estimated monthly total')).toBeVisible()
-    await expect(page.getByText(/Estimated in SGD:/)).toBeVisible()
-    for (const expense of ['Accommodation', 'Food', 'Transport', 'Personal expenses']) {
-      await expect(page.getByText(expense, { exact: true })).toBeVisible()
+    await expect(page.getByTestId('university-monthly-total-label')).toBeVisible()
+    await expect(page.getByTestId('university-monthly-total-sgd')).toBeVisible()
+    for (const expense of ['accommodation', 'food', 'transport', 'personal']) {
+      await expect(page.getByTestId(`university-cost-${expense}`)).toBeVisible()
     }
   })
 })

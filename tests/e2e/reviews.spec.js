@@ -24,9 +24,9 @@ async function postReview(page, text, stars = 4) {
 async function deleteMyReview(page) {
   while (await page.getByTestId('review-delete-btn').count()) {
     await page.getByTestId('review-delete-btn').first().click()
-    const confirmation = page.getByRole('dialog')
+    const confirmation = page.getByTestId('delete-confirm-dialog')
     await expect(confirmation).toBeVisible()
-    await confirmation.getByRole('button', { name: 'Delete Review', exact: true }).click()
+    await confirmation.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
   }
 }
@@ -183,9 +183,9 @@ test.describe('reviews', () => {
     await postReview(page, 'Review to delete')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
     await page.getByTestId('review-delete-btn').click()
-    const confirmation = page.getByRole('dialog')
+    const confirmation = page.getByTestId('delete-confirm-dialog')
     await expect(confirmation).toBeVisible()
-    await confirmation.getByRole('button', { name: 'Delete Review', exact: true }).click()
+    await confirmation.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
     await expect(page.getByTestId('review-body-input')).toBeVisible()
   })

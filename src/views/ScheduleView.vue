@@ -291,10 +291,10 @@ onMounted(async () => {
           <div class="row justify-content-center">
 
             <div class="schedule-mode-toggle btn-group my-3" role="group" aria-label="Schedule mode">
-              <input type="radio" class="btn-check" id="view" name="schedule-mode" autocomplete="off" :checked="!editSchedule" @change="editSchedule=false">
+              <input type="radio" class="btn-check" id="view" name="schedule-mode" autocomplete="off" data-testid="schedule-view-mode" :checked="!editSchedule" @change="editSchedule=false">
               <label class="btn" :class="editSchedule ? 'btn-outline-primary' : 'btn-primary'" for="view">View Schedule</label>
 
-              <input type="radio" class="btn-check" id="edit" name="schedule-mode" autocomplete="off" :checked="editSchedule" @change="editSchedule=true">
+              <input type="radio" class="btn-check" id="edit" name="schedule-mode" autocomplete="off" data-testid="schedule-edit-mode" :checked="editSchedule" @change="editSchedule=true">
               <label class="btn" :class="editSchedule ? 'btn-primary' : 'btn-outline-primary'" for="edit">Edit Schedule</label>
             </div>
           </div>
@@ -305,7 +305,7 @@ onMounted(async () => {
               <div class="col-md-8 text-center p-1">
                 You have no schedules planned for this university. Click on <span class="text-primary fw-bold">'New Schedule'</span> to start.
               </div>
-              <button type="button" class="btn btn-outline-primary col-md-3" id="create-schedule-btn" @click="openScheduleBlock()">
+              <button type="button" class="btn btn-outline-primary col-md-3" id="create-schedule-btn" data-testid="schedule-create-button" @click="openScheduleBlock()">
                 {{editSchedule?'Loading..':'New Schedule'}}
               </button>
               

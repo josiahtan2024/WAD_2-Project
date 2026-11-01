@@ -13,10 +13,10 @@ test.describe('saved budget planner', () => {
   test.afterEach(async ({ page }) => {
     if (!budgetCreated) return
     await page.goto('/cost-estimator')
-    const newestBudget = page.getByRole('row').nth(1)
+    const newestBudget = page.getByTestId('budget-row').first()
     await expect(newestBudget).toBeVisible()
-    await newestBudget.getByRole('button', { name: 'Delete' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete Budget' }).click()
+    await newestBudget.getByTestId('budget-delete-button').click()
+    await page.getByTestId('delete-confirm-action').click()
     budgetCreated = false
   })
 
@@ -28,23 +28,20 @@ test.describe('saved budget planner', () => {
     }))
 
     await page.goto('/cost-estimator')
-    await expect(page.getByRole('heading', { name: 'My Budgets' })).toBeVisible()
+    await expect(page.getByTestId('budget-heading')).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'No Budgets Yet' }).or(page.locator('table.budget-table'))
+      page.getByTestId('budget-empty-state').or(page.getByTestId('budget-table'))
     ).toBeVisible()
     // Capture existing rows before opening the planner, which unmounts the list.
     // The database allows only one budget per user and university.
-    const savedRows = await page.locator('tbody tr').allTextContents()
-    await page.getByRole('button', { name: /Create (New|Your First) Budget/ }).first().click()
+    const savedRows = await page.getByTestId('budget-row').allTextContents()
+    await page.getByTestId('budget-create-button').first().click()
 
-    const university = page.locator('#university')
-    const [, universityOptions] = await Promise.all([
-      page.locator('tbody tr').allTextContents(),
-      university.locator('option').evaluateAll((options) => options.slice(1).map((option) => ({
+    const university = page.getByTestId('budget-university-select')
+    const universityOptions = await university.evaluate((select) => Array.from(select.options).slice(1).map((option) => ({
         value: option.value,
         name: option.textContent.split(/\s+(?:â€”|—|–|-)\s+/u)[0].trim(),
-      }))),
-    ])
+      })))
     const availableUniversity = universityOptions.find((option) =>
       !savedRows.some((row) => row.includes(option.name))
     )
@@ -52,47 +49,47 @@ test.describe('saved budget planner', () => {
       test.skip(true, 'Budget tests need a published university without an existing budget for this account.')
     }
     await university.selectOption(availableUniversity.value)
-    await page.locator('#duration').fill('4')
+    await page.getByTestId('budget-duration-input').fill('4')
     const totalBeforeExpenses = await page.getByTestId('budget-total').innerText()
-    await page.locator('#accommodation').fill('1200')
-    await page.locator('#food').fill('450')
-    await page.locator('#transport').fill('120')
-    await page.locator('#personalExpenses').fill('180')
-    await page.locator('#otherExpenses').fill('50')
+    await page.getByTestId('budget-accommodation-input').fill('1200')
+    await page.getByTestId('budget-food-input').fill('450')
+    await page.getByTestId('budget-transport-input').fill('120')
+    await page.getByTestId('budget-personal-input').fill('180')
+    await page.getByTestId('budget-other-input').fill('50')
     await expect(page.getByTestId('budget-total')).not.toHaveText(totalBeforeExpenses)
 
-    await page.getByRole('button', { name: 'Create Budget' }).click()
-    await expect(page.getByText('Your new budget has been created successfully.')).toBeVisible()
+    await page.getByTestId('budget-submit-button').click()
+    await expect(page.getByTestId('notice-success-message')).toContainText('Your new budget has been created successfully.')
     budgetCreated = true
-    const createdBudget = page.getByRole('row').filter({ hasText: availableUniversity.name })
+    const createdBudget = page.getByTestId('budget-row').filter({ hasText: availableUniversity.name })
     await expect(createdBudget).toHaveCount(1)
-    await page.getByRole('button', { name: 'Dismiss success message' }).click()
+    await page.getByTestId('notice-dismiss-success').click()
 
-    const newestBudget = page.getByRole('row').nth(1)
+    const newestBudget = page.getByTestId('budget-row').first()
     await expect(newestBudget).toContainText('4 months')
-    await newestBudget.getByRole('button', { name: 'Read' }).click()
-    const details = page.getByRole('dialog')
+    await newestBudget.getByTestId('budget-read-button').click()
+    const details = page.getByTestId('budget-details-dialog')
     await expect(details).toBeVisible()
     await expect(details).toContainText('4 months')
-    await details.getByRole('button', { name: 'Close', exact: true }).click()
+    await details.getByTestId('budget-details-close').click()
 
-    await newestBudget.getByRole('button', { name: 'Edit' }).click()
-    await expect(page.locator('#duration')).toHaveValue('4')
-    await page.locator('#duration').fill('5')
-    await page.getByRole('button', { name: 'Update Budget' }).click()
-    await expect(page.getByText('Your budget has been updated successfully.')).toBeVisible()
+    await newestBudget.getByTestId('budget-edit-button').click()
+    await expect(page.getByTestId('budget-duration-input')).toHaveValue('4')
+    await page.getByTestId('budget-duration-input').fill('5')
+    await page.getByTestId('budget-submit-button').click()
+    await expect(page.getByTestId('notice-success-message')).toContainText('Your budget has been updated successfully.')
 
-    const updatedBudget = page.getByRole('row').nth(1)
+    const updatedBudget = page.getByTestId('budget-row').first()
     await expect(updatedBudget).toContainText('5 months')
-    await updatedBudget.getByRole('button', { name: 'Delete' }).click()
-    const confirmation = page.getByRole('dialog')
+    await updatedBudget.getByTestId('budget-delete-button').click()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
     await expect(confirmation).toBeVisible()
-    await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click()
-    await expect(page.getByRole('row').nth(1)).toContainText('5 months')
+    await confirmation.getByTestId('delete-confirm-cancel').click()
+    await expect(page.getByTestId('budget-row').first()).toContainText('5 months')
 
-    await page.getByRole('row').nth(1).getByRole('button', { name: 'Delete' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete Budget' }).click()
-    await expect(page.getByText('Budget deleted successfully.')).toBeVisible()
+    await page.getByTestId('budget-row').first().getByTestId('budget-delete-button').click()
+    await page.getByTestId('delete-confirm-action').click()
+    await expect(page.getByTestId('notice-success-message')).toContainText('Budget deleted successfully.')
     budgetCreated = false
   })
 })

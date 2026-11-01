@@ -39,10 +39,10 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
           <div class="notice-icon notice-icon-success" aria-hidden="true">✓</div>
           <div class="flex-grow-1">
             <h2 class="h6 fw-bold mb-1">Successfully Completed</h2>
-            <p class="mb-0">{{ successMessage }}</p>
+            <p class="mb-0" data-testid="notice-success-message">{{ successMessage }}</p>
             <slot name="actions" />
           </div>
-          <button type="button" class="btn-close" aria-label="Dismiss success message" @click="emit('dismiss-success')"></button>
+          <button type="button" class="btn-close" aria-label="Dismiss success message" data-testid="notice-dismiss-success" @click="emit('dismiss-success')"></button>
         </div>
       </div>
     </div>

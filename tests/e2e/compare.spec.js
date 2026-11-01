@@ -9,7 +9,7 @@ test.describe('compare', () => {
 
   test('empty shortlist leaves all comparison slots unselected', async ({ page }) => {
     await page.goto('/compare')
-    await expect(page.getByRole('heading', { name: 'Compare Partner Universities' })).toBeVisible()
+    await expect(page.getByTestId('compare-heading')).toBeVisible()
     const slots = page.getByTestId('compare-university-select')
     await expect(slots).toHaveCount(3)
     for (const slot of await slots.all()) await expect(slot).toHaveValue('')

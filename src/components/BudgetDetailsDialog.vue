@@ -23,7 +23,7 @@ function formatPreference(value) {
 <template>
   <Transition name="budget-details">
     <div v-if="budget" class="details-backdrop" role="presentation" @click.self="emit('close')">
-      <section class="details-card card border-0 shadow-lg" role="dialog" aria-modal="true" aria-labelledby="budget-details-title">
+      <section class="details-card card border-0 shadow-lg" role="dialog" aria-modal="true" aria-labelledby="budget-details-title" data-testid="budget-details-dialog">
         <div class="card-header bg-white border-0 d-flex justify-content-between gap-3 p-4 pb-2">
           <div>
             <p class="text-secondary small mb-1">Saved exchange budget</p>
@@ -55,7 +55,7 @@ function formatPreference(value) {
         </div>
 
         <div class="card-footer bg-white border-0 d-flex justify-content-end p-4 pt-2">
-          <button type="button" class="btn btn-secondary" @click="emit('close')">Close</button>
+          <button type="button" class="btn btn-secondary" data-testid="budget-details-close" @click="emit('close')">Close</button>
         </div>
       </section>
     </div>

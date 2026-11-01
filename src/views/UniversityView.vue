@@ -263,15 +263,15 @@ watch(() => route.params.id, async () => {
               </div>
               <template v-if="universityCost">
                 <div class="mb-3">
-                  <div class="small text-secondary">Estimated monthly total</div>
+                  <div class="small text-secondary" data-testid="university-monthly-total-label">Estimated monthly total</div>
                   <div class="h4 fw-bold mb-0">{{ formatMoney(monthlyCost, universityCost.currency_code) }}</div>
-                  <div class="small text-secondary">Estimated in SGD: {{ formatMoney(monthlyCostSgd, 'SGD') }}</div>
+                  <div class="small text-secondary" data-testid="university-monthly-total-sgd">Estimated in SGD: {{ formatMoney(monthlyCostSgd, 'SGD') }}</div>
                 </div>
                 <dl class="detail-list mb-0">
-                  <div><dt>Accommodation</dt><dd>{{ formatMoney(universityCost.accommodation, universityCost.currency_code) }}</dd></div>
-                  <div><dt>Food</dt><dd>{{ formatMoney(universityCost.food, universityCost.currency_code) }}</dd></div>
-                  <div><dt>Transport</dt><dd>{{ formatMoney(universityCost.transport, universityCost.currency_code) }}</dd></div>
-                  <div><dt>Personal expenses</dt><dd>{{ formatMoney(universityCost.personal_expenses, universityCost.currency_code) }}</dd></div>
+                  <div data-testid="university-cost-accommodation"><dt>Accommodation</dt><dd>{{ formatMoney(universityCost.accommodation, universityCost.currency_code) }}</dd></div>
+                  <div data-testid="university-cost-food"><dt>Food</dt><dd>{{ formatMoney(universityCost.food, universityCost.currency_code) }}</dd></div>
+                  <div data-testid="university-cost-transport"><dt>Transport</dt><dd>{{ formatMoney(universityCost.transport, universityCost.currency_code) }}</dd></div>
+                  <div data-testid="university-cost-personal"><dt>Personal expenses</dt><dd>{{ formatMoney(universityCost.personal_expenses, universityCost.currency_code) }}</dd></div>
                 </dl>
               </template>
               <p v-else class="text-secondary mb-0">Cost information is not available.</p>

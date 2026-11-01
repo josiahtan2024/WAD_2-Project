@@ -23,14 +23,14 @@ test.describe('schedule', () => {
     await expect(page).toHaveURL(/\/schedule\/\d+/)
     await expect(page.getByTestId('schedule-period-select')).toBeVisible()
 
-    const viewMode = page.locator('#view')
+    const viewMode = page.getByTestId('schedule-view-mode')
     if (await viewMode.count()) {
-      await page.locator('label[for="edit"]').click()
-      await expect(page.locator('#edit')).toBeChecked()
-      await page.locator('label[for="view"]').click()
+      await page.getByTestId('schedule-edit-mode').check()
+      await expect(page.getByTestId('schedule-edit-mode')).toBeChecked()
+      await viewMode.check()
       await expect(viewMode).toBeChecked()
     } else {
-      await page.locator('#create-schedule-btn').click()
+      await page.getByTestId('schedule-create-button').click()
       await expect(page.getByTestId('schedule-block')).toBeVisible({ timeout: 5000 })
     }
   })
