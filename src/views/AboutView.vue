@@ -6,8 +6,10 @@
           <p class="text-uppercase fw-bold small mb-3 about-eyebrow"><span class="about-eyebrow-mark"></span> About SMUXchange</p>
           <h1 class="page-title display-5 fw-bold mb-3">Your next chapter starts with a good plan.</h1>
           <p class="lead mb-4 about-intro">
-            Choosing where to study abroad is exciting. Bringing all the important details together
-            should be easier. SMUXchange gives SMU students one place to explore options and plan ahead.
+
+            SMUXchange brings exchange research and planning tools together,
+            helping SMU students explore destinations, compare options,
+            and prepare for their exchange journey.
           </p>
           <RouterLink class="btn btn-light btn-lg about-hero-cta" :to="{ name: 'universities' }">
             Explore universities <i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
@@ -21,7 +23,7 @@
             </div>
             <div class="journey-item">
               <span class="journey-icon"><i class="bi bi-compass" aria-hidden="true"></i></span>
-              <div><span class="journey-label">Explore</span><span class="journey-caption">Find a place that feels right</span></div>
+              <div><span class="journey-label">Explore</span><span class="journey-caption">Discover destinations</span></div>
               <i class="bi bi-check-circle-fill journey-check" aria-hidden="true"></i>
             </div>
             <div class="journey-connector"></div>
@@ -33,11 +35,11 @@
             <div class="journey-connector"></div>
             <div class="journey-item">
               <span class="journey-icon"><i class="bi bi-airplane" aria-hidden="true"></i></span>
-              <div><span class="journey-label">Get ready</span><span class="journey-caption">Feel prepared for what's ahead</span></div>
+              <div><span class="journey-label">Get ready</span><span class="journey-caption">Prepare for your next chapter</span></div>
               <i class="bi bi-arrow-up-right journey-next" aria-hidden="true"></i>
             </div>
           </div>
-          <p class="about-hero-note small mb-0 mt-3"><i class="bi bi-stars me-2" aria-hidden="true"></i>One place for the big picture and the details.</p>
+          <p class="about-hero-note small mb-0 mt-3"><i class="bi bi-stars me-2" aria-hidden="true"></i>Everything you need to plan ahead.</p>
         </div>
       </div>
     </header>
@@ -46,24 +48,24 @@
       <div class="col-12 col-lg-5">
         <article class="about-card about-problem h-100 rounded-4 p-4 p-md-5">
           <span class="about-kicker"><i class="bi bi-signpost-split me-2" aria-hidden="true"></i>The challenge</span>
-          <h2 class="h3 mt-3 mb-3">Too many tabs. Too many unknowns.</h2>
+          <h2 class="h3 mt-3 mb-3">Exchange planning can get complicated.</h2>
           <p class="mb-0">
-            Exchange decisions involve more than picking a destination. Students need to compare
-            partner universities, understand course options and credit mappings, estimate expenses,
-            and fit classes into a weekly plan. When those details are scattered, it takes more work
-            to compare choices and feel prepared.
+            Comparing universities, checking courses, estimating costs
+            and planning schedules can mean juggling information across
+            multiple platforms. Keeping everything organised shouldn't
+            be another challenge.
           </p>
         </article>
       </div>
       <div class="col-12 col-lg-7">
         <article class="about-card about-card-highlight h-100 rounded-4 p-4 p-md-5">
           <span class="about-kicker"><i class="bi bi-lightbulb me-2" aria-hidden="true"></i>Why we built it</span>
-          <h2 class="h3 mt-3 mb-3">Make the whole decision easier to see.</h2>
+          <h2 class="h3 mt-3 mb-3">One place to bring it all together.</h2>
           <p class="mb-0">
-            We created SMUXchange to make exchange planning clearer and more connected. The site
-            brings useful university information and practical planning tools together, so students
-            can explore alternatives, keep track of their preferences, and prepare for the next steps
-            in one place.
+            SMUXchange simplifies exchange planning by bringing university
+            information and practical tools into one platform. Explore
+            your options, organise your preferences and build a plan
+            with greater clarity.
           </p>
         </article>
       </div>
@@ -73,25 +75,25 @@
       <div class="row g-4 align-items-center">
         <div class="col-12 col-lg-4">
           <p class="text-uppercase fw-bold small text-primary mb-2">How we help</p>
-          <h2 id="approach-heading" class="h3 mb-0">A connected way to plan</h2>
+          <h2 id="approach-heading" class="h3 mb-0">Everything in one place.</h2>
         </div>
         <div class="col-12 col-lg-8">
           <div class="row g-3">
             <div class="col-12 col-md-6">
               <h3 class="h6 fw-bold"><i class="bi bi-buildings text-primary me-2" aria-hidden="true"></i>Explore and compare</h3>
-              <p class="mb-0">Browse partner universities, review key details, and shortlist options to compare.</p>
+              <p class="mb-0">Discover partner universities and compare your shortlisted destinations.</p>
             </div>
             <div class="col-12 col-md-6">
               <h3 class="h6 fw-bold"><i class="bi bi-book text-primary me-2" aria-hidden="true"></i>Plan your courses</h3>
-              <p class="mb-0">Search available courses, check credit mappings, and add courses to your cart.</p>
+              <p class="mb-0">Browse courses, check credit mappings and manage your selections.</p>
             </div>
             <div class="col-12 col-md-6">
-              <h3 class="h6 fw-bold"><i class="bi bi-calendar-week text-primary me-2" aria-hidden="true"></i>Build a weekly schedule</h3>
-              <p class="mb-0">Use your selected courses to draft and save a timetable for an exchange period.</p>
+              <h3 class="h6 fw-bold"><i class="bi bi-calendar-week text-primary me-2" aria-hidden="true"></i>Build your schedule</h3>
+              <p class="mb-0">Create and save a weekly timetable around your selected courses.</p>
             </div>
             <div class="col-12 col-md-6">
               <h3 class="h6 fw-bold"><i class="bi bi-wallet2 text-primary me-2" aria-hidden="true"></i>Estimate your costs</h3>
-              <p class="mb-0">Create a budget for your exchange and adjust estimates to suit your plans.</p>
+              <p class="mb-0">Plan your exchange budget and adjust expenses to suit your needs.</p>
             </div>
           </div>
         </div>
@@ -102,7 +104,7 @@
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
         <div>
           <p class="text-uppercase fw-bold small text-primary mb-2">Getting started</p>
-          <h2 id="steps-heading" class="h3 mb-0">How to use SMUXchange</h2>
+          <h2 id="steps-heading" class="h3 mb-0">Your exchange, step by step.</h2>
         </div>
         <RouterLink class="btn btn-primary" :to="{ name: 'universities' }">Explore Universities</RouterLink>
       </div>
@@ -110,29 +112,29 @@
         <li class="col-12 col-md-6 col-xl-3">
           <div class="about-step h-100 rounded-3 p-3">
           <span class="step-index">01</span>
-            <h3 class="h6 fw-bold mt-3">Find your options</h3>
-            <p class="mb-0">Browse universities and open a profile to review location, costs, courses, and exchange periods.</p>
+            <h3 class="h6 fw-bold mt-3">Explore destinations</h3>
+            <p class="mb-0">Browse university profiles, courses, costs and exchange periods.</p>
           </div>
         </li>
         <li class="col-12 col-md-6 col-xl-3">
           <div class="about-step h-100 rounded-3 p-3">
           <span class="step-index">02</span>
-            <h3 class="h6 fw-bold mt-3">Save and compare</h3>
-            <p class="mb-0">Sign in to shortlist universities and compare your preferred destinations side by side.</p>
+            <h3 class="h6 fw-bold mt-3">Shortlist your choices</h3>
+            <p class="mb-0">Save your preferred universities and compare them side by side.</p>
           </div>
         </li>
         <li class="col-12 col-md-6 col-xl-3">
           <div class="about-step h-100 rounded-3 p-3">
           <span class="step-index">03</span>
-            <h3 class="h6 fw-bold mt-3">Prepare your plan</h3>
-            <p class="mb-0">Search and cart courses, plan a weekly schedule, and save a budget for your exchange.</p>
+            <h3 class="h6 fw-bold mt-3">Build your plan</h3>
+            <p class="mb-0">Select courses, create your schedule and estimate your budget.</p>
           </div>
         </li>
         <li class="col-12 col-md-6 col-xl-3">
           <div class="about-step h-100 rounded-3 p-3">
           <span class="step-index">04</span>
-            <h3 class="h6 fw-bold mt-3">Review and refine</h3>
-            <p class="mb-0">Return to your saved plans whenever you want to update your choices and estimates.</p>
+            <h3 class="h6 fw-bold mt-3">Review your plans</h3>
+            <p class="mb-0">Revisit and update your saved choices whenever you need.</p>
           </div>
         </li>
       </ol>
@@ -145,9 +147,20 @@
   position: relative;
   overflow: hidden;
   color: #fff;
-  background: radial-gradient(ellipse at 85% 15%, rgba(94, 145, 226, 0.35), transparent 36%),
-    linear-gradient(125deg, #0b2348 0%, #12386e 60%, #1f4e9c 100%);
-  box-shadow: 0 1.25rem 3rem rgba(11, 35, 72, 0.16);
+  background:
+    radial-gradient(
+      ellipse at 85% 15%,
+      rgba(255, 255, 255, 0.12),
+      transparent 38%
+    ),
+    linear-gradient(
+      125deg,
+      var(--app-navy) 0%,
+      var(--app-blue) 65%,
+      #3d4785 100%
+    );
+
+  box-shadow: 0 1.25rem 3rem rgba(20, 27, 77, 0.18);
 }
 
 .about-hero h1 {

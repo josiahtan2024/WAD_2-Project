@@ -203,6 +203,16 @@ onBeforeUnmount(() => {
                   Schedule
                 </RouterLink>
               </li>
+
+              <li class="nav-item">
+                <RouterLink
+                  class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
+                  to="/about"
+                  data-testid="nav-about"
+                  @click="closeMobileMenu">
+                  About Us
+                </RouterLink>
+              </li>
             </template>
           </ul>
 
