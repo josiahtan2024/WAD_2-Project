@@ -9,7 +9,7 @@ import UniversityCard from '@/components/UniversityCard.vue'
 import AdminEditor from '@/components/admin/AdminEditor.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { calculateMonthlyCost } from '@/lib/universityCost'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()
@@ -130,7 +130,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <BudgetNotice
+  <Notice
     :data-testid="shortlist.error ? 'shortlist-error' : uni.error ? 'universities-error' : exchangeRates.error ? 'exchange-rates-error' : undefined"
     :error-message="shortlist.error || (uni.error ? `Could not load partner universities: ${uni.error}` : exchangeRates.error ? 'Unable to load SGD exchange rates.' : '')"
     @dismiss-error="shortlist.error ? shortlist.error = null : uni.error ? uni.error = null : exchangeRates.error = null"
@@ -138,7 +138,7 @@ onMounted(async () => {
     <template #actions>
       <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
     </template>
-  </BudgetNotice>
+  </Notice>
   <section data-testid="universities-page">
     <h1 class="page-title h3 fw-bold text-center mb-3">Partner Universities</h1>
     <template v-if="auth.adminActive">

@@ -7,10 +7,13 @@ test.describe('universities', () => {
   })
 
   test('search narrows the results', async ({ page }) => {
-    const before = await page.getByTestId('university-card').count()
-    await page.getByTestId('filter-search-input').fill('Tokyo')
-    await expect(page.getByTestId('university-card')).toHaveCount(1)
+    const cards = page.getByTestId('university-card')
+    const before = await cards.count()
+    const targetName = (await cards.first().getByTestId('university-card-name').innerText()).trim()
+    await page.getByTestId('filter-search-input').fill(targetName)
+    await expect(page.getByTestId('university-card-name').filter({ hasText: targetName })).toHaveCount(1)
     expect(before).toBeGreaterThan(1)
+    expect(await cards.count()).toBeLessThan(before)
   })
 
   test('no match shows the empty state', async ({ page }) => {

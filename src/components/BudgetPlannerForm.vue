@@ -40,6 +40,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                   <select
                     id="university"
+                    data-testid="budget-university-select"
                     v-model="selectedUniversityId"
                     class="form-select form-select-lg"
                   >
@@ -144,6 +145,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                   <input
                     id="duration"
+                    data-testid="budget-duration-input"
                     v-model.number="durationMonths"
                     type="number"
                     class="form-control form-control-lg"
@@ -204,6 +206,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                     <input
                       id="accommodation"
+                      data-testid="budget-accommodation-input"
                       v-model.number="accommodation"
                       type="number"
                       class="form-control"
@@ -249,6 +252,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                     <input
                       id="food"
+                      data-testid="budget-food-input"
                       v-model.number="food"
                       type="number"
                       class="form-control"
@@ -293,6 +297,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                     <input
                       id="transport"
+                      data-testid="budget-transport-input"
                       v-model.number="transport"
                       type="number"
                       class="form-control"
@@ -313,6 +318,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                     <input
                       id="personalExpenses"
+                      data-testid="budget-personal-input"
                       v-model.number="personalExpenses"
                       type="number"
                       class="form-control"
@@ -333,6 +339,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
                     <input
                       id="otherExpenses"
+                      data-testid="budget-other-input"
                       v-model.number="otherExpenses"
                       type="number"
                       class="form-control"
@@ -377,6 +384,7 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
                 <button
                   type="submit"
                   class="btn btn-primary btn-lg w-100"
+                  data-testid="budget-submit-button"
                   :disabled="saving || !validBudget"
                 >
                   <span

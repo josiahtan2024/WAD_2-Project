@@ -24,6 +24,9 @@ async function postReview(page, text, stars = 4) {
 async function deleteMyReview(page) {
   while (await page.getByTestId('review-delete-btn').count()) {
     await page.getByTestId('review-delete-btn').first().click()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
+    await expect(confirmation).toBeVisible()
+    await confirmation.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
   }
 }
@@ -38,7 +41,6 @@ test.describe('reviews (logged out)', () => {
 
 test.describe('reviews', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
     await login(page)
     await openFirstUniversity(page)
     await deleteMyReview(page)
@@ -106,6 +108,9 @@ test.describe('reviews', () => {
     const mine = page.getByTestId('review-item').first()
     await expect(mine.getByTestId('review-edited')).toHaveCount(0)
 
+    // The UI labels a review as edited only when updated_at is over a second
+    // after created_at; wait past that threshold before saving the edit.
+    await page.waitForTimeout(1100)
     await mine.getByTestId('review-edit-btn').click()
     await expect(mine.getByTestId('review-body-input')).toHaveValue('Original text')
     await mine.getByTestId('review-rating-5').click()
@@ -178,7 +183,10 @@ test.describe('reviews', () => {
     await postReview(page, 'Review to delete')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
     await page.getByTestId('review-delete-btn').click()
-    await expect(page.getByTestId('reviews-empty')).toBeVisible()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
+    await expect(confirmation).toBeVisible()
+    await confirmation.getByTestId('delete-confirm-action').click()
+    await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
     await expect(page.getByTestId('review-body-input')).toBeVisible()
   })
 })
@@ -187,7 +195,6 @@ test.describe('reviews on a phone', () => {
   test.use({ viewport: { width: 375, height: 700 } })
 
   test('the form and carousel fit the screen', async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
     await login(page)
     await openFirstUniversity(page)
     await deleteMyReview(page)
