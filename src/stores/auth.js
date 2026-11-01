@@ -4,69 +4,111 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useScheduleStore } from '@/stores/schedule'
 import { useCourseCartStore } from '@/stores/courseCart'
 
+let initPromise = null
+let authSubscription = null
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     loading: false,
     error: null,
     initialized: false,
-    previewAsStudent: false, // lets an admin see the site the way students do
+    previewAsStudent: false,
   }),
+
   getters: {
-    // role is set from the Supabase dashboard (app_metadata), users cannot change it themselves
+    // Role comes from Supabase app_metadata
     isAdmin: (state) => state.user?.app_metadata?.role === 'admin',
-    // admin controls show only for an admin who is not previewing the student view
+
     adminActive() {
       return this.isAdmin && !this.previewAsStudent
     },
   },
+
   actions: {
     setUser(user) {
       const oldId = this.user?.id ?? null
       const newId = user?.id ?? null
+
       if (oldId !== newId) {
         useShortlistStore().$reset()
         useScheduleStore().$reset()
         this.previewAsStudent = false
       }
+
       this.user = user
-      // The course cart is stored per user, so reload it once the user is known.
-      if (oldId !== newId || !this.initialized) useCourseCartStore().load()
+
+      // Reload the cart when the authenticated user changes
+      if (oldId !== newId || !this.initialized) {
+        useCourseCartStore().load()
+      }
     },
+
     togglePreview() {
+      if (!this.isAdmin) return
       this.previewAsStudent = !this.previewAsStudent
     },
-    /** Restore the session on app start (supabase.auth.getSession) and listen for changes. */
+
+    // Restore the Supabase session and register a single authentication state listener
     async init() {
-      if(this.initialized) return
+      if (this.initialized) return
 
-      this.loading = true
-      this.error = null
+      if (initPromise) return initPromise
 
-      try{
-        const { data, error } = await supabase.auth.getSession()
-        if(error) throw error
-        this.setUser(data.session?.user ?? null)
-        supabase.auth.onAuthStateChange((_event, session) => {
-          this.setUser(session?.user ?? null)
-        })
-        this.initialized = true} catch(error) {
+      initPromise = (async () => {
+        this.loading = true
+        this.error = null
+
+        try {
+          if (!authSubscription) {
+            const { data } = supabase.auth.onAuthStateChange(
+              (_event, session) => {
+                this.setUser(session?.user ?? null)
+              }
+            )
+
+            authSubscription = data.subscription
+          }
+
+          const { data, error } = await supabase.auth.getSession()
+
+          if (error) throw error
+
+          this.setUser(data.session?.user ?? null)
+          this.initialized = true
+
+        } catch (error) {
           this.error = error.message
+
+          authSubscription?.unsubscribe()
+          authSubscription = null
+
           throw error
-      } finally {
-        this.loading = false}
+        } finally {
+          this.loading = false
+          initPromise = null
+        }
+      })()
+
+      return initPromise
     },
-    /** @param {string} email @param {string} password */
+
     async signup(email, password) {
       this.loading = true
       this.error = null
+
       try {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), 
-          password, })
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+        })
+
         if (error) throw error
-        if(data.session){
+
+        if (data.session) {
           this.setUser(data.session.user)
         }
+
         return data
       } catch (error) {
         this.error = error.message
@@ -75,7 +117,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    /** @param {string} email @param {string} password */
+
     async login(email, password) {
       this.loading = true
       this.error = null
@@ -90,6 +132,7 @@ export const useAuthStore = defineStore('auth', {
         if (error) throw error
 
         this.setUser(data.user)
+
         return data.user
       } catch (error) {
         this.error = error.message
@@ -98,6 +141,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
+
     async logout() {
       this.loading = true
       this.error = null

@@ -15,7 +15,7 @@ const props = defineProps({
         'col-12': props.unisToCompare[2]       
         }">
             <div class="mt-5 pt-5 pb-3 border-bottom">
-                <div class="fs-2 fw-semibold"><slot></slot></div>
+                <div class="fw-semibold"><slot></slot></div>
             </div>
         </div>
     </div>
