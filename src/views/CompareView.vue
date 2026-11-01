@@ -462,11 +462,11 @@ watch(
     <div class="container-fluid min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
 
-        <section class="text-center py-5">
-            <div class="container">
-                <h1 class="display-4 fw-semibold">Compare Partner Universities</h1>
-                <p class="fs-5">SMU Global Experience</p>
-                <p class="fs-5 mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
+        <section class="compare-hero text-center">
+            <div class="container-fluid">
+                <h1 class="compare-hero-title fw-semibold mb-3" data-testid="compare-heading">Compare Partner Universities</h1>
+                <p class="compare-hero-subtitle mb-3">SMU Global Experience</p>
+                <p class="compare-hero-subtitle mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
                     target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
             </div>
         </section>
