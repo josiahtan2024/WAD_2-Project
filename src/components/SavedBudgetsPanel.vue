@@ -47,10 +47,10 @@ function resetFilters() {
     <div class="card-body p-3 p-md-4">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2 class="h4 fw-bold mb-1">My Budgets</h2>
+          <h2 class="h4 fw-bold mb-1" data-testid="budget-heading">My Budgets</h2>
           <p class="text-secondary mb-0">View and manage your saved exchange budgets.</p>
         </div>
-        <button type="button" class="btn btn-primary" @click="emit('create')">＋ Create New Budget</button>
+        <button type="button" class="btn btn-primary" data-testid="budget-create-button" @click="emit('create')">＋ Create New Budget</button>
       </div>
 
       <div v-if="loading" class="text-center py-5">
@@ -59,9 +59,9 @@ function resetFilters() {
       </div>
 
       <div v-else-if="props.budgets.length === 0" class="empty-state text-center py-5 px-3 rounded-4">
-        <h3 class="h5 fw-bold">No Budgets Yet</h3>
+        <h3 class="h5 fw-bold" data-testid="budget-empty-state">No Budgets Yet</h3>
         <p class="text-secondary mb-3">Create your first exchange budget to start planning your expenses.</p>
-        <button type="button" class="btn btn-primary" @click="emit('create')">Create Your First Budget</button>
+        <button type="button" class="btn btn-primary" data-testid="budget-create-button" @click="emit('create')">Create Your First Budget</button>
       </div>
 
       <div v-else>
@@ -101,10 +101,10 @@ function resetFilters() {
         </div>
 
         <div v-else class="table-responsive">
-          <table class="table align-middle budget-table mb-0">
+          <table class="table align-middle budget-table mb-0" data-testid="budget-table">
             <thead><tr><th>University</th><th>Exchange period</th><th>Duration</th><th>Total budget</th><th class="text-end">Actions</th></tr></thead>
             <tbody>
-              <tr v-for="budget in paginatedBudgets" :key="budget.id">
+              <tr v-for="budget in paginatedBudgets" :key="budget.id" data-testid="budget-row">
                 <td data-label="University">
                   <div>
                     <div class="fw-semibold">{{ budget.university_name }}</div>
@@ -116,9 +116,9 @@ function resetFilters() {
                 <td data-label="Total budget" class="fw-semibold text-nowrap">{{ props.formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}</td>
                 <td data-label="Actions">
                   <div class="d-flex justify-content-end gap-2 budget-actions">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="emit('read', budget)">Read</button>
-                    <button type="button" class="btn btn-sm btn-outline-primary" @click="emit('edit', budget)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" :disabled="props.deletingBudgetId === budget.id" @click="emit('delete', budget)">{{ props.deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-testid="budget-read-button" @click="emit('read', budget)">Read</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-testid="budget-edit-button" @click="emit('edit', budget)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-testid="budget-delete-button" :disabled="props.deletingBudgetId === budget.id" @click="emit('delete', budget)">{{ props.deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}</button>
                   </div>
                 </td>
               </tr>

@@ -4,7 +4,7 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const pageLoading = ref(true)
 const pageError = ref('')
@@ -127,7 +127,7 @@ onMounted(async () => {
 
 <template>
   <section data-testid="shortlist-page">
-    <BudgetNotice
+    <Notice
       :data-testid="shortlist.error || pageError ? 'shortlist-error' : undefined"
       :error-message="errorMessage || shortlist.error || pageError"
       :success-message="successMessage"

@@ -5,7 +5,7 @@ import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useAuthStore } from '@/stores/auth'
 import { useShortlistStore } from '@/stores/shortlist'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +19,7 @@ const loginLink = computed(() => ({ name: 'login', query: { redirect: route.full
 
 const pageLoading = ref(true)
 const pageError = ref('')
+const cartLimitNotice = ref('')
 
 // Filters (university and area are mirrored in the URL so a search can be shared or bookmarked)
 const universityId = ref(route.query.university ? Number(route.query.university) : '')
@@ -128,9 +129,10 @@ async function addToCart(mapping) {
   try { 
     const uniId = mapping.university_module.university_id
     if (cart.forUniversity(uniId).length >= cart.maxLimit) {
-      alert(`You have reached the limit of ${cart.maxLimit} modules for ${universityName(uniId)}. Please remove a module from this university's cart to add another.`)
+      cartLimitNotice.value = `You have reached the limit of ${cart.maxLimit} modules for ${universityName(uniId)}. Remove a module from this university's cart to add another.`
       return
     }
+    cartLimitNotice.value = ''
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
 async function removeFromCart(universityModuleId) {
@@ -183,10 +185,16 @@ onMounted(async () => {
 
 <template>
   <section data-testid="course-search-page">
-    <BudgetNotice
+    <Notice
       :data-testid="pageError ? 'course-search-error' : undefined"
       :error-message="pageError"
       @dismiss-error="pageError = ''"
+    />
+    <Notice
+      v-if="cartLimitNotice"
+      data-testid="course-cart-limit-popup"
+      :error-message="cartLimitNotice"
+      @dismiss-error="cartLimitNotice = ''"
     />
     <div class="mb-3 text-center">
       <h1 class="page-title h3 fw-bold mb-1">Course Search</h1>

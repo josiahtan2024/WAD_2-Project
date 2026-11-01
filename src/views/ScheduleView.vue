@@ -9,8 +9,6 @@ import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 import ModuleTable from '@/components/ModuleTable.vue'
-import BudgetNotice from '@/components/BudgetNotice.vue'
-import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,9 +22,6 @@ const auth = useAuthStore()
 // Each university + period pair is its own timetable. Both are null on plain /schedule.
 const universityId = computed(() => route.params.universityId ? Number(route.params.universityId) : null)
 const periodId = computed(() => route.query.period ? Number(route.query.period) : null)
-const selectedPeriodName = computed(() =>
-  uni.exchangePeriods.find((period) => period.id === periodId.value)?.period_name || 'this exchange period'
-)
 let loadedUniversityId = null // whose name, mappings and periods are loaded
 
 // Dropdown options: shortlisted universities plus any university the student has carted courses for
@@ -47,8 +42,6 @@ const saving = ref(false)
 const discarding = ref(false);
 const saved = ref(false)
 const scheduleDeleted = ref(false)
-const deleteScheduleOpen = ref(false)
-const deletingSchedule = ref(false)
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const timeLimit = [28800,64800] // 8am to 6pm in seconds
 const timeSlots = ref ([]);
@@ -56,15 +49,6 @@ const deleteModules = ref([]);
 const deleteStatus = ref(false);
 const selectedModule = ref('');
 const scheduleBlockKey = ref(0)
-const moduleReferenceHovered = ref(false)
-const moduleReferenceFocused = ref(false)
-const moduleReferencePinned = ref(false)
-const moduleReferenceSupportsHover = window.matchMedia('(hover: hover)').matches
-const moduleReferenceOpen = computed(() =>
-  moduleReferenceHovered.value || (moduleReferenceSupportsHover
-    ? moduleReferenceFocused.value
-    : moduleReferencePinned.value)
-)
 const hasSchedule = ref(false);
 const editSchedule = ref(false);
 const showGrid = ref(false)
@@ -93,45 +77,12 @@ async function save() {
     saving.value = false
   }
 }
-async function deleteSelectedSchedule() {
-  deletingSchedule.value = true
-  schedule.error = null
-  try {
-    await schedule.deleteForPeriod(universityId.value, periodId.value)
-    deleteScheduleOpen.value = false
-    hasSchedule.value = false
-    showGrid.value = false
-    editSchedule.value = false
-    changesMade.value = false
-    selectedModule.value = ''
-    deleteModules.value = []
-    scheduleBlockKey.value += 1
-    saved.value = false
-    scheduleDeleted.value = true
-  } catch (error) {
-    deleteScheduleOpen.value = false
-    schedule.error = error.message || 'Unable to delete this schedule.'
-  } finally {
-    deletingSchedule.value = false
-  }
-}
 function loadTimeSlots() {
   let ts = []
   for(let t = timeLimit[0];t<timeLimit[1]+1;t+=1800){
     ts.push(t);
   }
   return ts;
-}
-function toggleModuleReference() {
-  if (!moduleReferenceSupportsHover) {
-    moduleReferencePinned.value = !moduleReferencePinned.value
-  }
-}
-function closeModuleReferenceOnFocusOut(event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) {
-    moduleReferenceFocused.value = false
-    if (!moduleReferenceSupportsHover) moduleReferencePinned.value = false
-  }
 }
 function openScheduleBlock(){
   editSchedule.value=true;
@@ -279,10 +230,11 @@ onMounted(async () => {
 
 <template>
   <section data-testid="schedule-page">
-    <div class="card top-0 z-3" :class="{'position-sticky':changesMade}">
- <div class="card-body">
-        <div class="d-flex flex-column align-items-end-lg align-items-center-xs" :class="{'justify-content-center':!changesMade,'justify-content-between':changesMade}">
-          <h1 class="h3 fw-bold text-center mb-3">Weekly Schedule</h1><h1 :class="{'d-block':changesMade}" class="text-primary h3 fw-bold text-center mb-3">{{ uni.scheduleUniName?`${uni.scheduleUniName}`:"" }}</h1>
+    <div class="card schedule-header" :class="{'schedule-header-sticky':changesMade}">
+      <div class="card-body">
+        <div class="d-flex flex-column align-items-center" :class="{'justify-content-between':changesMade}">
+          <h1 class="page-title text-center mb-2">Weekly Schedule</h1>
+          <p v-if="uni.scheduleUniName" class="text-primary fw-semibold text-center mb-0">{{ uni.scheduleUniName }}</p>
           <template v-if="changesMade">
           <div class="changes-pill btn-group w-lg-50 mx-auto" role="group">
             <button class="btn btn-danger" :disabled="discarding" data-testid="schedule-save-btn" @click="discardChange()">
@@ -338,13 +290,12 @@ onMounted(async () => {
         <template v-if="hasSchedule">
           <div class="row justify-content-center">
 
-            <div class="btn-group w-50 my-3" role="group" aria-label="Basic radio toggle button group">
-              <input type="radio" class="btn-check" id="view" autocomplete="off" :checked="!editSchedule" @click="editSchedule=!editSchedule">
-              <label class="btn btn-outline-info w-20" for="view">View Schedule</label>
-              
-              <input type="radio" class="btn-check" id="edit" autocomplete="off" :checked="editSchedule" @click="editSchedule=!editSchedule">
-              <label class="btn btn-outline-dark w-20   " for="edit">Edit Schedule</label>
-            
+            <div class="schedule-mode-toggle btn-group my-3" role="group" aria-label="Schedule mode">
+              <input type="radio" class="btn-check" id="view" name="schedule-mode" autocomplete="off" data-testid="schedule-view-mode" :checked="!editSchedule" @change="editSchedule=false">
+              <label class="btn" :class="editSchedule ? 'btn-outline-primary' : 'btn-primary'" for="view">View Schedule</label>
+
+              <input type="radio" class="btn-check" id="edit" name="schedule-mode" autocomplete="off" data-testid="schedule-edit-mode" :checked="editSchedule" @change="editSchedule=true">
+              <label class="btn" :class="editSchedule ? 'btn-primary' : 'btn-outline-primary'" for="edit">Edit Schedule</label>
             </div>
           </div>
           
@@ -354,22 +305,13 @@ onMounted(async () => {
               <div class="col-md-8 text-center p-1">
                 You have no schedules planned for this university. Click on <span class="text-primary fw-bold">'New Schedule'</span> to start.
               </div>
-              <div class="btn btn-outline-primary col-md-3" id="create-schedule-btn" @click="openScheduleBlock()">
-                
+              <button type="button" class="btn btn-outline-primary col-md-3" id="create-schedule-btn" data-testid="schedule-create-button" @click="openScheduleBlock()">
                 {{editSchedule?'Loading..':'New Schedule'}}
-              </div>
+              </button>
               
             </div>
         </template>
 
-        <template>
-          <button class="btn btn-danger" data-testid="schedule-save-btn" @click="discardChange">
-            Discard Changes
-          </button>
-          <button class="btn btn-primary" :disabled="saving" data-testid="schedule-save-btn" @click="save">
-            {{ saving ? 'Saving...' : 'Save schedule' }}
-          </button>
-        </template>
         <template v-if="showGrid">
           <div class="col-md-6">
             <InstructionAlert action="Insert" :instructions="instructionsInsert" @select-mod="onSelectMod()" id="instructionSelect" :modules="schedule.moduleData">
@@ -408,12 +350,13 @@ onMounted(async () => {
             <ModuleTable></ModuleTable>
             <InstructionAlert action="Delete" :instructions="instructionsDelete" id="instructionDelete">
               <template v-slot:form>
-                <div class="d-flex mx-auto">
+                <div class="row g-2 mx-auto">
                     <template v-for="mod in schedule.moduleData" :key="mod.id">
-                      <div class="text-center align-items-center p-1">
-                        <input type="checkbox" :value="mod.module_name" class="form-check-input" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
-                        
-                        <label class= 'px-1 form-check-label' :for="`${mod.id}-2`"  >{{ mod.module_code }}</label>
+                      <div class="col-4">
+                        <label class="module-delete-option" :class="{ 'is-disabled': !checkScheduleModule(mod.module_name) }" :for="`${mod.id}-2`">
+                          <input type="checkbox" :value="mod.module_name" class="form-check-input m-0" :id="`${mod.id}-2`" v-model="deleteModules" :disabled="!checkScheduleModule(mod.module_name)">
+                          <span class="text-break">{{ mod.module_code }}</span>
+                        </label>
                       </div>
                     </template>
                   
@@ -505,7 +448,17 @@ onMounted(async () => {
 }
 
 .schedule-mode-toggle {
-  max-width: 32rem;
+  width: min(100%, 32rem);
+  padding: 0.25rem;
+  gap: 0.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+}
+
+.schedule-mode-toggle .btn {
+  flex: 1 1 0;
+  border-radius: calc(var(--app-radius) - 0.25rem) !important;
 }
 
 .schedule-module-controls :deep(.schedule-instructions) {
@@ -520,6 +473,30 @@ onMounted(async () => {
   justify-content: center;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.module-delete-option {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--app-border);
+  border-radius: 0.5rem;
+  background: var(--app-surface);
+  cursor: pointer;
+  text-align: center;
+}
+
+.module-delete-option:has(input:checked) {
+  border-color: var(--app-blue);
+  background: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.module-delete-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .module-reference {
