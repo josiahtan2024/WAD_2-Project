@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 import ModuleTable from '@/components/ModuleTable.vue'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()

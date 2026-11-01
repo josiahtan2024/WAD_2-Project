@@ -2,7 +2,7 @@
 import { onUnmounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 
 const props = defineProps({ review: { type: Object, required: true } })
 
@@ -65,7 +65,7 @@ async function remove(comment) {
 
 <template>
   <Teleport to="body">
-    <BudgetNotice :success-message="successMessage" @dismiss-success="dismissSuccess" />
+    <Notice :success-message="successMessage" @dismiss-success="dismissSuccess" />
   </Teleport>
   <div class="mt-3 pt-2 border-top" data-testid="review-comments">
     <h3 class="h6 text-muted">Comments ({{ review.review_comments.length }})</h3>

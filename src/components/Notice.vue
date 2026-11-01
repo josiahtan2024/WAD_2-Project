@@ -11,12 +11,12 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
   <Transition name="notice">
     <div
       v-if="errorMessage || successMessage"
-      class="budget-notice-wrap"
+      class="notice-wrap"
       aria-live="polite"
     >
       <div
         v-if="errorMessage"
-        class="budget-notice budget-notice-error card border-0 shadow-lg"
+        class="notice notice-error card border-0 shadow-lg"
         role="alert"
       >
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
@@ -32,7 +32,7 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 
       <div
         v-else
-        class="budget-notice budget-notice-success card border-0 shadow-lg"
+        class="notice notice-success card border-0 shadow-lg"
         role="status"
       >
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
@@ -50,7 +50,7 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 </template>
 
 <style scoped>
-.budget-notice-wrap {
+.notice-wrap {
   position: fixed;
   top: 1rem;
   left: 50%;
@@ -60,16 +60,16 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
   pointer-events: none;
 }
 
-.budget-notice {
+.notice {
   pointer-events: auto;
   border-radius: 1rem;
   overflow: hidden;
   animation: notice-enter 180ms ease-out;
 }
 
-.budget-notice .card-body { background: #fff; }
-.budget-notice-error { border-left: 5px solid #dc3545 !important; }
-.budget-notice-success { border-left: 5px solid #198754 !important; }
+.notice .card-body { background: #fff; }
+.notice-error { border-left: 5px solid #dc3545 !important; }
+.notice-success { border-left: 5px solid #198754 !important; }
 
 .notice-icon {
   width: 2.25rem;

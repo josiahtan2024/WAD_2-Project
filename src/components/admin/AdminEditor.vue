@@ -8,7 +8,7 @@ import DetailsForm from '@/components/admin/DetailsForm.vue'
 import CostForm from '@/components/admin/CostForm.vue'
 import AcademicsForm from '@/components/admin/AcademicsForm.vue'
 import PeriodsForm from '@/components/admin/PeriodsForm.vue'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 
 const props = defineProps({
   university: { type: Object, default: null }, // null while adding a new one
@@ -146,5 +146,5 @@ watch(
     <p v-else class="mb-0 small">Checking what would be lost...</p>
   </ConfirmDialog>
 
-  <BudgetNotice :success-message="notice" @dismiss-success="notice = ''" />
+  <Notice :success-message="notice" @dismiss-success="notice = ''" />
 </template>

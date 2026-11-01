@@ -6,7 +6,7 @@ import MapPanel from '@/components/MapPanel.vue'
 import InfoPanel from '@/components/InfoPanel.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { useAuthStore } from '@/stores/auth'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 
 const exchangeRates = useExchangeRatesStore()
 
@@ -57,7 +57,7 @@ onMounted(async () => {
 
 <template>
   <section data-testid="home-page">
-    <BudgetNotice
+    <Notice
       :data-testid="uni.error ? 'home-error' : undefined"
       :error-message="uni.error || ''"
       @dismiss-error="uni.error = null"

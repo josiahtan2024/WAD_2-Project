@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import CreditMappingTable from '@/components/CreditMappingTable.vue'
 import ReviewCarousel from '@/components/ReviewCarousel.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 import AdminBar from '@/components/admin/AdminBar.vue'
 import AdminEditor from '@/components/admin/AdminEditor.vue'
 import AdminEditButton from '@/components/admin/AdminEditButton.vue'
@@ -192,7 +192,7 @@ watch(() => route.params.id, async () => {
 
 <template>
   <section data-testid="university-page">
-    <BudgetNotice
+    <Notice
       :data-testid="uni.error ? 'university-error' : undefined"
       :error-message="uni.error || ''"
       :success-message="reviewSuccessMessage"

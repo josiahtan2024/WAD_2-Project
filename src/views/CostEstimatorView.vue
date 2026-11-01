@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/Notice.vue'
 import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
 import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
 import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'
@@ -795,7 +795,7 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <BudgetNotice
+      <Notice
         :error-message="errorMessage"
         :success-message="successMessage"
         @dismiss-error="errorMessage = ''"
