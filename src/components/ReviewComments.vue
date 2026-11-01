@@ -2,7 +2,7 @@
 import { onUnmounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const props = defineProps({ review: { type: Object, required: true } })
 

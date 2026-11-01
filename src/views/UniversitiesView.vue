@@ -9,7 +9,7 @@ import UniversityCard from '@/components/UniversityCard.vue'
 import AdminEditor from '@/components/admin/AdminEditor.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { calculateMonthlyCost } from '@/lib/universityCost'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const exchangeRates = useExchangeRatesStore()
 const uni = useUniversitiesStore()

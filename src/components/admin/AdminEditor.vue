@@ -8,7 +8,7 @@ import DetailsForm from '@/components/admin/DetailsForm.vue'
 import CostForm from '@/components/admin/CostForm.vue'
 import AcademicsForm from '@/components/admin/AcademicsForm.vue'
 import PeriodsForm from '@/components/admin/PeriodsForm.vue'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const props = defineProps({
   university: { type: Object, default: null }, // null while adding a new one

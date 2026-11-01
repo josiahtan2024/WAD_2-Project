@@ -1,15 +1,10 @@
 <script setup>
-import {ref} from 'vue';
-import { useUniversitiesStore } from '@/stores/universities'
-
-import {useScheduleStore} from '@/stores/schedule'
+import { ref } from 'vue'
 const props = defineProps({
     'action':String,
     'instructions':Array,
         
 })
-const schedule = useScheduleStore();
-const uni = useUniversitiesStore();
 const collapsed = ref(props.action!='Insert'); // LEAVE IT OPEN BY DEFAULT IF USER IS CREATING A NEW SCHEDULE
 </script>
 <template>

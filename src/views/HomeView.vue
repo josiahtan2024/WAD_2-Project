@@ -6,7 +6,7 @@ import MapPanel from '@/components/MapPanel.vue'
 import InfoPanel from '@/components/InfoPanel.vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { useAuthStore } from '@/stores/auth'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const exchangeRates = useExchangeRatesStore()
 

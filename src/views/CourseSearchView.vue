@@ -5,7 +5,7 @@ import { useUniversitiesStore } from '@/stores/universities'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { useAuthStore } from '@/stores/auth'
 import { useShortlistStore } from '@/stores/shortlist'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const route = useRoute()
 const router = useRouter()

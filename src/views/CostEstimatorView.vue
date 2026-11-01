@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 import DeleteBudgetDialog from '@/components/DeleteBudgetDialog.vue'
 import SavedBudgetsPanel from '@/components/SavedBudgetsPanel.vue'
 import BudgetSummaryPanel from '@/components/BudgetSummaryPanel.vue'

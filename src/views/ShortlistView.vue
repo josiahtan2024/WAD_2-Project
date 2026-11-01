@@ -4,7 +4,7 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
-import Notice from '@/components/Notice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const pageLoading = ref(true)
 const pageError = ref('')

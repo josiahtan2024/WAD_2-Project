@@ -9,8 +9,6 @@ import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue';
 import InstructionAlert from '@/components/InstructionAlert.vue';
 import ModuleTable from '@/components/ModuleTable.vue'
-import Notice from '@/components/Notice.vue'
-import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,9 +22,6 @@ const auth = useAuthStore()
 // Each university + period pair is its own timetable. Both are null on plain /schedule.
 const universityId = computed(() => route.params.universityId ? Number(route.params.universityId) : null)
 const periodId = computed(() => route.query.period ? Number(route.query.period) : null)
-const selectedPeriodName = computed(() =>
-  uni.exchangePeriods.find((period) => period.id === periodId.value)?.period_name || 'this exchange period'
-)
 let loadedUniversityId = null // whose name, mappings and periods are loaded
 
 // Dropdown options: shortlisted universities plus any university the student has carted courses for
@@ -47,8 +42,6 @@ const saving = ref(false)
 const discarding = ref(false);
 const saved = ref(false)
 const scheduleDeleted = ref(false)
-const deleteScheduleOpen = ref(false)
-const deletingSchedule = ref(false)
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const timeLimit = [28800,64800] // 8am to 6pm in seconds
 const timeSlots = ref ([]);
@@ -56,15 +49,6 @@ const deleteModules = ref([]);
 const deleteStatus = ref(false);
 const selectedModule = ref('');
 const scheduleBlockKey = ref(0)
-const moduleReferenceHovered = ref(false)
-const moduleReferenceFocused = ref(false)
-const moduleReferencePinned = ref(false)
-const moduleReferenceSupportsHover = window.matchMedia('(hover: hover)').matches
-const moduleReferenceOpen = computed(() =>
-  moduleReferenceHovered.value || (moduleReferenceSupportsHover
-    ? moduleReferenceFocused.value
-    : moduleReferencePinned.value)
-)
 const hasSchedule = ref(false);
 const editSchedule = ref(false);
 const showGrid = ref(false)
@@ -93,45 +77,12 @@ async function save() {
     saving.value = false
   }
 }
-async function deleteSelectedSchedule() {
-  deletingSchedule.value = true
-  schedule.error = null
-  try {
-    await schedule.deleteForPeriod(universityId.value, periodId.value)
-    deleteScheduleOpen.value = false
-    hasSchedule.value = false
-    showGrid.value = false
-    editSchedule.value = false
-    changesMade.value = false
-    selectedModule.value = ''
-    deleteModules.value = []
-    scheduleBlockKey.value += 1
-    saved.value = false
-    scheduleDeleted.value = true
-  } catch (error) {
-    deleteScheduleOpen.value = false
-    schedule.error = error.message || 'Unable to delete this schedule.'
-  } finally {
-    deletingSchedule.value = false
-  }
-}
 function loadTimeSlots() {
   let ts = []
   for(let t = timeLimit[0];t<timeLimit[1]+1;t+=1800){
     ts.push(t);
   }
   return ts;
-}
-function toggleModuleReference() {
-  if (!moduleReferenceSupportsHover) {
-    moduleReferencePinned.value = !moduleReferencePinned.value
-  }
-}
-function closeModuleReferenceOnFocusOut(event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) {
-    moduleReferenceFocused.value = false
-    if (!moduleReferenceSupportsHover) moduleReferencePinned.value = false
-  }
 }
 function openScheduleBlock(){
   editSchedule.value=true;

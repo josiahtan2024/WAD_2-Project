@@ -381,7 +381,11 @@ async function fetchCurrencyRates() {
     const url = "https://api.frankfurter.dev/v2/rates?base=sgd"
     try {
         const response = await axios.get(url)
-        const data = response.data.map(({base, ...rest}) => rest)
+        const data = response.data.map((rate) => {
+            const withoutBase = { ...rate }
+            delete withoutBase.base
+            return withoutBase
+        })
         currencyRates.value = data
     } catch (error) {
         console.error(error.message)
