@@ -165,6 +165,7 @@ onBeforeUnmount(() => {
                   Shortlist
                 </RouterLink>
               </li>
+            </template>
 
               <li class="nav-item">
                 <RouterLink
@@ -183,7 +184,7 @@ onBeforeUnmount(() => {
                   </span>
                 </RouterLink>
               </li>
-
+            <template v-if="auth.user">
               <li class="nav-item">
                 <RouterLink
                   class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
@@ -203,6 +204,7 @@ onBeforeUnmount(() => {
                   Schedule
                 </RouterLink>
               </li>
+            </template>
 
               <li class="nav-item">
                 <RouterLink
@@ -213,7 +215,6 @@ onBeforeUnmount(() => {
                   About Us
                 </RouterLink>
               </li>
-            </template>
           </ul>
 
           <div class="d-flex gap-2 align-items-center flex-wrap pt-3 mt-auto">
