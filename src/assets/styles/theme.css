@@ -124,7 +124,7 @@ button,
   top: 0;
   z-index: 1040;
   min-height: var(--app-navbar-height);
-  background: var(--app-navy);
+  background: linear-gradient(120deg, #141b4d, #2c3366);
 
   --bs-navbar-color: #ffffff;
   --bs-navbar-hover-color: var(--app-gray-blue);
