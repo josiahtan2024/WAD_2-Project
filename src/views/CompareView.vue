@@ -324,8 +324,8 @@ async function createMap(idx) {
     const zoomLevel = isMobile ? 13 : 14
 
     const map = L.map(element, { 
-        scrollWheelZoom: false,
-        dragging: !L.Browser.mobile 
+        dragging: !L.Browser.mobile,
+        zoomControl: !L.Browser.mobile
     }).setView([lat, lon], zoomLevel)
 
     map.on('click', () => {

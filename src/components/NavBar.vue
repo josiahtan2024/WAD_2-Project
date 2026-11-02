@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
               </button>
 
               <button
-                class="btn btn-outline-light btn-sm flex-fill"
+                class="btn btn-light btn-sm flex-fill"
                 data-testid="nav-logout-btn"
                 @click="logout">
                 Log Out
@@ -380,7 +380,6 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
-  line-height: 1;
 
   vertical-align: middle;
   transition: background-color 0.2s ease;
