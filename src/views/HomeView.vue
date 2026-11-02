@@ -157,12 +157,12 @@ onMounted(async () => {
     </div>
 
     <div class="row g-3 home-browse-row">
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-lg-3">
         <div class="home-university-panel filter-panel">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <h2 class="h6 fw-bold mb-0 text-uppercase tracking-wider">Partner Universities</h2>
-            <span v-if="visibleUniversities.length" class="badge bg-secondary-subtle text-secondary rounded-pill">
-              {{ visibleUniversities.length }}
+            <h2 class="h6 fw-bold mb-0 text-uppercase text-navy tracking-wider">Regions</h2>
+            <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">
+              {{ visibleUniversities.length }} Unis
             </span>
           </div>
 
@@ -223,7 +223,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-lg-6">
         <MapPanel
           :universities="visibleUniversities"
           :selected-id="selected?.id ?? null"
@@ -232,7 +232,7 @@ onMounted(async () => {
         />
       </div>
 
-      <div class="col-12 col-md-3">
+      <div class="col-12 col-lg-3">
         <InfoPanel :university="selected" />
       </div>
     </div>
@@ -240,6 +240,17 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.total-count-pill {
+  background-color: var(--app-navy);
+  color: #ffffff;
+  font-size: 0.7rem;
+  padding: 0.3em 0.7em;
+}
+
 .home-browse-row { 
   --home-map-height: 480px; 
 }
