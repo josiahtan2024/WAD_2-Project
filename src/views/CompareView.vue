@@ -459,11 +459,11 @@ watch(
 </script>
 
 <template>
-    <div class="container-fluid min-vh-100 d-flex flex-column p-0">
+    <div class="container py-4 mb-5 min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
 
         <section class="compare-hero text-center">
-            <div class="container-fluid">
+            <div class="container">
                 <h1 class="compare-hero-title fw-semibold mb-3" data-testid="compare-heading">Compare Partner Universities</h1>
                 <p class="compare-hero-subtitle mb-3">SMU Global Experience</p>
                 <p class="compare-hero-subtitle mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
@@ -471,7 +471,7 @@ watch(
             </div>
         </section>
 
-        <section class="container-fluid pb-5">
+        <section class="container">
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"

@@ -184,7 +184,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section data-testid="course-search-page">
+  <section class="container py-4 mb-5" data-testid="course-search-page">
     <Notice
       :data-testid="pageError ? 'course-search-error' : undefined"
       :error-message="pageError"

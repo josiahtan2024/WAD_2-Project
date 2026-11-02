@@ -126,7 +126,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section data-testid="shortlist-page">
+  <section class="container py-4 mb-5" data-testid="shortlist-page">
     <Notice
       :data-testid="shortlist.error || pageError ? 'shortlist-error' : undefined"
       :error-message="errorMessage || shortlist.error || pageError"

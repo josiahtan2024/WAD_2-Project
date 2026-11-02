@@ -1,5 +1,5 @@
 <template>
-  <footer class="app-footer mt-5">
+  <footer class="app-footer">
     <div class="container-xl py-4 py-md-5">
       <div class="row g-4 align-items-start pb-4">
         <div class="col-12 col-lg-7">

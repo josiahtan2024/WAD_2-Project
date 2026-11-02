@@ -229,7 +229,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section data-testid="schedule-page">
+  <section class="container py-4 mb-5" data-testid="schedule-page">
     <div class="card schedule-header" :class="{'schedule-header-sticky':changesMade}">
       <div class="card-body">
         <div class="d-flex flex-column align-items-center" :class="{'justify-content-between':changesMade}">

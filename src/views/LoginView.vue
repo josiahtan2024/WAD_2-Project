@@ -26,6 +26,7 @@ async function submit() {
 </script>
 
 <template>
+  <div class="container py-4 mb-5">
   <section class="row justify-content-center" data-testid="login-page">
     <div class="col-12 col-md-6 col-lg-4">
       <h1 class="page-title h3 fw-bold text-center mb-3">Log In</h1>
@@ -45,5 +46,6 @@ async function submit() {
       </form>
       <p class="mt-3 mb-0">No account? <RouterLink to="/signup">Sign Up</RouterLink></p>
     </div>
-  </section>
+  </section>    
+  </div>
 </template>

@@ -191,7 +191,7 @@ watch(() => route.params.id, async () => {
 </script>
 
 <template>
-  <section data-testid="university-page">
+  <section class="container py-4 mb-5" data-testid="university-page">
     <Notice
       :data-testid="uni.error ? 'university-error' : undefined"
       :error-message="uni.error || ''"
