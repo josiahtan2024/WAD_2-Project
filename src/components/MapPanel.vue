@@ -117,11 +117,11 @@ onMounted(() => {
   map = L.map(el.value, {
     minZoom: 1,
     worldCopyJump: true,
+    dragging: !L.Browser.mobile,
+    zoomControl: !L.Browser.mobile
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 70,
@@ -167,7 +167,7 @@ watch(
 
 <template>
   <div class="map-container">
-    <div ref="el" class="map-panel rounded" data-testid="map-panel"></div>
+    <div ref="el" class="map-panel rounded-3 overflow-hidden" data-testid="map-panel"></div>
 
     <button
       type="button"
@@ -176,7 +176,7 @@ watch(
       aria-label="Reset map to world view"
       title="Reset map"
     >
-      <i class="bi bi-globe"></i>
+      <i class="bi bi-globe me-1"></i>
       Reset map
     </button>
   </div>
@@ -189,8 +189,9 @@ watch(
 }
 
 .map-panel {
-  height: 420px;
+  height: 480px;
   width: 100%;
+  border: 1px solid var(--app-border);
 }
 
 :deep(.university-marker-wrapper) {
@@ -201,19 +202,19 @@ watch(
 :deep(.university-marker) {
   width: 18px;
   height: 18px;
-  background: #1f4e9c;
+  background: var(--app-gray-blue);
   border: 2px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 5px rgba(20, 27, 77, 0.35);
   transition: all 0.2s ease;
 }
 
 :deep(.university-marker.selected) {
   width: 22px;
   height: 22px;
-  background: #7dd3fc;
+  background: #38bdf8;
   border: 3px solid #ffffff;
-  box-shadow: 0 0 0 3px #1f4e9c;
+  box-shadow: 0 0 0 3px var(--app-blue);
 }
 
 :deep(.marker-cluster) {
@@ -224,13 +225,13 @@ watch(
 :deep(.marker-cluster-small),
 :deep(.marker-cluster-medium),
 :deep(.marker-cluster-large) {
-  background-color: rgba(31, 78, 156, 0.3);
+  background-color: rgba(20, 27, 77, 0.25);
 }
 
 :deep(.marker-cluster-small div),
 :deep(.marker-cluster-medium div),
 :deep(.marker-cluster-large div) {
-  background-color: #1f4e9c;
+  background-color: var(--app-blue);
   color: white;
   font-weight: 600;
   font-family: inherit;
@@ -245,19 +246,20 @@ watch(
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 6px 12px;
   background: white;
-  color: #1f4e9c;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  color: var(--app-blue);
+  border: 1px solid var(--app-border);
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .map-reset-button:hover {
-  background: #f0f5ff;
+  background: var(--app-surface);
+  border-color: var(--app-gray-blue);
 }
 </style>
