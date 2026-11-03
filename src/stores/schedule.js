@@ -27,6 +27,12 @@ export const useScheduleStore = defineStore('schedule', {
   state: () => ({ currentSchedule: {}, moduleData:[], loading: false, error: null,studentTimeTableId:null,exchangePeriodId:null,universityId:null,savedPeriodIds:[] }), // rows from `schedule_blocks`
   actions: {
     /** @param {number|string} universityId Load the user's blocks for this university. */
+    resetStore(){
+      this.currentSchedule = {};
+      this.studentTimeTableId = null;
+      this.exchangePeriodId = null;
+      this.error = null;
+    },
     serialiseToDb(){
       let insertModuleData =[]
       for(const day in this.currentSchedule){
