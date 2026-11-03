@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { TEST_EMAIL, TEST_PASSWORD, login } from './helpers'
 
-test.beforeEach('auth', () => {
+test.describe('auth', () => {
   test('logged-out user is redirected from a protected page', async ({ page }) => {
     await page.goto('/shortlist')
     await expect(page.getByTestId('login-page')).toBeVisible()

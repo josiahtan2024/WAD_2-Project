@@ -4,10 +4,14 @@ import { login } from './helpers'
 // Needs an account whose app_metadata has role = admin (see README, "Admin accounts").
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim()
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim()
-const hasAdminCredentials = ADMIN_EMAIL && ADMIN_PASSWORD &&
-  ADMIN_EMAIL.toLowerCase() !== 'undefined' && ADMIN_PASSWORD.toLowerCase() !== 'undefined'
+const hasAdminCredentials = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD &&
+  ADMIN_EMAIL.toLowerCase() !== 'undefined' && ADMIN_PASSWORD.toLowerCase() !== 'undefined')
 
 async function loginAsAdmin(page) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  }
+
   await page.goto('/login')
   await page.getByTestId('login-email-input').fill(ADMIN_EMAIL)
   await page.getByTestId('login-password-input').fill(ADMIN_PASSWORD)
@@ -26,22 +30,21 @@ async function openFirstUniversity(page) {
   await expect(page.getByTestId('university-page')).toBeVisible()
 }
 
-test.beforeEach('students', () => {
-  test('see no staff controls', async ({ page }) => {
-    await login(page)
-    await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
-    await expect(page.getByTestId('admin-bar')).toHaveCount(0)
-    await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await page.goto('/universities')
-    await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
-    await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
-  })
+test('students do not see staff controls', async ({ page }) => {
+  await login(page)
+  await openFirstUniversity(page)
+  await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
+  await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
+  await expect(page.getByTestId('admin-bar')).toHaveCount(0)
+  await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
+  await page.goto('/universities')
+  await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
+  await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
 })
 
 test.describe('admins', () => {
   test.skip(!hasAdminCredentials, 'set valid ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  /** @type {{ id: number, name: string } | null} */
   let createdUniversity = null
 
   test.afterEach(async ({ page }) => {

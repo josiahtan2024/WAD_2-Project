@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { login, clearShortlist } from './helpers'
 
-test.beforeEach('shortlist', () => {
+test.describe('shortlist', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
     await clearShortlist(page)
