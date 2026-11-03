@@ -76,6 +76,28 @@ const saved = computed(() => {
 })
 
 const pageCount = computed(() => Math.ceil(saved.value.length / pageSize))
+
+const displayedPages = computed(() => {
+  const total = pageCount.value
+  const current = currentPage.value
+  const maxVisible = 5
+  
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  if (end > total) {
+    end = total
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  const range = []
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  return range
+})
+
 const paginatedSaved = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return saved.value.slice(start, start + pageSize)
@@ -148,7 +170,7 @@ onMounted(async () => {
         <select
           id="shortlist-sort"
           v-model="sortBy"
-          class="form-select form-select-sm shortlist-sort"
+          class="form-select form-select-sm shortlist-sort shadow-none"
         >
           <option value="added">Recently Added</option>
           <option value="name">University Name (A - Z)</option>
@@ -253,7 +275,8 @@ onMounted(async () => {
       <ul class="pagination justify-content-center flex-wrap mb-0">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button
-            class="page-link rounded-start-pill px-3"
+            class="page-link page-nav-btn. -0p[[/
+            ]] rounded-start-pill px-3 shadow-none"
             type="button"
             :disabled="currentPage === 1"
             aria-label="Previous page"
@@ -261,13 +284,13 @@ onMounted(async () => {
           >Previous</button>
         </li>
         <li
-          v-for="page in pageCount"
+          v-for="page in displayedPages"
           :key="page"
           class="page-item"
           :class="{ active: currentPage === page }"
         >
           <button
-            class="page-link px-3"
+            class="page-link px-3 shadow-none"
             type="button"
             :aria-current="currentPage === page ? 'page' : undefined"
             :aria-label="`Page ${page}`"
@@ -276,7 +299,7 @@ onMounted(async () => {
         </li>
         <li class="page-item" :class="{ disabled: currentPage === pageCount }">
           <button
-            class="page-link rounded-end-pill px-3"
+            class="page-link page-nav-btn rounded-end-pill px-3 shadow-none"
             type="button"
             :disabled="currentPage === pageCount"
             aria-label="Next page"
@@ -294,7 +317,7 @@ onMounted(async () => {
 }
 
 .shortlist-row-item {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .shortlist-row-item:hover {
@@ -341,6 +364,11 @@ onMounted(async () => {
 
 .border-dashed {
   border-style: dashed !important;
+}
+
+.page-nav-btn {
+  min-width: 95px;
+  justify-content: center;
 }
 
 .shortlist-pagination .page-link {
