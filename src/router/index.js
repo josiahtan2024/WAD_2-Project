@@ -30,9 +30,20 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(to, _from, savedPosition) {
-    // Restore the prior position for browser back/forward; start new views at the top.
-    return savedPosition ?? { top: 0, left: 0 }
+
+  scrollBehavior(to, from, savedPosition) {
+    // Restore position when using browser back/forward
+    if (savedPosition) {
+      return savedPosition
+    }
+
+    // Preserve scroll when only query parameters change
+    if (to.path === from.path) {
+      return false
+    }
+
+    // Start new pages at the top
+    return { top: 0, left: 0 }
   },
 })
 

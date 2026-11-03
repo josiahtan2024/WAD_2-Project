@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useShortlistStore } from '@/stores/shortlist'
@@ -17,6 +17,7 @@ const shortlist = useShortlistStore()
 const auth = useAuthStore()
 const router = useRouter()
 const adminSection = ref(null)
+const gridTopRef = ref(null)
 const showHidden = ref(true)
 const availableUniversities = computed(() => uni.items.filter((university) =>
   university.published !== false || (auth.adminActive && showHidden.value)
@@ -116,6 +117,18 @@ const pageResults = computed(() => {
   return results.value.slice(start, start + pageSize)
 })
 
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage > oldPage) {
+    nextTick(() => {
+      if (gridTopRef.value) {
+        const yOffset = -75
+        const y = gridTopRef.value.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    })
+  }
+})
+
 watch(() => [uni.query, uni.filters.region, uni.sortBy], () => {
   currentPage.value = 1
 })
@@ -191,7 +204,7 @@ onMounted(async () => {
     </template>
 
     <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
-
+    <div ref="gridTopRef">
     <div v-if="uni.loading" class="text-muted text-center py-5" data-testid="universities-loading">Loading partner universities...</div>
     <div v-else-if="!uni.error && !results.length" class="text-muted text-center py-5 bg-light rounded-4 border border-dashed my-3" data-testid="universities-empty">
       <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No partner universities match your search.</div>
@@ -204,12 +217,13 @@ onMounted(async () => {
         @toggle-shortlist="toggle" />
       </div>
     </div>
+    </div>
 
     <nav v-if="pageCount > 1" class="university-pagination mt-5" aria-label="University list pages" data-testid="universities-pagination">
       <ul class="pagination justify-content-center flex-wrap mb-0">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link page-nav-btn rounded-start-pill px-3 shadow-none" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
-            Previous
+          <button class="page-link rounded-start-pill px-3 shadow-none" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
+            <i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i><span>Prev</span>
           </button>
         </li>
         <li v-for="page in displayedPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
@@ -218,8 +232,8 @@ onMounted(async () => {
           </button>
         </li>
         <li class="page-item" :class="{ disabled: currentPage === pageCount }">
-          <button class="page-link page-nav-btn rounded-end-pill px-3 shadow-none" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
-            Next
+          <button class="page-link rounded-end-pill px-3 shadow-none" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
+            <span>Next</span><i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i>
           </button>
         </li>
       </ul>
@@ -234,11 +248,6 @@ onMounted(async () => {
 
 .border-dashed {
   border-style: dashed !important;
-}
-
-.page-nav-btn {
-  min-width: 95px;
-  justify-content: center;
 }
 
 .university-pagination .page-link {

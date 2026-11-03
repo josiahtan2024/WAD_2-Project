@@ -192,10 +192,12 @@ const estimatedMonthlyCost = computed(() => {
 .region-badge {
   font-size: 0.75rem;
   letter-spacing: 0.02em;
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
 }
 
 .cost-stat-card {
-  background-color: var(--app-surface);
+  background-color: var(--app-surface) !important;
   border-color: var(--app-border) !important;
 }
 </style>

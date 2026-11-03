@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAuthStore } from '@/stores/auth'
@@ -131,6 +131,19 @@ async function remove(u) {
   }
 }
 
+const gridTopRef = ref(null)
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage > oldPage) {
+    nextTick(() => {
+      if (gridTopRef.value) {
+        const yOffset = -90
+        const y = gridTopRef.value.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    })
+  }
+})
+
 onMounted(async () => {
   pageLoading.value = true
   pageError.value = ''
@@ -179,6 +192,7 @@ onMounted(async () => {
       </div>
     </div>
 
+    <div ref="gridTopRef">
     <div
       v-if="pageLoading || shortlist.loading"
       class="text-muted text-center py-5"
@@ -265,6 +279,7 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+    </div>
 
     <nav
       v-if="pageCount > 1 && !pageLoading && !shortlist.loading"
@@ -275,13 +290,12 @@ onMounted(async () => {
       <ul class="pagination justify-content-center flex-wrap mb-0">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button
-            class="page-link page-nav-btn. -0p[[/
-            ]] rounded-start-pill px-3 shadow-none"
+            class="page-link rounded-start-pill px-3 shadow-none"
             type="button"
             :disabled="currentPage === 1"
             aria-label="Previous page"
             @click="goToPage(currentPage - 1)"
-          >Previous</button>
+          ><i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i><span>Prev</span></button>
         </li>
         <li
           v-for="page in displayedPages"
@@ -299,12 +313,12 @@ onMounted(async () => {
         </li>
         <li class="page-item" :class="{ disabled: currentPage === pageCount }">
           <button
-            class="page-link page-nav-btn rounded-end-pill px-3 shadow-none"
+            class="page-link rounded-end-pill px-3 shadow-none"
             type="button"
             :disabled="currentPage === pageCount"
             aria-label="Next page"
             @click="goToPage(currentPage + 1)"
-          >Next</button>
+          ><span>Next</span><i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></button>
         </li>
       </ul>
     </nav>
@@ -364,11 +378,6 @@ onMounted(async () => {
 
 .border-dashed {
   border-style: dashed !important;
-}
-
-.page-nav-btn {
-  min-width: 95px;
-  justify-content: center;
 }
 
 .shortlist-pagination .page-link {
