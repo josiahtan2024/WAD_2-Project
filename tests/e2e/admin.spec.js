@@ -26,7 +26,7 @@ async function openFirstUniversity(page) {
   await expect(page.getByTestId('university-page')).toBeVisible()
 }
 
-test.describe('students', () => {
+test.beforeEach('students', () => {
   test('see no staff controls', async ({ page }) => {
     await login(page)
     await openFirstUniversity(page)

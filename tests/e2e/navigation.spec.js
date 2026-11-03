@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('navigation on a phone', () => {
+test.beforeEach('navigation on a phone', () => {
   test.use({
     viewport: { width: 375, height: 812 },
     isMobile: true,
