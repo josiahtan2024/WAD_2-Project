@@ -191,29 +191,25 @@ onMounted(async () => {
 
 <style scoped>
 .university-pagination .page-link {
-  color: #0b2348;
-  border-color: #d7deea;
+  color: var(--app-blue);
+  border-color: var(--app-border);
   background-color: #fff;
 }
 
 .university-pagination .page-link:hover:not(:disabled) {
-  color: #0b2348;
-  border-color: #cbdcff;
-  background-color: #f1f5fc;
+  color: var(--app-blue);
+  border-color: var(--app-border);
+  background-color: var(--app-surface);
 }
 
 .university-pagination .page-item.active .page-link {
   color: #fff;
-  border-color: #0b2348;
-  background-color: #0b2348;
-}
-
-.university-pagination .page-link:focus-visible {
-  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+  border-color: var(--app-blue);
+  background-color: var(--app-blue);
 }
 
 .university-pagination .page-item.disabled .page-link {
   color: #8793a6;
-  background-color: #f8faff;
+  background-color: var(--app-surface);
 }
 </style>

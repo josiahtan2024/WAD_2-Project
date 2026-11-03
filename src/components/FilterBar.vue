@@ -32,8 +32,8 @@ function clearFilters() {
       <div class="col-12 col-sm-6 col-lg-4">
         <label for="universitySort" class="form-label fw-semibold">Sort By</label>
         <select id="universitySort" v-model="sortBy" class="form-select" aria-label="Sort By" data-testid="filter-sort-select">
-          <option value="name">University Name (A–Z)</option>
-          <option value="country">Country (A–Z)</option>
+          <option value="name">University Name (A - Z)</option>
+          <option value="country">Country (A - Z)</option>
           <option value="cost">Monthly Cost (Low to High)</option>
         </select>
       </div>

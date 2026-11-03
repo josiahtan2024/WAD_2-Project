@@ -36,7 +36,7 @@ const auth = useAuthStore()
 
 const sortBy = ref('added')
 const currentPage = ref(1)
-const pageSize = 6
+const pageSize = 5
 
 const saved = computed(() => {
   const universities = shortlist.items
@@ -219,9 +219,10 @@ onMounted(async () => {
             class="btn btn-sm btn-primary rounded-pill px-3 py-2"
             data-testid="shortlist-schedule-link"
           >
-            <i class="bi bi-calendar-check me-1"></i> Plan Schedule
+            <i class="bi bi-calendar-check me-1 d-none d-sm-inline-block"></i> Plan Schedule
           </RouterLink>
 
+          <div class="d-flex align-items-center gap-2">
           <RouterLink
             :to="`/universities/${u.id}`"
             class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2"
@@ -238,6 +239,7 @@ onMounted(async () => {
           >
             <i class="bi bi-trash"></i>
           </button>
+          </div>
         </div>
       </div>
     </div>
