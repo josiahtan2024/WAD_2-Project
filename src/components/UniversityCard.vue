@@ -63,6 +63,7 @@ const estimatedMonthlyCost = computed(() => {
   >
     <div class="card-body d-flex flex-column p-4">
       
+      <!-- Top header row with logo and badges -->
       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
         <div
           v-if="university.logo_url"
@@ -79,14 +80,23 @@ const estimatedMonthlyCost = computed(() => {
           <i class="bi bi-mortarboard fs-4 text-muted"></i>
         </div>
 
-        <span class="badge region-badge rounded-pill px-3 py-2 fw-semibold"
-          :class="selectedRegion === university.region ? 'text-bg-primary' : 'bg-light text-navy border'">
-          <i class="bi bi-geo-alt-fill me-1"></i>{{ university.region }}
-        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span
+            v-if="university.published === false"
+            class="badge bg-secondary rounded-pill p-2 d-flex align-items-center justify-content-center"
+            title="Hidden from students"
+            data-testid="university-hidden-badge">
+            <i class="bi bi-eye-slash"></i>
+          </span>
+
+          <span class="badge region-badge rounded-pill px-3 py-2 fw-semibold"
+            :class="selectedRegion === university.region ? 'text-bg-primary' : 'bg-light text-navy border'">
+            <i class="bi bi-geo-alt-fill me-1"></i>{{ university.region }}
+          </span>
+        </div>
       </div>
 
       <div class="mb-4 flex-grow-1 min-width-0">
-        <span v-if="university.published === false" class="badge text-bg-secondary mb-2" data-testid="university-hidden-badge">Hidden from students</span>
         <h2
           class="h5 card-title university-name mb-1"
           data-testid="university-card-name"
@@ -110,7 +120,7 @@ const estimatedMonthlyCost = computed(() => {
       <div class="mt-auto pt-4 border-top d-flex gap-2 flex-wrap flex-sm-nowrap">
         <RouterLink
           :to="`/universities/${university.id}`"
-          class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-2"
+          class="btn btn-primary btn-sm flex-fill rounded-pill py-2"
           data-testid="university-card-link"
         >
           Details
@@ -119,7 +129,7 @@ const estimatedMonthlyCost = computed(() => {
         <RouterLink
           v-if="auth.adminActive"
           :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
-          class="btn btn-outline-secondary btn-sm rounded-pill py-2"
+          class="btn btn-outline-secondary btn-sm rounded-pill py-2 px-3"
           data-testid="university-card-edit"
         >
           Edit
@@ -127,10 +137,11 @@ const estimatedMonthlyCost = computed(() => {
 
         <button
           class="btn btn-sm flex-fill rounded-pill py-2"
-          :class="shortlisted ? 'btn-secondary' : 'btn-primary'"
+          :class="shortlisted ? 'btn-primary' : 'btn-outline-primary'"
           :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
           @click="$emit('toggle-shortlist', university)"
         >
+          <i class="bi me-1" :class="shortlisted ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
           {{ shortlisted ? 'Shortlisted' : 'Shortlist' }}
         </button>
       </div>
