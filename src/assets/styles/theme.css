@@ -86,6 +86,25 @@ button,
   --bs-btn-active-border-color: var(--app-navy);
 }
 
+/* Outline Buttons */
+.btn-outline-primary {
+  --bs-btn-color: var(--app-blue);
+  --bs-btn-border-color: var(--app-blue);
+  --bs-btn-bg: #fff;
+
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-gray-blue);
+  --bs-btn-hover-border-color: var(--app-gray-blue);
+
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--app-navy);
+  --bs-btn-active-border-color: var(--app-navy);
+  
+  --bs-btn-disabled-color: var(--app-blue);
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: var(--app-blue);
+}
+
 /* Links */
 .link-primary {
   color: var(--app-blue) !important;

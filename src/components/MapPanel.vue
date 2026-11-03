@@ -23,8 +23,8 @@ let map
 let clusterGroup
 
 const markers = new Map()
-const DEFAULT_CENTER = [20, 0]
-const DEFAULT_ZOOM = 1.5
+const DEFAULT_CENTER = [25, 0]
+const DEFAULT_ZOOM = 2
 
 function resetMap() {
   if (!map) return
@@ -115,13 +115,19 @@ function draw() {
 
 onMounted(() => {
   map = L.map(el.value, {
-    minZoom: 1,
+    minZoom: 2,
     worldCopyJump: true,
     dragging: !L.Browser.mobile,
     zoomControl: !L.Browser.mobile
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)
+
+  L.control.scale({
+    metric: true,
+    imperial: true,
+    position: 'bottomleft'
+  }).addTo(map)
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 70,
@@ -167,17 +173,17 @@ watch(
 
 <template>
   <div class="map-container">
-    <div ref="el" class="map-panel rounded-3 overflow-hidden" data-testid="map-panel"></div>
+    <div ref="el" class="map-panel" data-testid="map-panel"></div>
 
     <button
       type="button"
       class="map-reset-button"
       @click="resetMap"
       aria-label="Reset map to world view"
-      title="Reset map"
+      title="Reset Map"
     >
       <i class="bi bi-globe me-1"></i>
-      Reset map
+      Reset
     </button>
   </div>
 </template>
@@ -189,9 +195,9 @@ watch(
 }
 
 .map-panel {
-  height: 480px;
+  height: 100%;
   width: 100%;
-  border: 1px solid var(--app-border);
+  border-radius: 0;
 }
 
 :deep(.university-marker-wrapper) {
@@ -261,5 +267,17 @@ watch(
 .map-reset-button:hover {
   background: var(--app-surface);
   border-color: var(--app-gray-blue);
+}
+
+:deep(.leaflet-control-scale-line) {
+  border-color: var(--app-navy);
+  color: var(--app-navy);
+  font-weight: 600;
+  padding: 2px 6px;
+}
+
+:deep(.leaflet-bottom.leaflet-left) {
+  bottom: 6px;
+  left: 6px;
 }
 </style>

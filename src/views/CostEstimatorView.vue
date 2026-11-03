@@ -770,7 +770,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="container px-0">
+  <main class="container py-4 mb-5">
     <div class="mb-3">
 
       <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>

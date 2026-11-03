@@ -139,7 +139,7 @@ onMounted(async () => {
       <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
     </template>
   </Notice>
-  <section data-testid="universities-page">
+  <section class="container py-4 mb-5" data-testid="universities-page">
     <h1 class="page-title h3 fw-bold text-center mb-3">Partner Universities</h1>
     <template v-if="auth.adminActive">
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">

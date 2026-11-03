@@ -1,5 +1,5 @@
 <template>
-  <section class="about-page" data-testid="about-page">
+  <section class="about-page container py-4 mb-5" data-testid="about-page">
     <header class="about-hero rounded-4 p-4 p-md-5 mb-5">
       <div class="row align-items-center g-4 g-xl-5">
         <div class="col-12 col-lg-7">
