@@ -155,7 +155,7 @@ onMounted(async () => {
       @dismiss-error="uni.error = null"/>
 
     <div class="row g-0 h-100 flex-column-reverse flex-lg-row">
-      <!-- Sidebar / Details Controls -->
+      <!-- Sidebar -->
       <div class="col-12 col-lg-3 d-flex flex-column sidebar-column">
         <!-- Info Panel -->
         <div class="info-panel-wrapper overflow-hidden border-bottom border-end-lg">

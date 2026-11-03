@@ -159,13 +159,12 @@ const estimatedMonthlyCost = computed(() => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #ffffff;
-  padding: 4px;
 }
 
 .info-logo {
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
 }
 
 .info-text {
