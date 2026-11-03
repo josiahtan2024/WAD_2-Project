@@ -1,5 +1,5 @@
 -- Run in the Supabase SQL Editor. 
--- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- schema.sql >> seed.sql >> policies.sql >> admin.sql
 -- 1. Universities & Localization
 CREATE TABLE IF NOT EXISTS universities (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
