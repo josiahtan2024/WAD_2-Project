@@ -109,8 +109,6 @@ const estimatedMonthlyCost = computed(() => {
       <div class="pt-2 border-top">
         <RouterLink
           :to="`/universities/${university.id}`"
-          target="_blank"
-          rel="noopener noreferrer"
           class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fs-8 fw-semibold"
           data-testid="info-details-link">
           <span>View University Details</span>

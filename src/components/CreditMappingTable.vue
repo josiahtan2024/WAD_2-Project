@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({ mappings: { type: Array, default: () => [] } })
 const search = ref('')
-const selectedArea = ref('')
+const selectedSchool = ref('')
 
 const groups = computed(() => {
   const grouped = new Map()
@@ -14,7 +14,7 @@ const groups = computed(() => {
       grouped.set(key, {
         key,
         area,
-        school: mapping.smu_module?.school,
+        school: mapping.smu_module?.school?.trim(),
         description: mapping.smu_module?.description,
         mappings: [],
       })
@@ -24,11 +24,15 @@ const groups = computed(() => {
   return [...grouped.values()].sort((a, b) => a.area.localeCompare(b.area, 'en', { sensitivity: 'base' }))
 })
 
+const schools = computed(() => [...new Set(
+  groups.value.map((group) => group.school?.trim()).filter(Boolean)
+)].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })))
+
 const filteredGroups = computed(() => {
   const query = search.value.trim().toLowerCase()
 
   return groups.value
-    .filter((group) => selectedArea.value === '' || String(group.key) === selectedArea.value)
+    .filter((group) => selectedSchool.value === '' || group.school === selectedSchool.value)
     .map((group) => ({
       ...group,
       mappings: query ? group.mappings.filter((mapping) => [
@@ -49,7 +53,7 @@ const filteredCount = computed(() => filteredGroups.value.reduce((count, group) 
 
 function clearFilters() {
   search.value = ''
-  selectedArea.value = ''
+  selectedSchool.value = ''
 }
 </script>
 
@@ -82,16 +86,16 @@ function clearFilters() {
             />
           </div>
           <div class="col-12 col-md-6">
-            <label for="mapping-area-filter" class="form-label fw-semibold">Filter by SMU Course Area</label>
-            <select id="mapping-area-filter" v-model="selectedArea" class="form-select" data-testid="mapping-area-filter">
-              <option value="">All Course Areas</option>
-              <option v-for="group in groups" :key="group.key" :value="String(group.key)">{{ group.area }}</option>
+            <label for="mapping-school-filter" class="form-label fw-semibold">Filter by SMU School</label>
+            <select id="mapping-school-filter" v-model="selectedSchool" class="form-select" data-testid="mapping-school-filter">
+              <option value="">All Schools</option>
+              <option v-for="school in schools" :key="school" :value="school">{{ school }}</option>
             </select>
           </div>
         </div>
         <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
           <div class="small text-muted" data-testid="mapping-count">{{ filteredCount }} of {{ mappings.length }} mapped courses</div>
-          <button v-if="search || selectedArea" type="button" class="btn btn-sm btn-outline-secondary" data-testid="mapping-clear-filters" @click="clearFilters">Reset Search and Filters</button>
+          <button v-if="search || selectedSchool" type="button" class="btn btn-sm btn-outline-secondary" data-testid="mapping-clear-filters" @click="clearFilters">Reset Search and Filters</button>
         </div>
         </div>
         <p v-if="!filteredGroups.length" class="text-muted mb-0" data-testid="mapping-no-results">No course mappings match your search.</p>
@@ -100,7 +104,7 @@ function clearFilters() {
             v-for="(group, index) in filteredGroups"
             :key="group.key"
             class="mapping-group border rounded-3"
-            :open="!!search.trim() || selectedArea !== '' || index === 0"
+            :open="!!search.trim() || selectedSchool !== '' || index === 0"
             data-testid="mapping-group"
           >
             <summary class="mapping-summary d-flex align-items-center justify-content-between gap-3 p-3">

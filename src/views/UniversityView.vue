@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAdminUniversitiesStore } from '@/stores/adminUniversities'
 import { useReviewsStore } from '@/stores/reviews'
 import { useAuthStore } from '@/stores/auth'
+import { useShortlistStore } from '@/stores/shortlist'
 import CreditMappingTable from '@/components/CreditMappingTable.vue'
 import ReviewCarousel from '@/components/ReviewCarousel.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
@@ -42,10 +43,13 @@ const uni = useUniversitiesStore()
 const admin = useAdminUniversitiesStore()
 const reviews = useReviewsStore()
 const auth = useAuthStore()
+const shortlist = useShortlistStore()
 const exchangeRates = useExchangeRatesStore()
 const posting = ref(false)
 const postError = ref('')
 const reviewSuccessMessage = ref('')
+const shortlistError = ref('')
+const shortlistSaving = ref(false)
 
 let reviewNoticeTimeout = null
 watch(reviewSuccessMessage, (message) => {
@@ -65,6 +69,9 @@ const university = computed(() => {
   const item = uni.items.find((u) => String(u.id) === route.params.id)
   return item && (auth.adminActive || item.published !== false) ? item : undefined
 })
+const isShortlisted = computed(() => shortlist.items.some(
+  (item) => String(item.university_id) === String(university.value?.id)
+))
 const universityCost = computed(() => {
   const cost = university.value?.university_costs
   return Array.isArray(cost) ? cost[0] : cost
@@ -99,6 +106,34 @@ function formatExchangeDate(date) {
 }
 
 const selectedPeriod = computed(() => details.value.periods[selectedPeriodIndex.value] ?? null)
+
+async function toggleShortlist() {
+  if (!university.value) return
+  if (!auth.user) {
+    router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
+
+  shortlistSaving.value = true
+  shortlistError.value = ''
+  try {
+    if (isShortlisted.value) await shortlist.remove(university.value.id)
+    else await shortlist.add(university.value.id)
+  } catch (error) {
+    shortlistError.value = error.message || 'Unable to update your shortlist.'
+  } finally {
+    shortlistSaving.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!auth.user) return
+  try {
+    await shortlist.load()
+  } catch (error) {
+    shortlistError.value = error.message || 'Unable to load your shortlist.'
+  }
+})
 
 function distanceFromSmU() {
   const lat = Number(university.value?.lat)
@@ -193,10 +228,10 @@ watch(() => route.params.id, async () => {
 <template>
   <section class="container py-4 mb-5" data-testid="university-page">
     <Notice
-      :data-testid="uni.error ? 'university-error' : undefined"
-      :error-message="uni.error || ''"
+      :data-testid="uni.error ? 'university-error' : shortlistError ? 'shortlist-error' : undefined"
+      :error-message="uni.error || shortlistError"
       :success-message="reviewSuccessMessage"
-      @dismiss-error="uni.error = null"
+      @dismiss-error="uni.error ? uni.error = null : shortlistError = ''"
       @dismiss-success="reviewSuccessMessage = ''"
     />
     <div v-if="uni.loading" class="text-muted" data-testid="university-loading">Loading...</div>
@@ -225,6 +260,16 @@ watch(() => route.params.id, async () => {
           target="_blank"
           rel="noopener noreferrer"
         >Visit Website</a>
+        <button
+          type="button"
+          class="btn btn-sm"
+          :class="isShortlisted ? 'btn-secondary' : 'btn-primary'"
+          :disabled="shortlistSaving"
+          data-testid="university-shortlist-btn"
+          @click="toggleShortlist">
+          <span v-if="shortlistSaving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          {{ isShortlisted ? 'Remove from Shortlist' : 'Add to Shortlist' }}
+        </button>
       </header>
       <div v-if="detailsError" class="alert alert-warning" role="status">Some university comparison details could not be loaded: {{ detailsError }}</div>
       <div v-if="detailsLoading" class="text-muted mb-3" role="status">Loading university details...</div>

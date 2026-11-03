@@ -132,6 +132,7 @@ function toggleUniversity(university) {
 
 function handleReset() {
   selected.value = null
+  resetRegions()
   if (route.query.university) {
     router.replace({ query: { ...route.query, university: undefined } })
   }
@@ -165,14 +166,19 @@ onMounted(async () => {
         
         <div class="h-60 d-flex flex-column border-end-lg p-3 home-university-panel">
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-            <h2 class="region-panel-title mb-0">
-              <span @click="resetRegions" role="button" tabindex="0"
-                @keydown.enter.prevent="resetRegions"
-                @keydown.space.prevent="resetRegions"
-                style="cursor: pointer;">
-                Regions
-              </span>
-            </h2>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                v-if="hasAnyRegionExpanded"
+                type="button"
+                class="region-back-btn"
+                aria-label="Back to all regions"
+                title="Back to all regions"
+                data-testid="home-regions-back-btn"
+                @click="resetRegions">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+              </button>
+              <h2 class="region-panel-title mb-0">Regions</h2>
+            </div>
             <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">
               {{ visibleUniversities.length }} Unis
             </span>
@@ -259,7 +265,7 @@ onMounted(async () => {
 <style scoped>
 .remaining-height-container {
   height: calc(100vh - var(--app-navbar-height, 58px));
-  min-height: 550px;
+  min-height: 32rem;
 }
 
 .h-40 {
@@ -294,6 +300,25 @@ onMounted(async () => {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--app-navy);
+}
+
+.region-back-btn {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  color: var(--app-blue);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.region-back-btn:hover,
+.region-back-btn:focus-visible {
+  color: #ffffff;
+  background: var(--app-blue);
 }
 
 .total-count-pill {
@@ -406,5 +431,52 @@ onMounted(async () => {
   background-color: var(--app-blue);
   color: #ffffff;
   padding-left: 1rem !important;
+}
+
+@media (max-width: 991.98px) {
+  .remaining-height-container {
+    height: auto;
+    min-height: 0;
+  }
+
+  .remaining-height-container > .row {
+    height: auto !important;
+  }
+
+  .sidebar-column,
+  .map-column {
+    height: auto !important;
+  }
+
+  .info-panel-wrapper {
+    height: auto !important;
+    min-height: 10rem;
+  }
+
+  .info-panel-card {
+    min-height: 10rem;
+  }
+
+  .home-university-panel {
+    min-height: 18rem;
+    max-height: 45vh;
+  }
+
+  .map-column {
+    height: clamp(21rem, 58vh, 34rem) !important;
+    min-height: 21rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .home-university-panel {
+    padding: 1rem !important;
+    min-height: 16rem;
+  }
+
+  .map-column {
+    height: 55vh !important;
+    min-height: 19rem;
+  }
 }
 </style>

@@ -19,4 +19,16 @@ test.describe('shortlist', () => {
     await page.getByTestId('shortlist-remove-btn').click()
     await expect(page.getByTestId('shortlist-empty')).toBeVisible()
   })
+
+  test('university details can add and remove the university from shortlist', async ({ page }) => {
+    await page.goto('/universities')
+    await page.getByTestId('university-card-link').first().click()
+
+    const button = page.getByTestId('university-shortlist-btn')
+    await expect(button).toHaveText('Add to Shortlist')
+    await button.click()
+    await expect(button).toHaveText('Remove from Shortlist')
+    await button.click()
+    await expect(button).toHaveText('Add to Shortlist')
+  })
 })

@@ -117,8 +117,9 @@ onMounted(() => {
   map = L.map(el.value, {
     minZoom: 2,
     worldCopyJump: true,
-    dragging: !L.Browser.mobile,
-    zoomControl: !L.Browser.mobile
+    dragging: true,
+    zoomControl: true,
+    touchZoom: true,
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)

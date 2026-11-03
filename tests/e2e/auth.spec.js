@@ -9,6 +9,7 @@ test.describe('auth', () => {
 
   test('log in and log out', async ({ page }) => {
     await login(page)
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-logout-btn').click()
     await expect(page.getByTestId('nav-login-link')).toBeVisible()
   })

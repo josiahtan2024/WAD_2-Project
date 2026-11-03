@@ -30,4 +30,24 @@ test.describe('universities', () => {
     const names = await cards.allTextContents()
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
   })
+
+  test('credit mappings can be filtered by SMU school', async ({ page }) => {
+    await page.getByTestId('university-card-link').first().click()
+    await expect(page.getByTestId('university-page')).toBeVisible()
+    await expect(page.getByTestId('mapping-loading')).toHaveCount(0)
+
+    const schoolFilter = page.getByTestId('mapping-school-filter')
+    if (!(await schoolFilter.count())) {
+      test.skip(true, 'This university has no course mappings to filter.')
+    }
+
+    await page.getByTestId('credit-mapping-table').locator('summary').first().click()
+    await expect(schoolFilter).toBeVisible()
+    await expect(schoolFilter.locator('option').nth(1)).toBeAttached()
+    await schoolFilter.selectOption({ index: 1 })
+    await expect(schoolFilter).not.toHaveValue('')
+    await expect(page.getByTestId('mapping-clear-filters')).toBeVisible()
+    await page.getByTestId('mapping-clear-filters').click()
+    await expect(schoolFilter).toHaveValue('')
+  })
 })

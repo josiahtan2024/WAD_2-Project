@@ -1,30 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-import HomeView from '@/views/HomeView.vue'
-import LoginView from '@/views/LoginView.vue'
-import SignupView from '@/views/SignupView.vue'
-import UniversitiesView from '@/views/UniversitiesView.vue'
-import UniversityView from '@/views/UniversityView.vue'
-import ShortlistView from '@/views/ShortlistView.vue'
-import CompareView from '@/views/CompareView.vue'
-import ScheduleView from '@/views/ScheduleView.vue'
-import CostEstimator from '@/views/CostEstimatorView.vue'
-import CourseSearchView from '@/views/CourseSearchView.vue'
-import AboutView from '@/views/AboutView.vue'
-
 const routes = [
-  { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
-  { path: '/about', name: 'about', component: AboutView, meta: { title: 'About Us' } },
-  { path: '/login', name: 'login', component: LoginView, meta: { title: 'Login' } },
-  { path: '/signup', name: 'signup', component: SignupView, meta: { title: 'Sign Up' } },
-  { path: '/universities', name: 'universities', component: UniversitiesView, meta: { title: 'Partner Universities' } },
-  { path: '/universities/:id', name: 'university', component: UniversityView, meta: { title: 'University Details' } },
-  { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { title: 'My Shortlist', requiresAuth: true } },
-  { path: '/compare', name: 'compare', component: CompareView, meta: { title: 'Compare Universities' } },
-  { path: '/courses', name: 'courses', component: CourseSearchView, meta: { title: 'Course Search' } },
-  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { title: 'Cost Estimator', requiresAuth: true }, },
-  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { title: 'My Schedule', requiresAuth: true } },
+  { path: '/', name: 'home', component: () => import('@/views/HomeView.vue'), meta: { title: 'Home' } },
+  { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue'), meta: { title: 'About Us' } },
+  { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { title: 'Login' } },
+  { path: '/signup', name: 'signup', component: () => import('@/views/SignupView.vue'), meta: { title: 'Sign Up' } },
+  { path: '/universities', name: 'universities', component: () => import('@/views/UniversitiesView.vue'), meta: { title: 'Partner Universities' } },
+  { path: '/universities/:id', name: 'university', component: () => import('@/views/UniversityView.vue'), meta: { title: 'University Details' } },
+  { path: '/shortlist', name: 'shortlist', component: () => import('@/views/ShortlistView.vue'), meta: { title: 'My Shortlist', requiresAuth: true } },
+  { path: '/compare', name: 'compare', component: () => import('@/views/CompareView.vue'), meta: { title: 'Compare Universities' } },
+  { path: '/courses', name: 'courses', component: () => import('@/views/CourseSearchView.vue'), meta: { title: 'Course Search' } },
+  { path: '/cost-estimator', name: 'cost-estimator', component: () => import('@/views/CostEstimatorView.vue'), meta: { title: 'Cost Estimator', requiresAuth: true }, },
+  { path: '/schedule/:universityId?', name: 'schedule', component: () => import('@/views/ScheduleView.vue'), meta: { title: 'My Schedule', requiresAuth: true } },
 ]
 
 const router = createRouter({

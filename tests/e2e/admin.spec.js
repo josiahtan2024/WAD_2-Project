@@ -14,7 +14,7 @@ async function loginAsAdmin(page) {
   await page.getByTestId('login-submit-btn').click()
   const loggedIn = page.getByTestId('nav-logout-btn')
   const loginError = page.getByTestId('login-error')
-  await expect(loggedIn.or(loginError)).toBeVisible()
+  await expect(loggedIn.or(loginError)).toHaveCount(1)
   if (await loginError.isVisible()) {
     throw new Error(`Admin login failed: ${await loginError.innerText()}`)
   }
@@ -65,15 +65,17 @@ test.describe('admins', () => {
   test('see the staff controls and can switch to the student view', async ({ page }) => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     await expect(page.getByTestId('admin-edit-cost')).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })

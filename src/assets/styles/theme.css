@@ -71,6 +71,15 @@ button,
   min-width: 0;
 }
 
+/* Keep native selects inside their grid/flex column at every viewport size. */
+select.form-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
 /* Buttons */
 .btn-primary {
   --bs-btn-color: #fff;
@@ -258,6 +267,11 @@ button,
 }
 
 @media (max-width: 575.98px) {
+  select.form-select {
+    min-height: 2.75rem;
+    font-size: max(1rem, 16px);
+  }
+
   .filter-panel .form-label {
     font-size: 0.925rem;
   }
