@@ -84,6 +84,12 @@ function toggleRegion(regionName) {
   expandedRegions.value[regionName] = !isCurrentlyExpanded
 }
 
+function resetRegions() {
+  Object.keys(expandedRegions.value).forEach(key => {
+    expandedRegions.value[key] = false
+  })
+}
+
 function autoExpandRegionForSelected(selectedUni) {
   if (!selectedUni) return
   const rawRegion = selectedUni.region ? selectedUni.region.trim() : ''
@@ -160,7 +166,12 @@ onMounted(async () => {
         <div class="h-60 d-flex flex-column border-end-lg p-3 home-university-panel">
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
             <h2 class="region-panel-title mb-0">
-              <span>Regions</span>
+              <span @click="resetRegions" role="button" tabindex="0"
+                @keydown.enter.prevent="resetRegions"
+                @keydown.space.prevent="resetRegions"
+                style="cursor: pointer;">
+                Regions
+              </span>
             </h2>
             <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">
               {{ visibleUniversities.length }} Unis
