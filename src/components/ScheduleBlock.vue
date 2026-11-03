@@ -2,8 +2,6 @@
 import { computed,ref } from 'vue';
 import { useScheduleStore } from '@/stores/schedule';
 const props = defineProps({'modules':Array,
-'timeSlots':Array,
-'weekDays':Array,
 'changesDetected':Boolean,
 'selectedModule':String,
 'mode':String}); //2 modes: view and edit
@@ -12,6 +10,10 @@ const emit = defineEmits(['insertModule'])
 const selectedDay = ref('');
 const startTime = ref(0);
 const endTime = ref(0);
+const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const timeLimit = [28800,64800] // assumption: each university day runs from 8am to 6pm (timing read/written in seconds)
+
+
 const noModuleError = ref(false);
 const schedule = useScheduleStore();
 const selectedModuleCode = computed(()=>{
@@ -33,6 +35,15 @@ const endSlot = computed(() =>{ //end of window
   return (day,time) => {
     return (time>startTime.value && time < endTime.value) && day == selectedDay.value
   }
+})
+
+const timeSlots = computed(() =>{
+  let ts = []
+  for(let t = timeLimit[0];t<timeLimit[1]+1;t+=1800){
+    ts.push(t);
+  }
+  return ts;
+
 })
 
 function isEditMode(){
@@ -121,7 +132,7 @@ function isBlocked(day,time){
     </template>
     <template v-if="noModuleError">
       <div class="alert opacity-75 text-center">
-        No Module selected, please select a Module.
+        No module selected
       </div>
     </template>
     <div>
@@ -130,16 +141,16 @@ function isBlocked(day,time){
           <thead>
             <tr class="text-center">
               <th>&nbsp;</th>
-              <template v-for="day in props.weekDays" :key="day">
+              <template v-for="day in weekDays" :key="day">
                 <th>{{ day }}</th>
               </template>
             </tr>
           </thead>
           <tbody id="window">
-            <template v-for="time in props.timeSlots" :key="time">
+            <template v-for="time in timeSlots" :key="time">
               <tr>
                 <th class="timing" scope="row">{{ timeString(Number(time)) }}</th>
-                <template v-for="day in props.weekDays" :key="day">
+                <template v-for="day in weekDays" :key="day">
                   <td class="slot text-center text-light fw-bold" @click="isEditMode()?selectLesson(day,time):$event.stopPropagation()" style="text-wrap-style: balance;" :class="{'blocked':isBlocked(day,time).blocked,'disabled':!isEditMode(),'block':startSlot(day,time) || endSlot(day,time) || midSlot(day,time)}">
                    {{ isBlocked(day,time).mod }}
                   </td>
@@ -156,7 +167,9 @@ function isBlocked(day,time){
 
 <style scoped>
 /* Optional styling can go here */
-
+table{
+  cursor: pointer;
+}
 tbody#window .slot:hover{
   background-color: #0669fd3d
 ;
