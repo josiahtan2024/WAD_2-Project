@@ -21,15 +21,28 @@ const emit = defineEmits(['select', 'reset'])
 const el = ref(null)
 let map
 let clusterGroup
+let resizeObserver
 
 const markers = new Map()
-const DEFAULT_CENTER = [25, 0]
-const DEFAULT_ZOOM = 2
+const DEFAULT_CENTER_DESKTOP = [25, 0]
+const DEFAULT_ZOOM_DESKTOP = 2
+const DEFAULT_CENTER_MOBILE = [20, 0] 
+const DEFAULT_ZOOM_MOBILE = 1
+
+function getResponsiveDefaults() {
+  const isMobile = window.innerWidth < 992
+  return {
+    center: isMobile ? DEFAULT_CENTER_MOBILE : DEFAULT_CENTER_DESKTOP,
+    zoom: isMobile ? DEFAULT_ZOOM_MOBILE : DEFAULT_ZOOM_DESKTOP,
+  }
+}
 
 function resetMap() {
   if (!map) return
 
-  map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, {
+  const { center, zoom } = getResponsiveDefaults()
+
+  map.flyTo(center, zoom, {
     animate: true,
     duration: 1.4,
   })
@@ -63,7 +76,6 @@ function focusSelectedUniversity() {
 
   const latLng = marker.getLatLng()
 
-  // Zoom in to the selected university, even if it is clustered.
   clusterGroup.zoomToShowLayer(marker, () => {
     map.flyTo(latLng, 15, {
       animate: true,
@@ -113,13 +125,21 @@ function draw() {
   updateSelectedMarker()
 }
 
+function handleResize() {
+  if (map) {
+    map.invalidateSize()
+  }
+}
+
 onMounted(() => {
-  map = L.map(el.value, {
-    minZoom: 2,
+  const { center, zoom } = getResponsiveDefaults()
+
+map = L.map(el.value, {
+    minZoom: window.innerWidth < 992 ? 1 : 2,
     worldCopyJump: true,
     dragging: !L.Browser.mobile,
     zoomControl: !L.Browser.mobile
-  }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
+  }).setView(center, zoom)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)
 
@@ -141,15 +161,25 @@ onMounted(() => {
 
   draw()
 
-  // Only focus if a selectedId is explicitly passed on load, otherwise keep the default reset view
   if (props.selectedId != null) {
     focusSelectedUniversity()
   } else {
     resetMap()
   }
+
+  if (window.ResizeObserver && el.value) {
+    resizeObserver = new ResizeObserver(() => {
+      handleResize()
+    })
+    resizeObserver.observe(el.value)
+  }
 })
 
 onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
   if (map) {
     map.remove()
     map = null
@@ -172,7 +202,7 @@ watch(
 </script>
 
 <template>
-  <div class="map-container">
+  <div class="map-container h-100">
     <div ref="el" class="map-panel" data-testid="map-panel"></div>
 
     <button

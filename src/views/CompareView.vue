@@ -4,10 +4,21 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
+
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import iconUrl from 'leaflet/dist/images/marker-icon.png'
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+    iconUrl,
+    iconRetinaUrl,
+    shadowUrl,
+})
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -761,7 +772,9 @@ watch(
                     <template #default="{ uni }">
                         <div class="mt-3 pt-3 border-top">
                             <a :href="uni.academic.modulesURL" class="link-primary text-decoration-none custom-hover-link" 
-                                target="_blank" rel="noopener noreferrer">View Course Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></a>
+                                target="_blank" rel="noopener noreferrer">View Course
+                                <span class="d-inline-block">Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></span>
+                            </a>
                         </div>
                     </template>
                 </CompareRow>
@@ -902,7 +915,7 @@ watch(
     font-size: 2rem;
 }
 .compare-select:hover {
-    outline: 1px solid #173b78;
+    outline: 1px solid var(--app-gray-blue);
 }
 .sticky-uni-selector {
     position: sticky;
