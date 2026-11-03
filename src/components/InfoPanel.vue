@@ -16,9 +16,7 @@ const logoUrl = computed(() => {
 
   const filePath = path.replace(/^\/?university-logos\//, '')
 
-  return supabase.storage
-    .from('university-logos')
-    .getPublicUrl(filePath).data.publicUrl
+  return supabase.storage.from('university-logos').getPublicUrl(filePath).data.publicUrl
 })
 
 const exchangeRates = useExchangeRatesStore()
@@ -35,9 +33,7 @@ const estimatedMonthlyCost = computed(() => {
   const rate = exchangeRates.rates[currency]
 
   if (!Number.isFinite(rate) || rate <= 0) {
-    return exchangeRates.loading
-      ? 'Loading...'
-      : 'SGD estimate unavailable'
+    return exchangeRates.loading ? 'Loading...' : 'SGD estimate unavailable'
   }
 
   return new Intl.NumberFormat('en-SG', {
@@ -51,11 +47,11 @@ const estimatedMonthlyCost = computed(() => {
 
 <template>
   <div class="info-panel-card card border-0 h-100 d-flex flex-column" data-testid="info-panel">
-
     <div
       v-if="!university"
       class="empty-info-state d-flex flex-column align-items-center justify-content-center text-center p-3 h-100"
-      data-testid="info-empty">
+      data-testid="info-empty"
+    >
       <div class="empty-icon-wrapper mb-2">
         <i class="bi bi-geo-alt-fill text-primary fs-5"></i>
       </div>
@@ -65,8 +61,10 @@ const estimatedMonthlyCost = computed(() => {
       </p>
     </div>
 
-    <div v-else class="card-body d-flex flex-column h-100 p-3 justify-content-between overflow-hidden">
-
+    <div
+      v-else
+      class="card-body d-flex flex-column h-100 p-3 justify-content-between overflow-hidden"
+    >
       <div class="info-header pb-2 border-bottom d-flex align-items-center gap-3">
         <div class="info-logo-box">
           <img
@@ -74,10 +72,9 @@ const estimatedMonthlyCost = computed(() => {
             :key="logoUrl"
             :src="logoUrl"
             :alt="`${university.name} logo`"
-            class="info-logo"/>
-          <i v-else
-            class="bi bi-mortarboard fs-4 text-muted"
-            aria-hidden="true"></i>
+            class="info-logo"
+          />
+          <i v-else class="bi bi-mortarboard fs-4 text-muted" aria-hidden="true"></i>
         </div>
 
         <div class="info-text">
@@ -100,9 +97,7 @@ const estimatedMonthlyCost = computed(() => {
           <div class="fw-bold fs-6 text-navy">
             {{ estimatedMonthlyCost }}
           </div>
-          <p class="text-muted fs-9 mb-0 mt-1">
-            Converted to SGD using live FX rates.
-          </p>
+          <p class="text-muted fs-9 mb-0 mt-1">Converted to SGD using live FX rates.</p>
         </div>
       </div>
 
@@ -110,12 +105,12 @@ const estimatedMonthlyCost = computed(() => {
         <RouterLink
           :to="`/universities/${university.id}`"
           class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fs-8 fw-semibold"
-          data-testid="info-details-link">
+          data-testid="info-details-link"
+        >
           <span>View University Details</span>
           <i class="bi bi-arrow-right"></i>
         </RouterLink>
       </div>
-
     </div>
   </div>
 </template>

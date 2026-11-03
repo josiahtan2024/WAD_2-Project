@@ -27,25 +27,39 @@ async function submit() {
 
 <template>
   <div class="container py-4 mb-5">
-  <section class="row justify-content-center" data-testid="login-page">
-    <div class="col-12 col-md-6 col-lg-4">
-      <h1 class="page-title h3 fw-bold text-center mb-3">Log In</h1>
-      <form @submit.prevent="submit">
-        <div class="mb-3">
-          <label class="form-label" for="login-email">Email</label>
-          <input id="login-email" v-model="email" type="email" class="form-control" required data-testid="login-email-input" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label" for="login-password">Password</label>
-          <input id="login-password" v-model="password" type="password" class="form-control" required data-testid="login-password-input" />
-        </div>
-        <div v-if="error" class="alert alert-danger" data-testid="login-error">{{ error }}</div>
-        <button class="btn btn-primary w-100" :disabled="loading" data-testid="login-submit-btn">
-          {{ loading ? 'Logging In...' : 'Log In' }}
-        </button>
-      </form>
-      <p class="mt-3 mb-0">No account? <RouterLink to="/signup">Sign Up</RouterLink></p>
-    </div>
-  </section>    
+    <section class="row justify-content-center" data-testid="login-page">
+      <div class="col-12 col-md-6 col-lg-4">
+        <h1 class="page-title h3 fw-bold text-center mb-3">Log In</h1>
+        <form @submit.prevent="submit">
+          <div class="mb-3">
+            <label class="form-label" for="login-email">Email</label>
+            <input
+              id="login-email"
+              v-model="email"
+              type="email"
+              class="form-control"
+              required
+              data-testid="login-email-input"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="login-password">Password</label>
+            <input
+              id="login-password"
+              v-model="password"
+              type="password"
+              class="form-control"
+              required
+              data-testid="login-password-input"
+            />
+          </div>
+          <div v-if="error" class="alert alert-danger" data-testid="login-error">{{ error }}</div>
+          <button class="btn btn-primary w-100" :disabled="loading" data-testid="login-submit-btn">
+            {{ loading ? 'Logging In...' : 'Log In' }}
+          </button>
+        </form>
+        <p class="mt-3 mb-0">No account? <RouterLink to="/signup">Sign Up</RouterLink></p>
+      </div>
+    </section>
   </div>
 </template>

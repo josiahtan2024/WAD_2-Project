@@ -25,10 +25,10 @@ test.describe('shortlist', () => {
     await page.getByTestId('university-card-link').first().click()
 
     const button = page.getByTestId('university-shortlist-btn')
-    await expect(button).toHaveText('Add to Shortlist')
+    await expect(button).toHaveText('Shortlist')
     await button.click()
-    await expect(button).toHaveText('Remove from Shortlist')
+    await expect(button).toHaveText('Shortlisted')
     await button.click()
-    await expect(button).toHaveText('Add to Shortlist')
+    await expect(button).toHaveText('Shortlist')
   })
 })

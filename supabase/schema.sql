@@ -1,5 +1,5 @@
 -- Run in the Supabase SQL Editor. 
--- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- schema.sql >> seed.sql >> policies.sql >> admin.sql
 -- 1. Universities & Localization
 CREATE TABLE IF NOT EXISTS universities (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -235,7 +235,8 @@ CREATE TABLE IF NOT EXISTS cart_modules (
 CREATE TABLE IF NOT EXISTS planned_modules (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     timetable_id BIGINT NOT NULL,
-    cart_module_id BIGINT NOT NULL,
+    university_module_id BIGINT NOT NULL,
+    cart_module_id BIGINT,
     user_id UUID NOT NULL
         REFERENCES auth.users(id) ON DELETE CASCADE,
     university_id BIGINT NOT NULL
@@ -250,7 +251,11 @@ CREATE TABLE IF NOT EXISTS planned_modules (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (timetable_id, cart_module_id),
+    UNIQUE (timetable_id, university_module_id),
+
+    FOREIGN KEY (university_module_id, university_id)
+        REFERENCES university_modules(id, university_id)
+        ON DELETE CASCADE,
 
     FOREIGN KEY (timetable_id, user_id, university_id)
         REFERENCES timetables(id, user_id, university_id)
@@ -258,7 +263,7 @@ CREATE TABLE IF NOT EXISTS planned_modules (
 
     FOREIGN KEY (cart_module_id, user_id, university_id)
         REFERENCES cart_modules(id, user_id, university_id)
-        ON DELETE CASCADE,
+        ON DELETE SET NULL (cart_module_id),
 
     CHECK (end_time > start_time)
 );

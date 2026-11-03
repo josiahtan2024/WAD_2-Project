@@ -108,7 +108,7 @@ select.form-select {
   --bs-btn-active-color: #fff;
   --bs-btn-active-bg: var(--app-navy);
   --bs-btn-active-border-color: var(--app-navy);
-  
+
   --bs-btn-disabled-color: var(--app-blue);
   --bs-btn-disabled-bg: transparent;
   --bs-btn-disabled-border-color: var(--app-blue);
@@ -186,7 +186,7 @@ select.form-select {
   transform: scale(0.96);
 }
 
-.app-navbar .navbar-toggler[aria-expanded="true"] {
+.app-navbar .navbar-toggler[aria-expanded='true'] {
   background: var(--app-blue);
   border-color: var(--app-gray-blue);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
@@ -260,7 +260,7 @@ select.form-select {
     margin-left: auto;
   }
 
-  .app-navbar .navbar-collapse > .d-flex > [data-testid="nav-logout-btn"] {
+  .app-navbar .navbar-collapse > .d-flex > [data-testid='nav-logout-btn'] {
     margin-right: auto;
     margin-left: 0;
   }

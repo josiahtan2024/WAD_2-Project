@@ -4,8 +4,12 @@ import { login } from './helpers'
 // Needs an account whose app_metadata has role = admin (see README, "Admin accounts").
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim()
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim()
-const hasAdminCredentials = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD &&
-  ADMIN_EMAIL.toLowerCase() !== 'undefined' && ADMIN_PASSWORD.toLowerCase() !== 'undefined')
+const hasAdminCredentials = Boolean(
+  ADMIN_EMAIL &&
+  ADMIN_PASSWORD &&
+  ADMIN_EMAIL.toLowerCase() !== 'undefined' &&
+  ADMIN_PASSWORD.toLowerCase() !== 'undefined'
+)
 
 async function loginAsAdmin(page) {
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {

@@ -10,7 +10,9 @@ test('universities: search narrows the results', async ({ page }) => {
   const before = await cards.count()
   const targetName = (await cards.first().getByTestId('university-card-name').innerText()).trim()
   await page.getByTestId('filter-search-input').fill(targetName)
-  await expect(page.getByTestId('university-card-name').filter({ hasText: targetName })).toHaveCount(1)
+  await expect(
+    page.getByTestId('university-card-name').filter({ hasText: targetName })
+  ).toHaveCount(1)
   expect(before).toBeGreaterThan(1)
   expect(await cards.count()).toBeLessThan(before)
 })

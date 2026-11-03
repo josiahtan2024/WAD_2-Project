@@ -22,8 +22,8 @@ const emit = defineEmits(['cancel', 'confirm'])
   >
     <template #description>
       Are you sure you want to delete the budget for
-      <strong>{{ budget?.university_name }}</strong>?
-      This action cannot be undone.
+      <strong>{{ budget?.university_name }}</strong
+      >? This action cannot be undone.
     </template>
   </DeleteConfirmDialog>
 </template>

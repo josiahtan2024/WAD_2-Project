@@ -1,5 +1,5 @@
 -- Run in the Supabase SQL Editor. 
--- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- schema.sql >> seed.sql >> policies.sql >> admin.sql
 -- Disable sequence auto-increment overriding so the explicitly defined IDs are respected
 -- SUPABASE STORAGE
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

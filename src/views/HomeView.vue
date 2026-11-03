@@ -16,23 +16,16 @@ const route = useRoute()
 const router = useRouter()
 const selected = ref(null)
 
-const TARGET_REGIONS = [
-  'Africa',
-  'Americas',
-  'Asia',
-  'Europe',
-  'Middle-East',
-  'Oceania'
-]
+const TARGET_REGIONS = ['Africa', 'Americas', 'Asia', 'Europe', 'Middle-East', 'Oceania']
 
 const expandedRegions = ref({
-  'Africa': false,
-  'Americas': false,
-  'Asia': false,
-  'Europe': false,
+  Africa: false,
+  Americas: false,
+  Asia: false,
+  Europe: false,
   'Middle-East': false,
-  'Oceania': false,
-  'Other': false
+  Oceania: false,
+  Other: false,
 })
 
 const visibleUniversities = computed(() =>
@@ -41,16 +34,15 @@ const visibleUniversities = computed(() =>
 
 const universitiesByRegion = computed(() => {
   const grouped = {}
-  
-  TARGET_REGIONS.forEach(region => {
+
+  TARGET_REGIONS.forEach((region) => {
     grouped[region] = []
   })
 
-  visibleUniversities.value.forEach(u => {
+  visibleUniversities.value.forEach((u) => {
     const rawRegion = u.region ? u.region.trim() : ''
-    const matchedRegion = TARGET_REGIONS.find(
-      r => r.toLowerCase() === rawRegion.toLowerCase()
-    ) || 'Other'
+    const matchedRegion =
+      TARGET_REGIONS.find((r) => r.toLowerCase() === rawRegion.toLowerCase()) || 'Other'
 
     if (!grouped[matchedRegion]) {
       grouped[matchedRegion] = []
@@ -58,26 +50,26 @@ const universitiesByRegion = computed(() => {
     grouped[matchedRegion].push(u)
   })
 
-  Object.keys(grouped).forEach(region => {
+  Object.keys(grouped).forEach((region) => {
     grouped[region].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
   })
 
   const sortedRegions = Object.keys(grouped).sort((a, b) => a.localeCompare(b))
-  
-  return sortedRegions.map(regionName => ({
+
+  return sortedRegions.map((regionName) => ({
     name: regionName,
-    universities: grouped[regionName]
+    universities: grouped[regionName],
   }))
 })
 
 const hasAnyRegionExpanded = computed(() => {
-  return Object.values(expandedRegions.value).some(isExpanded => isExpanded)
+  return Object.values(expandedRegions.value).some((isExpanded) => isExpanded)
 })
 
 function toggleRegion(regionName) {
   const isCurrentlyExpanded = expandedRegions.value[regionName]
-  
-  Object.keys(expandedRegions.value).forEach(key => {
+
+  Object.keys(expandedRegions.value).forEach((key) => {
     expandedRegions.value[key] = false
   })
 
@@ -85,7 +77,7 @@ function toggleRegion(regionName) {
 }
 
 function resetRegions() {
-  Object.keys(expandedRegions.value).forEach(key => {
+  Object.keys(expandedRegions.value).forEach((key) => {
     expandedRegions.value[key] = false
   })
 }
@@ -93,14 +85,13 @@ function resetRegions() {
 function autoExpandRegionForSelected(selectedUni) {
   if (!selectedUni) return
   const rawRegion = selectedUni.region ? selectedUni.region.trim() : ''
-  const matchedRegion = TARGET_REGIONS.find(
-    r => r.toLowerCase() === rawRegion.toLowerCase()
-  ) || 'Other'
+  const matchedRegion =
+    TARGET_REGIONS.find((r) => r.toLowerCase() === rawRegion.toLowerCase()) || 'Other'
 
-  Object.keys(expandedRegions.value).forEach(key => {
+  Object.keys(expandedRegions.value).forEach((key) => {
     expandedRegions.value[key] = false
   })
-  
+
   if (matchedRegion && expandedRegions.value[matchedRegion] !== undefined) {
     expandedRegions.value[matchedRegion] = true
   }
@@ -110,7 +101,9 @@ watch(
   () => [route.query.university, visibleUniversities.value],
   ([universityId]) => {
     const foundUni = universityId
-      ? visibleUniversities.value.find((university) => String(university.id) === String(universityId)) ?? null
+      ? (visibleUniversities.value.find(
+          (university) => String(university.id) === String(universityId)
+        ) ?? null)
       : null
 
     selected.value = foundUni
@@ -118,7 +111,7 @@ watch(
       autoExpandRegionForSelected(foundUni)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 function toggleUniversity(university) {
@@ -155,15 +148,17 @@ onMounted(async () => {
     <Notice
       :data-testid="uni.error ? 'home-error' : undefined"
       :error-message="uni.error || ''"
-      @dismiss-error="uni.error = null"/>
+      @dismiss-error="uni.error = null"
+    />
 
     <div class="row g-0 h-100">
       <div class="col-12 col-lg-3 d-flex flex-column h-100 sidebar-column">
-
-        <div class="h-40 overflow-hidden d-flex flex-column border-bottom border-end-lg info-panel-wrapper">
+        <div
+          class="h-40 overflow-hidden d-flex flex-column border-bottom border-end-lg info-panel-wrapper"
+        >
           <InfoPanel :university="selected" class="h-100 w-100" />
         </div>
-        
+
         <div class="h-60 d-flex flex-column border-end-lg p-3 home-university-panel">
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
             <div class="d-flex align-items-center gap-2">
@@ -174,7 +169,8 @@ onMounted(async () => {
                 aria-label="Back to all regions"
                 title="Back to all regions"
                 data-testid="home-regions-back-btn"
-                @click="resetRegions">
+                @click="resetRegions"
+              >
                 <i class="bi bi-arrow-left" aria-hidden="true"></i>
               </button>
               <h2 class="region-panel-title mb-0">Regions</h2>
@@ -195,17 +191,21 @@ onMounted(async () => {
 
             <div v-else class="d-flex flex-column gap-2" data-testid="home-university-list">
               <template v-for="regionGroup in universitiesByRegion" :key="regionGroup.name">
-                <div 
-                  v-if="!hasAnyRegionExpanded || expandedRegions[regionGroup.name]" 
+                <div
+                  v-if="!hasAnyRegionExpanded || expandedRegions[regionGroup.name]"
                   class="region-card"
                 >
                   <button
                     type="button"
+                    data-testid="map-region-button"
                     class="region-header-btn w-100 d-flex align-items-center justify-content-between border-0"
                     :class="{ 'is-expanded': expandedRegions[regionGroup.name] }"
                     @click="toggleRegion(regionGroup.name)"
-                    :aria-expanded="!!expandedRegions[regionGroup.name]">
-                    <span class="d-flex align-items-center gap-2 fw-semibold text-truncate text-navy">
+                    :aria-expanded="!!expandedRegions[regionGroup.name]"
+                  >
+                    <span
+                      class="d-flex align-items-center gap-2 fw-semibold text-truncate text-navy"
+                    >
                       <i class="bi bi-geo-alt-fill region-icon"></i>
                       {{ regionGroup.name }}
                     </span>
@@ -213,31 +213,39 @@ onMounted(async () => {
                       <span class="badge region-count-badge">
                         {{ regionGroup.universities.length }}
                       </span>
-                      <i 
-                        class="bi bi-chevron-down region-chevron" 
+                      <i
+                        class="bi bi-chevron-down region-chevron"
                         :class="{ 'rotate-180': expandedRegions[regionGroup.name] }"
                       ></i>
                     </div>
                   </button>
 
                   <div v-show="expandedRegions[regionGroup.name]" class="region-uni-container py-1">
-                    <div v-if="!regionGroup.universities.length" class="text-muted small px-3 py-2 fst-italic">
+                    <div
+                      v-if="!regionGroup.universities.length"
+                      class="text-muted small px-3 py-2 fst-italic"
+                    >
                       No universities listed
                     </div>
                     <ul v-else class="list-group list-group-flush rounded-0 border-0">
-                      <li 
-                        v-for="u in regionGroup.universities" 
+                      <li
+                        v-for="u in regionGroup.universities"
                         :key="u.id"
+                        data-testid="map-university-item"
                         class="list-group-item list-group-item-action university-list-item py-2 px-3 fs-7 border-0"
                         :class="{ 'is-selected': selected?.id === u.id }"
                         role="button"
                         tabindex="0"
                         @click="toggleUniversity(u)"
                         @keydown.enter.prevent="toggleUniversity(u)"
-                        @keydown.space.prevent="toggleUniversity(u)">
+                        @keydown.space.prevent="toggleUniversity(u)"
+                      >
                         <div class="d-flex align-items-center justify-content-between gap-2">
                           <span class="uni-name text-truncate fw-medium">{{ u.name }}</span>
-                          <i v-if="selected?.id === u.id" class="bi bi-check2 text-white fs-7 flex-shrink-0"></i>
+                          <i
+                            v-if="selected?.id === u.id"
+                            class="bi bi-check2 text-white fs-7 flex-shrink-0"
+                          ></i>
                         </div>
                       </li>
                     </ul>
@@ -356,7 +364,9 @@ onMounted(async () => {
   border: 1px solid var(--app-border);
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .region-card:hover {
@@ -367,7 +377,9 @@ onMounted(async () => {
   background: #ffffff;
   padding: 0.65rem 0.85rem;
   font-size: 0.875rem;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   cursor: pointer;
 }
 
@@ -416,7 +428,10 @@ onMounted(async () => {
   cursor: pointer;
   color: #334155;
   border-radius: 0;
-  transition: background-color 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    padding-left 0.15s ease;
 }
 
 .university-list-item:hover {
