@@ -135,12 +135,30 @@ async function addToCart(mapping) {
     cartLimitNotice.value = ''
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
+// Removing a course also deletes its saved schedule timeslots, so ask first when it has any
+async function confirmScheduleLoss(universityModuleId, uniId) {
+  const slots = await cart.scheduledSlotCount(universityModuleId, uniId)
+  if (!slots) return true
+  const what = universityModuleId == null ? 'These courses have' : 'This course has'
+  return window.confirm(`${what} ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing ${universityModuleId == null ? 'them' : 'it'} from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}. Continue?`)
+}
 async function removeFromCart(universityModuleId) {
-  try { await cart.remove(universityModuleId) } catch { /* shown via cart.error */ }
+  try {
+    if (!(await confirmScheduleLoss(universityModuleId))) return
+    await cart.remove(universityModuleId)
+  } catch (error) {
+    cart.error ??= error.message // a failed timeslot check is not recorded by the store
+  }
 }
 async function clearCart() {
   // while filtered to one university, only clear what is shown
-  try { await cart.clear(cartFiltered.value ? universityId.value : undefined) } catch { /* shown via cart.error */ }
+  const uniId = cartFiltered.value ? universityId.value : undefined
+  try {
+    if (!(await confirmScheduleLoss(undefined, uniId))) return
+    await cart.clear(uniId)
+  } catch (error) {
+    cart.error ??= error.message
+  }
 }
 
 function selectArea(area) {
