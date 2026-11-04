@@ -24,14 +24,13 @@ const rows = [
           <th v-for="u in universities" :key="u.id" class="pb-4" data-testid="compare-col">
             <div class="h5 mb-2">{{ u.name }}</div>
             <RouterLink :to="`/universities/${u.id}`" class="btn btn-primary btn-sm me-1"
-              ><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Details</RouterLink
+              >Details</RouterLink
             >
             <button
               class="btn btn-outline-secondary btn-sm"
               data-testid="compare-remove-btn"
               @click="$emit('remove', u)"
             >
-              <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
               Remove
             </button>
           </th>

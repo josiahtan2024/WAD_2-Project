@@ -740,9 +740,7 @@ async function saveBudget() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (error) {
     console.error('Error saving budget:', error)
-    errorMessage.value = error.code === '23505'
-      ? 'Only one budget record is allowed for each university. Edit or delete the existing budget instead.'
-      : error.message || 'Unable to save your budget. Please try again.'
+    errorMessage.value = error.message || 'Unable to save your budget. Please try again.'
   } finally {
     saving.value = false
   }
@@ -766,10 +764,10 @@ onMounted(async () => {
 
 <template>
   <main class="container py-4 mb-5">
-    <div class="mb-4 pb-3 border-bottom">
-      <h1 class="page-title fw-bold text-navy mb-1">Exchange Budget Planner</h1>
+    <div class="mb-3">
+      <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
 
-      <p class="text-muted small mb-0">
+      <p class="text-secondary text-center mb-0">
         Estimate your exchange expenses, compare published costs, and plan your budget before you
         go.
       </p>
@@ -828,7 +826,6 @@ onMounted(async () => {
 
       <div v-if="currentView === 'planner' && universities.length > 0" class="mb-3">
         <button type="button" class="btn btn-outline-secondary" @click="backToBudgetList">
-          <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
           ← Back to My Budgets
         </button>
       </div>

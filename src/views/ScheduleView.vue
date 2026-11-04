@@ -278,7 +278,7 @@ onMounted(async () => {
                 data-testid="schedule-save-btn"
                 @click="discardChange()"
               >
-                <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ discarding ? 'Discarding..' : 'Discard Changes' }}
+                {{ discarding ? 'Discarding..' : 'Discard Changes' }}
               </button>
               <button
                 class="btn btn-primary"
@@ -286,7 +286,7 @@ onMounted(async () => {
                 data-testid="schedule-save-btn"
                 @click="save()"
               >
-                <i class="bi bi-save me-1" aria-hidden="true"></i>{{ saving ? 'Saving...' : 'Save Schedule' }}
+                {{ saving ? 'Saving...' : 'Save Schedule' }}
               </button>
             </div>
           </template>
@@ -444,7 +444,7 @@ onMounted(async () => {
                 data-testid="schedule-create-button"
                 @click="openScheduleBlock()"
               >
-                <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>{{ editSchedule ? 'Loading..' : 'New Schedule' }}
+                {{ editSchedule ? 'Loading..' : 'New Schedule' }}
               </button>
             </div>
           </template>
@@ -541,7 +541,7 @@ onMounted(async () => {
                         :disabled="deleteModules.length === 0 || deleteStatus"
                         @click="removeModules()"
                       >
-                        <i class="bi bi-trash3 me-1" aria-hidden="true"></i>{{ !deleteStatus ? 'Delete from Schedule' : 'Deleting..' }}
+                        {{ !deleteStatus ? 'Delete from Schedule' : 'Deleting..' }}
                       </button>
                     </div>
                   </div>

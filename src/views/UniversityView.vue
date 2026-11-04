@@ -470,7 +470,6 @@ watch(
                     :aria-pressed="selectedPeriodIndex === index"
                     @click="selectedPeriodIndex = index"
                   >
-                    <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>
                     {{ formatExchangeDate(period.start_date) }}
                   </button>
                 </div>
