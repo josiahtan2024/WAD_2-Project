@@ -177,7 +177,7 @@ onMounted(async () => {
     @dismiss-error="shortlist.error ? shortlist.error = null : uni.error ? uni.error = null : exchangeRates.error = null"
   >
     <template #actions>
-      <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
+      <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Retry</button>
     </template>
   </Notice>
 
@@ -213,7 +213,6 @@ onMounted(async () => {
         <UniversityCard 
         :university="u" 
         :shortlisted="isShortlisted(u.id)" 
-        :selected-region="uni.filters.region" 
         @toggle-shortlist="toggle" />
       </div>
     </div>

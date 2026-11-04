@@ -218,8 +218,8 @@ onMounted(async () => {
       :error-message="cartLimitNotice"
       @dismiss-error="cartLimitNotice = ''"
     />
-    <div class="mb-4 pb-3 border-bottom text-center">
-      <h1 class="page-title h3 fw-bold text-navy mb-1">Course Search</h1>
+    <div class="mb-4 pb-3 border-bottom">
+      <h1 class="page-title fw-bold text-navy mb-1">Course Search</h1>
       <p class="text-muted small mb-0">
         Pick an SMU course area to see the partner university courses mapped to it, <br class="d-none d-md-block">then add the ones you want to your cart for scheduling.
       </p>
@@ -241,13 +241,13 @@ onMounted(async () => {
         </div>
         <div class="col-12 col-sm-6 col-lg-5">
           <label for="course-area-search" class="form-label fw-semibold small text-navy">SMU Course Area</label>
-          <div class="input-group">
+          <div class="input-group app-search-group">
             <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input
               id="course-area-search"
               v-model="areaQuery"
               type="search"
-              class="form-control border-start-0 shadow-none text-truncate"
+              class="form-control app-search-field border-start-0 shadow-none text-truncate"
               placeholder="e.g. XECO900 or Finance"
               data-testid="course-area-search"
             />
@@ -269,7 +269,7 @@ onMounted(async () => {
       </div>
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
         <span class="small text-secondary" data-testid="course-area-count">Showing <strong class="text-navy">{{ filteredAreas.length }}</strong> of {{ uni.modules.length }} course areas</span>
-        <button v-if="hasActiveFilters" type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-testid="course-clear-filters" @click="clearFilters">
+        <button v-if="hasActiveFilters" type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 app-filter-reset" data-testid="course-clear-filters" @click="clearFilters">
           <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
         </button>
       </div>
@@ -298,6 +298,7 @@ onMounted(async () => {
               data-testid="course-area-item"
               @click="selectArea(area)"
             >
+              <i class="bi bi-journal-text me-2" aria-hidden="true"></i>
               <div class="d-flex justify-content-between align-items-start gap-2">
                 <div class="min-w-0">
                   <div class="fw-semibold mb-1 area-title">{{ area.course_area }}</div>
@@ -331,14 +332,14 @@ onMounted(async () => {
               <div class="small text-muted">{{ selectedArea.school }}</div>
             </div>
             <div class="card-body pb-2 bg-light border-bottom flex-grow-0 flex-shrink-0">
-              <div class="input-group input-group-sm mb-2">
+              <div class="input-group app-search-group mb-2">
                 <span class="input-group-text bg-light border-end-0 text-muted">
                   <i class="bi bi-search"></i>
                 </span>
                 <input
                   v-model="moduleQuery"
                   type="search"
-                  class="form-control shadow-none"
+                  class="form-control app-search-field border-start-0 shadow-none"
                   placeholder="Search Courses by Name"
                   aria-label="Search Mapped Courses by Name"
                   data-testid="course-module-search"
@@ -452,11 +453,11 @@ onMounted(async () => {
             <div class="text-center">
             <p v-if="hiddenCartCount" class="small text-muted mb-2" data-testid="course-cart-hidden">
               +{{ hiddenCartCount }} course{{ hiddenCartCount === 1 ? '' : 's' }} for other universities ·
-              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-all" @click="showAllCart = true">Show all</button>
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-all" @click="showAllCart = true"><i class="bi bi-arrows-expand me-1" aria-hidden="true"></i>Show all</button>
             </p>
             <p v-else-if="canHideOtherCarts" class="small text-muted mb-2" data-testid="course-cart-showing-all">
               Showing all universities ·
-              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-less" @click="showAllCart = false">Show less</button>
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-less" @click="showAllCart = false"><i class="bi bi-arrows-collapse me-1" aria-hidden="true"></i>Show less</button>
             </p>
             <button
               v-if="cartGroups.length"
@@ -465,7 +466,7 @@ onMounted(async () => {
               data-testid="course-cart-clear-btn"
               @click="clearCart()"
             >
-              {{ cartFiltered ? `Clear ${universityName(universityId)}` : 'Clear Cart' }}
+              <i class="bi bi-trash3 me-1" aria-hidden="true"></i>{{ cartFiltered ? `Clear ${universityName(universityId)}` : 'Clear Cart' }}
             </button>
             </div>
           </div>

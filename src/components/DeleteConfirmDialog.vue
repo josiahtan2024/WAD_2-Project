@@ -53,6 +53,7 @@ const emit = defineEmits(['cancel', 'confirm'])
               :disabled="working"
               @click="emit('cancel')"
             >
+              <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
               Cancel
             </button>
             <button
@@ -62,6 +63,7 @@ const emit = defineEmits(['cancel', 'confirm'])
               :disabled="working"
               @click="emit('confirm')"
             >
+              <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
               <span
                 v-if="working"
                 class="spinner-border spinner-border-sm me-2"

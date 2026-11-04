@@ -32,8 +32,9 @@ watch(() => props.open, () => (typed.value = ''))
           </div>
           <div v-if="error" class="alert alert-danger py-2 mt-3 mb-0" role="alert" data-testid="confirm-error">{{ error }}</div>
           <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-outline-secondary" :disabled="working" data-testid="confirm-cancel" @click="emit('cancel')">Cancel</button>
+            <button type="button" class="btn btn-outline-secondary" :disabled="working" data-testid="confirm-cancel" @click="emit('cancel')"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel</button>
             <button type="button" class="btn" :class="danger ? 'btn-danger' : 'btn-primary'" :disabled="working || !allowed" data-testid="confirm-ok" @click="emit('confirm')">
+              <i :class="['bi', danger ? 'bi-trash3' : 'bi-check-circle']" class="me-1" aria-hidden="true"></i>
               <span v-if="working" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
               {{ confirmLabel }}
             </button>

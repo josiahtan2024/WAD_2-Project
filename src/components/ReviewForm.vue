@@ -156,6 +156,7 @@ async function submit() {
           :disabled="submitting || reviews.saving"
           data-testid="review-submit-btn"
         >
+          <i :class="['bi', editing ? 'bi-save' : 'bi-send']" class="me-1" aria-hidden="true"></i>
           {{
             submitting || reviews.saving ? 'Saving...' : editing ? 'Save Changes' : 'Post Review'
           }}
@@ -167,6 +168,7 @@ async function submit() {
           data-testid="review-cancel-btn"
           @click="emit('cancel')"
         >
+          <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
           Cancel
         </button>
       </div>

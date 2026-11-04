@@ -108,7 +108,7 @@ function submit() {
         </div>
       </div>
       <div v-if="errors[row.key]" class="text-danger small mt-2" data-testid="admin-field-error">{{ errors[row.key] }}</div>
-      <button type="button" class="btn btn-link btn-sm text-danger px-0 mt-2" data-testid="admin-period-remove" @click="removeRow(row)">Remove This Period</button>
+      <button type="button" class="btn btn-link btn-sm text-danger px-0 mt-2" data-testid="admin-period-remove" @click="removeRow(row)"><i class="bi bi-trash3 me-1" aria-hidden="true"></i>Remove This Period</button>
     </fieldset>
 
     <p v-if="removedExisting" class="text-danger small" data-testid="admin-period-warning">
@@ -116,8 +116,8 @@ function submit() {
     </p>
 
     <div class="d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-period-add" @click="addRow">Add a Period</button>
-      <button v-if="rows.length" type="button" class="btn btn-outline-secondary btn-sm" data-testid="admin-period-copy" @click="copyToNextYear">Copy All to Next Year</button>
+      <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-period-add" @click="addRow"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add a Period</button>
+      <button v-if="rows.length" type="button" class="btn btn-outline-secondary btn-sm" data-testid="admin-period-copy" @click="copyToNextYear"><i class="bi bi-copy me-1" aria-hidden="true"></i>Copy All to Next Year</button>
     </div>
   </form>
 </template>
