@@ -353,7 +353,7 @@ watch(
                   <dd>{{ university.timezone || 'Not available' }}</dd>
                 </div>
                 <div>
-                  <dt>Distance from SMU</dt>
+                  <dt>Distance from SG</dt>
                   <dd>{{ distanceFromSMU() }}</dd>
                 </div>
               </dl>

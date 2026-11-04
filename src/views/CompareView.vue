@@ -490,7 +490,7 @@ watch(
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
-                        class="compare-select form-select fw-semibold text-truncate compare-university-select shadow-none" data-testid="compare-university-select">
+                        class="compare-select form-select fw-semibold text-truncate text-navy compare-university-select shadow-none" data-testid="compare-university-select">
                             <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
@@ -938,6 +938,7 @@ watch(
     max-height: 200px;
     object-fit: contain;
     margin: 0 auto;
+    border-radius: 8px;
 }
 .uni-map {
     width: 100%;

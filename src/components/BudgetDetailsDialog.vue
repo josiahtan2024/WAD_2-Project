@@ -124,7 +124,7 @@ function formatPreference(value) {
         <div class="card-footer bg-light border-top d-flex justify-content-end p-3 px-4">
           <button
             type="button"
-            class="btn btn-sm btn-outline-secondary rounded-pill px-4"
+            class="btn btn-outline-secondary rounded-pill px-4 py-2"
             data-testid="budget-details-close"
             @click="emit('close')"
           >

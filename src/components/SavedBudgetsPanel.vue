@@ -22,7 +22,7 @@ const updateWidth = () => { windowWidth.value = window.innerWidth }
 onMounted(() => window.addEventListener('resize', updateWidth))
 onUnmounted(() => window.removeEventListener('resize', updateWidth))
 
-const isMobile = computed(() => windowWidth.value < 768)
+const isMobile = computed(() => windowWidth.value < 992)
 const displayedPages = computed(() => {
   const total = pageCount.value
   const current = currentPage.value
@@ -362,7 +362,7 @@ function resetFilters() {
   background-color: var(--app-surface);
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .budget-table,
   .budget-table tbody,
   .budget-table tr,

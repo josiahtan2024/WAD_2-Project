@@ -148,7 +148,7 @@ watch(
 
   <ConfirmDialog
     :open="section === 'delete'"
-    title="Delete this university?"
+    title="Delete University?"
     confirm-label="Delete permanently"
     danger
     :working="admin.saving"
@@ -158,8 +158,8 @@ watch(
     @confirm="confirmDelete"
   >
     <p class="mb-2 text-muted small">
-      <strong class="text-navy">{{ university?.name }}</strong> and everything saved against it will be erased. This
-      cannot be undone.
+      <strong class="text-navy">{{ university?.name }}</strong> and everything saved against it will be erased. 
+      <br>This action cannot be undone.
     </p>
     <ul v-if="impact" class="mb-0 text-muted small ps-3" data-testid="delete-impact">
       <li>
