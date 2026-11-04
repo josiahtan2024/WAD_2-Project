@@ -68,51 +68,55 @@ function clearFilters() {
 </script>
 
 <template>
-  <details class="card border-0 shadow-sm rounded-4" data-testid="credit-mapping-table">
+  <details class="card border rounded-4 shadow-sm overflow-hidden bg-white" data-testid="credit-mapping-table">
     <summary
       class="mapping-card-summary d-flex align-items-center justify-content-between gap-3 p-3 p-md-4"
     >
       <div>
-        <h2 class="h5 fw-bold mb-1">Course Mapping</h2>
-        <p class="text-muted mb-0">
+        <h2 class="h5 fw-bold text-navy mb-1">Course Mapping</h2>
+        <p class="text-muted small mb-0">
           SMU course areas mapped to courses at this partner university.
         </p>
       </div>
       <div class="d-flex align-items-center gap-2 flex-shrink-0">
-        <span class="badge rounded-pill text-bg-light border"
-          >{{ mappings.length }} {{ mappings.length === 1 ? 'course' : 'courses' }}</span
-        >
-        <i class="bi bi-chevron-down mapping-card-chevron" aria-hidden="true"></i>
+        <span class="badge rounded-pill text-navy bg-surface border fw-medium px-2 py-1">
+          {{ mappings.length }} {{ mappings.length === 1 ? 'course' : 'courses' }}
+        </span>
+        <i class="bi bi-chevron-down mapping-card-chevron text-muted" aria-hidden="true"></i>
       </div>
     </summary>
     <div class="card-body p-3 p-md-4 pt-0">
-      <p v-if="!mappings.length" class="text-muted mb-0" data-testid="mapping-empty">
+      <p v-if="!mappings.length" class="text-muted small mb-0 py-3 text-center" data-testid="mapping-empty">
         No course mappings recorded for this university yet.
       </p>
       <div v-else>
-        <div class="mapping-filters rounded-3 p-3 mb-3">
+        <!-- Filter Bar -->
+        <div class="filter-panel mb-4 p-4 border rounded-4" data-testid="mapping-filter-bar">
           <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6">
-              <label for="mapping-search" class="form-label fw-semibold"
+              <label for="mapping-search" class="form-label fw-semibold small text-navy"
                 >Search Course Mappings</label
               >
-              <input
-                id="mapping-search"
-                v-model="search"
-                type="search"
-                class="form-control"
-                placeholder="Search course areas or partner courses"
-                data-testid="mapping-search"
-              />
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input
+                  id="mapping-search"
+                  v-model="search"
+                  type="search"
+                  class="form-control border-start-0 shadow-none text-truncate"
+                  placeholder="Search by SMU Course Area or Partner Courses"
+                  data-testid="mapping-search"
+                />
+              </div>
             </div>
             <div class="col-12 col-md-6">
-              <label for="mapping-school-filter" class="form-label fw-semibold"
+              <label for="mapping-school-filter" class="form-label fw-semibold small text-navy"
                 >Filter by SMU School</label
               >
               <select
                 id="mapping-school-filter"
                 v-model="selectedSchool"
-                class="form-select"
+                class="form-select shadow-none text-truncate"
                 data-testid="mapping-school-filter"
               >
                 <option value="">All Schools</option>
@@ -122,29 +126,31 @@ function clearFilters() {
               </select>
             </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
-            <div class="small text-muted" data-testid="mapping-count">
-              {{ filteredCount }} of {{ mappings.length }} mapped courses
+          <div class="d-flex justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+            <div class="small text-secondary" data-testid="mapping-count">
+              Showing <strong class="text-navy">{{ filteredCount }}</strong> of {{ mappings.length }} mapped courses
             </div>
             <button
               v-if="search || selectedSchool"
               type="button"
-              class="btn btn-sm btn-outline-secondary"
+              class="btn btn-sm btn-outline-secondary rounded-pill px-3"
               data-testid="mapping-clear-filters"
               @click="clearFilters"
             >
-              Reset Search and Filters
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
             </button>
           </div>
         </div>
-        <p v-if="!filteredGroups.length" class="text-muted mb-0" data-testid="mapping-no-results">
+
+        <div v-if="!filteredGroups.length" class="text-muted small text-center py-4 bg-light rounded-4 border border-dashed my-3" data-testid="mapping-no-results">
+          <i class="bi bi-search fs-3 mb-2 d-block text-secondary"></i>
           No course mappings match your search.
-        </p>
-        <div v-else class="mapping-list d-flex flex-column gap-2">
+        </div>
+        <div v-else class="d-flex flex-column gap-3">
           <details
             v-for="(group, index) in filteredGroups"
             :key="group.key"
-            class="mapping-group border rounded-3"
+            class="mapping-group border rounded-4 overflow-hidden"
             :open="!!search.trim() || selectedSchool !== '' || index === 0"
             data-testid="mapping-group"
           >
@@ -152,24 +158,23 @@ function clearFilters() {
               class="mapping-summary d-flex align-items-center justify-content-between gap-3 p-3"
             >
               <div class="min-w-0">
-                <div class="small fw-semibold text-uppercase text-secondary mb-1">
+                <div class="fs-9 fw-bold text-uppercase text-muted tracking-wider mb-0.5">
                   SMU Course Area
                 </div>
-                <div class="fw-bold text-break">{{ group.area }}</div>
-                <div v-if="group.school" class="small text-primary fw-semibold">
+                <div class="fw-bold text-navy text-break fs-6">{{ group.area }}</div>
+                <div v-if="group.school" class="badge bg-light text-secondary border fw-normal mt-1">
                   {{ group.school }}
                 </div>
               </div>
               <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                <span class="badge rounded-pill text-bg-light border"
-                  >{{ group.mappings.length }}
-                  {{ group.mappings.length === 1 ? 'course' : 'courses' }}</span
-                >
-                <i class="bi bi-chevron-down mapping-chevron" aria-hidden="true"></i>
+                <span class="badge rounded-pill text-navy bg-light border fw-medium px-2 py-1">
+                  {{ group.mappings.length }} {{ group.mappings.length === 1 ? 'course' : 'courses' }}
+                </span>
+                <i class="bi bi-chevron-down mapping-chevron text-muted" aria-hidden="true"></i>
               </div>
             </summary>
-            <div class="mapping-group-content px-3 pb-3">
-              <p v-if="group.description" class="small text-secondary border-top pt-3 mb-2">
+            <div class="mapping-group-content mapping-scroll px-3 pb-3">
+              <p v-if="group.description" class="small text-muted pt-3 mb-2">
                 {{ group.description }}
               </p>
               <div
@@ -178,22 +183,22 @@ function clearFilters() {
                 class="partner-course d-flex align-items-start gap-2 py-2 border-top"
                 data-testid="mapping-row"
               >
-                <i class="bi bi-arrow-right mapping-arrow mt-1" aria-hidden="true"></i>
+                <i class="bi bi-arrow-right mapping-arrow mt-1 text-primary" aria-hidden="true"></i>
                 <div class="min-w-0">
-                  <div class="fw-semibold">
+                  <div class="fw-semibold text-navy">
                     <span v-if="m.university_module?.module_code" class="text-primary me-1">{{
                       m.university_module.module_code
                     }}</span>
                     {{ m.university_module?.module_name || 'Course name unavailable' }}
                   </div>
-                  <div v-if="m.university_module?.description" class="small text-secondary mt-1">
+                  <div v-if="m.university_module?.description" class="small text-muted mt-1">
                     {{ m.university_module.description }}
                   </div>
                   <div v-if="m.university_module?.language" class="small text-muted mt-1">
-                    Language: {{ m.university_module.language }}
+                    <i class="bi bi-translate me-1"></i>Language: {{ m.university_module.language }}
                   </div>
-                  <div v-if="m.notes" class="small text-secondary mt-1">
-                    <span class="fw-semibold">Notes:</span> {{ m.notes }}
+                  <div v-if="m.notes" class="small text-secondary mt-1 bg-light p-2 rounded-3 border">
+                    <span class="fw-semibold text-navy">Notes:</span> {{ m.notes }}
                   </div>
                 </div>
               </div>
@@ -206,6 +211,26 @@ function clearFilters() {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.bg-surface {
+  background-color: var(--app-surface);
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
+.fs-9 {
+  font-size: 0.6875rem;
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
 .mapping-card-summary {
   cursor: pointer;
   list-style: none;
@@ -227,15 +252,44 @@ function clearFilters() {
   background: #fff;
 }
 
-.mapping-filters {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
+.mapping-group-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.mapping-scroll {
+  overscroll-behavior: contain;
+}
+.mapping-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.mapping-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mapping-scroll::-webkit-scrollbar-thumb {
+  background: rgba(20, 27, 77, 0.15);
+  border-radius: 4px;
+}
+
+.filter-panel {
+  padding: 1rem;
+  background: var(--app-surface, #f8f9fc);
+  border: 1px solid var(--app-border, #e8eaf0);
+  border-radius: var(--app-radius, 0.75rem);
+}
+
+.filter-panel .btn-outline-secondary {
+  --bs-btn-color: var(--app-gray-blue);
+  --bs-btn-border-color: #d5d8e5;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-gray-blue);
+  --bs-btn-hover-border-color: var(--app-gray-blue);
 }
 
 .mapping-summary {
   cursor: pointer;
   list-style: none;
-  background: #f5f7fb;
+  background: var(--app-surface, #f8f9fc);
   border-radius: inherit;
 }
 
@@ -244,7 +298,8 @@ function clearFilters() {
 }
 
 .mapping-group[open] .mapping-summary {
-  border-radius: 0.5rem 0.5rem 0 0;
+  border-bottom: 1px solid var(--app-border, #e8eaf0);
+  border-radius: 0.75rem 0.75rem 0 0;
 }
 
 .mapping-chevron {
@@ -253,10 +308,6 @@ function clearFilters() {
 
 .mapping-group[open] .mapping-chevron {
   transform: rotate(180deg);
-}
-
-.mapping-arrow {
-  color: #0b2348;
 }
 
 .partner-course:first-child {

@@ -134,7 +134,7 @@ onMounted(async () => {
   }
 })
 
-function distanceFromSmU() {
+function distanceFromSMU() {
   const lat = Number(university.value?.lat)
   const lon = Number(university.value?.long)
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || !lat || !lon) return 'Not available'
@@ -241,9 +241,11 @@ watch(
       @dismiss-error="uni.error ? (uni.error = null) : (shortlistError = '')"
       @dismiss-success="reviewSuccessMessage = ''"
     />
-    <div v-if="uni.loading" class="text-muted" data-testid="university-loading">Loading...</div>
-    <p v-else-if="!uni.error && !university" class="text-muted" data-testid="university-not-found">
-      University not found. <RouterLink to="/universities">Back to list</RouterLink>
+    <div v-if="uni.loading" class="text-muted small" data-testid="university-loading">
+      <span class="spinner-border spinner-border-sm me-1 text-primary"></span>Loading...
+    </div>
+    <p v-else-if="!uni.error && !university" class="text-muted small" data-testid="university-not-found">
+      University not found. <RouterLink to="/universities" class="link-primary">Back to list</RouterLink>
     </p>
     <template v-else-if="!uni.error">
       <template v-if="auth.adminActive">
@@ -261,56 +263,68 @@ watch(
           @deleted="afterDelete"
         />
       </template>
-      <header
-        class="university-header d-flex flex-column align-items-center text-center gap-2 mb-4"
-      >
-        <div class="university-heading">
-          <h1 class="page-title h3 fw-bold mb-2">{{ university.name }}</h1>
-          <p class="text-muted mb-0">{{ university.city }}, {{ university.country }}</p>
+
+      <header class="university-header d-flex flex-column flex-md-row align-items-center align-items-md-center text-center text-md-start gap-4 mb-4 pb-4 border-bottom">
+        <div class="detail-logo-box p-0 bg-white border rounded-4 shadow-sm flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center">
+          <img
+            v-if="logoUrl"
+            :src="logoUrl"
+            :alt="`${university.name} logo`"
+            class="detail-logo w-100 h-100"
+          />
+          <i v-else class="bi bi-mortarboard fs-1 text-muted"></i>
         </div>
-        <img
-          v-if="logoUrl"
-          :src="logoUrl"
-          :alt="`${university.name} logo`"
-          class="detail-logo rounded-3"
-        />
-        <a
-          v-if="university.website_url"
-          class="btn btn-outline-primary btn-sm"
-          :href="university.website_url"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Visit Website</a
-        >
-        <button
-          type="button"
-          class="btn rounded-pill px-3 px-sm-4"
-          :class="isShortlisted ? 'btn-primary' : 'btn-outline-primary'"
-          :disabled="shortlistSaving"
-          data-testid="university-shortlist-btn"
-          @click="toggleShortlist"
-        >
-          <i
-            class="bi d-none d-sm-inline-block me-1"
-            :class="isShortlisted ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"
-            aria-hidden="true"
-          ></i>
-          {{ isShortlisted ? 'Shortlisted' : 'Shortlist' }}
-        </button>
+
+        <div class="flex-grow-1 min-w-0">
+          <h1 class="page-title h3 fw-bold text-navy mb-1">{{ university.name }}</h1>
+          <p class="text-muted small mb-3">
+            <i class="bi bi-geo-alt text-primary me-1"></i>{{ university.city }}, {{ university.country }}
+          </p>
+
+          <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 flex-wrap">
+            <a
+              v-if="university.website_url"
+              class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2"
+              :href="university.website_url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="bi bi-globe me-1"></i> Visit Website
+            </a>
+            <button
+              type="button"
+              class="btn btn-sm rounded-pill px-3 px-sm-4 py-2"
+              :class="isShortlisted ? 'btn-primary' : 'btn-outline-primary'"
+              :disabled="shortlistSaving"
+              data-testid="university-shortlist-btn"
+              @click="toggleShortlist"
+            >
+              <i
+                class="bi me-1"
+                :class="isShortlisted ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"
+                aria-hidden="true"
+              ></i>
+              {{ isShortlisted ? 'Shortlisted' : 'Shortlist' }}
+            </button>
+          </div>
+        </div>
       </header>
-      <div v-if="detailsError" class="alert alert-warning" role="status">
+
+      <div v-if="detailsError" class="alert alert-warning rounded-4 border-0 small" role="status">
         Some university comparison details could not be loaded: {{ detailsError }}
       </div>
-      <div v-if="detailsLoading" class="text-muted mb-3" role="status">
-        Loading university details...
+      <div v-if="detailsLoading" class="text-muted small mb-3" role="status">
+        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Loading details...
       </div>
 
-      <div class="row g-3 mb-3">
+      <!-- Main Info Cards -->
+      <div class="row g-3 mb-4">
+        <!-- Location Card -->
         <div class="col-12 col-lg-5">
-          <section class="card border-0 shadow-sm rounded-4 h-100">
+          <section class="card border rounded-4 shadow-sm h-100 bg-white">
             <div class="card-body p-3 p-md-4">
               <div class="d-flex justify-content-between align-items-start mb-3">
-                <h2 class="h5 fw-bold mb-0">Location</h2>
+                <h2 class="h5 fw-bold text-navy mb-0">Location</h2>
                 <AdminEditButton
                   v-if="auth.adminActive"
                   label="location"
@@ -323,7 +337,7 @@ watch(
                   <dd>{{ university.city || 'Not available' }}</dd>
                 </div>
                 <div>
-                  <dt>State / province</dt>
+                  <dt>State / Province</dt>
                   <dd>{{ university.state || 'Not available' }}</dd>
                 </div>
                 <div>
@@ -340,36 +354,38 @@ watch(
                 </div>
                 <div>
                   <dt>Distance from SMU</dt>
-                  <dd>{{ distanceFromSmU() }}</dd>
+                  <dd>{{ distanceFromSMU() }}</dd>
                 </div>
               </dl>
               <RouterLink
                 v-if="university.lat && university.long"
-                class="btn btn-outline-primary btn-sm mt-3"
+                class="btn btn-outline-primary btn-sm rounded-pill w-100 mt-3 py-2"
                 :to="{ name: 'home', query: { university: university.id } }"
-                >Open Map</RouterLink
               >
+                <i class="bi bi-map me-1"></i> Open Map Location
+              </RouterLink>
             </div>
           </section>
         </div>
 
+        <!-- Cost Card -->
         <div class="col-12 col-lg-7">
-          <section class="card border-0 shadow-sm rounded-4 h-100">
+          <section class="card border rounded-4 shadow-sm h-100 bg-white">
             <div class="card-body p-3 p-md-4">
               <div class="d-flex justify-content-between align-items-start mb-3">
-                <h2 class="h5 fw-bold mb-0">Cost</h2>
+                <h2 class="h5 fw-bold text-navy mb-0">Cost</h2>
                 <AdminEditButton v-if="auth.adminActive" label="cost" @click="editing = 'cost'" />
               </div>
               <template v-if="universityCost">
-                <div class="mb-3">
-                  <div class="small text-secondary" data-testid="university-monthly-total-label">
-                    Estimated monthly total
+                <div class="cost-stat-card p-3 rounded-3 border bg-light mb-3">
+                  <div class="small text-muted fw-semibold text-uppercase tracking-wider fs-9 mb-1" data-testid="university-monthly-total-label">
+                    Estimated Monthly Total
                   </div>
-                  <div class="h4 fw-bold mb-0">
+                  <div class="h3 fw-bold text-navy mb-1">
                     {{ formatMoney(monthlyCost, universityCost.currency_code) }}
                   </div>
-                  <div class="small text-secondary" data-testid="university-monthly-total-sgd">
-                    Estimated in SGD: {{ formatMoney(monthlyCostSgd, 'SGD') }}
+                  <div class="small text-muted" data-testid="university-monthly-total-sgd">
+                    Estimated in SGD: <strong class="text-primary">{{ formatMoney(monthlyCostSgd, 'SGD') }}</strong>
                   </div>
                 </div>
                 <dl class="detail-list mb-0">
@@ -390,7 +406,7 @@ watch(
                     </dd>
                   </div>
                   <div data-testid="university-cost-personal">
-                    <dt>Personal expenses</dt>
+                    <dt>Personal Expenses</dt>
                     <dd>
                       {{
                         formatMoney(universityCost.personal_expenses, universityCost.currency_code)
@@ -399,16 +415,17 @@ watch(
                   </div>
                 </dl>
               </template>
-              <p v-else class="text-secondary mb-0">Cost information is not available.</p>
+              <p v-else class="text-muted small mb-0 py-4 text-center border border-dashed rounded-3">Cost information is not available.</p>
             </div>
           </section>
         </div>
 
+        <!-- Academics Card -->
         <div class="col-12 col-lg-5">
-          <section class="card border-0 shadow-sm rounded-4 h-100">
+          <section class="card border rounded-4 shadow-sm h-100 bg-white">
             <div class="card-body p-3 p-md-4">
               <div class="d-flex justify-content-between align-items-start mb-3">
-                <h2 class="h5 fw-bold mb-0">Academics</h2>
+                <h2 class="h5 fw-bold text-navy mb-0">Academics</h2>
                 <AdminEditButton
                   v-if="auth.adminActive"
                   label="academics"
@@ -417,11 +434,11 @@ watch(
               </div>
               <dl class="detail-list mb-0">
                 <div>
-                  <dt>Mapped modules</dt>
+                  <dt>Mapped Modules</dt>
                   <dd>{{ details.modules.length }}</dd>
                 </div>
                 <div>
-                  <dt>Instruction language</dt>
+                  <dt>Instruction Language</dt>
                   <dd>
                     {{
                       details.languages
@@ -432,27 +449,29 @@ watch(
                   </dd>
                 </div>
                 <div>
-                  <dt>Exchange programmes</dt>
+                  <dt>Exchange Programmes</dt>
                   <dd>{{ details.periods.length }}</dd>
                 </div>
               </dl>
               <a
                 v-if="university.modules_url"
-                class="btn btn-outline-primary btn-sm mt-3"
+                class="btn btn-outline-primary btn-sm rounded-pill w-100 mt-3 py-2"
                 :href="university.modules_url"
                 target="_blank"
                 rel="noopener noreferrer"
-                >View course catalogue</a
               >
+                <i class="bi bi-journal-bookmark me-1"></i> View Course Catalogue
+              </a>
             </div>
           </section>
         </div>
 
+        <!-- Exchange Periods Card -->
         <div class="col-12 col-lg-7">
-          <section class="card border-0 shadow-sm rounded-4 h-100">
+          <section class="card border rounded-4 shadow-sm h-100 bg-white">
             <div class="card-body p-3 p-md-4">
               <div class="d-flex justify-content-between align-items-start mb-3">
-                <h2 class="h5 fw-bold mb-0">Exchange</h2>
+                <h2 class="h5 fw-bold text-navy mb-0">Exchange</h2>
                 <AdminEditButton
                   v-if="auth.adminActive"
                   label="exchange"
@@ -465,7 +484,7 @@ watch(
                     v-for="(period, index) in details.periods"
                     :key="period.id || index"
                     type="button"
-                    class="btn btn-sm"
+                    class="btn btn-sm rounded-pill px-3"
                     :class="selectedPeriodIndex === index ? 'btn-primary' : 'btn-outline-primary'"
                     :aria-pressed="selectedPeriodIndex === index"
                     @click="selectedPeriodIndex = index"
@@ -483,11 +502,11 @@ watch(
                     <dd>{{ selectedPeriod.term || 'Not available' }}</dd>
                   </div>
                   <div>
-                    <dt>Academic year</dt>
+                    <dt>Academic Year</dt>
                     <dd>{{ selectedPeriod.academic_year || 'Not available' }}</dd>
                   </div>
                   <div>
-                    <dt>Exchange period</dt>
+                    <dt>Exchange Period</dt>
                     <dd>
                       {{ formatExchangeDate(selectedPeriod.start_date) }} to
                       {{ formatExchangeDate(selectedPeriod.end_date) }}
@@ -496,17 +515,17 @@ watch(
                   <div>
                     <dt>Temperature</dt>
                     <dd>
-                      {{ selectedPeriod.min_temperature ?? 'Not available' }} –
+                      {{ selectedPeriod.min_temperature ?? 'Not available' }} -
                       {{ selectedPeriod.max_temperature ?? 'Not available' }} °C
                     </dd>
                   </div>
-                  <div class="detail-description">
+                  <div>
                     <dt>Overview</dt>
                     <dd>{{ selectedPeriod.description || 'Not available' }}</dd>
                   </div>
                 </dl>
               </template>
-              <p v-else class="text-secondary mb-0">
+              <p v-else class="text-muted small mb-0 py-4 text-center border border-dashed rounded-3">
                 Exchange period information is not available.
               </p>
             </div>
@@ -514,24 +533,25 @@ watch(
         </div>
       </div>
 
-      <div class="row g-3">
+      <!-- Lower Sections: Course Mapping & Reviews -->
+      <div class="row g-4">
         <div class="col-12">
-          <div v-if="mappingError" class="alert alert-warning" role="status">
+          <div v-if="mappingError" class="alert alert-warning rounded-4 border-0 small" role="status">
             {{ mappingError }}
           </div>
-          <p v-else-if="uni.mappingsLoading" class="text-muted" data-testid="mapping-loading">
-            Loading course mappings...
+          <p v-else-if="uni.mappingsLoading" class="text-muted small" data-testid="mapping-loading">
+            <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Loading course mappings...
           </p>
           <CreditMappingTable v-else :mappings="uni.mappings" />
         </div>
         <div class="col-12">
-          <div v-if="reviews.error" class="alert alert-warning" data-testid="reviews-error">
+          <div v-if="reviews.error" class="alert alert-warning rounded-4 border-0 small" data-testid="reviews-error">
             {{ reviews.error }}
           </div>
-          <section class="card border-0 shadow-sm rounded-4" aria-label="Reviews">
+          <section class="card border rounded-4 shadow-sm bg-white" aria-label="Reviews">
             <div class="card-body p-3 p-md-4">
               <ReviewCarousel :reviews="reviews.items" @success="reviewSuccessMessage = $event" />
-              <div v-if="postError" class="alert alert-danger mt-2" data-testid="review-post-error">
+              <div v-if="postError" class="alert alert-danger rounded-4 py-2 small mt-2" data-testid="review-post-error">
                 {{ postError }}
               </div>
               <ReviewForm
@@ -549,6 +569,48 @@ watch(
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
+.fs-9 {
+  font-size: 0.6875rem;
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
+.detail-logo-box {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .detail-logo-box {
+    width: 115px;
+    height: 115px;
+  }
+}
+
+.detail-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cost-stat-card {
+  background-color: var(--app-surface, #f8f9fc) !important;
+  border-color: var(--app-border, #e8eaf0) !important;
+}
+
 .detail-list {
   display: grid;
   gap: 0.75rem;
@@ -560,7 +622,7 @@ watch(
   align-items: flex-start;
   gap: 1rem;
   padding-bottom: 0.65rem;
-  border-bottom: 1px solid #e8eaf0;
+  border-bottom: 1px solid var(--app-border, #e8eaf0);
 }
 
 .detail-list > div:last-child {
@@ -569,45 +631,22 @@ watch(
 }
 
 .detail-list dt {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   font-weight: 400;
+  font-size: 0.875rem;
 }
 
 .detail-list dd {
   margin: 0;
   text-align: right;
   overflow-wrap: anywhere;
-}
-
-.detail-description {
-  flex-direction: column;
-  gap: 0.35rem !important;
-}
-
-.detail-description dd {
-  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--app-navy);
 }
 
 .university-heading {
   max-width: 100%;
   overflow-wrap: anywhere;
-}
-
-.detail-logo {
-  width: min(200px, 45vw);
-  aspect-ratio: 1;
-  max-width: 100%;
-  object-fit: contain;
-  background-color: white;
-}
-
-@media (max-width: 575.98px) {
-  .university-header {
-    margin-bottom: 1rem !important;
-  }
-
-  .detail-logo {
-    width: min(160px, 45vw);
-  }
 }
 </style>

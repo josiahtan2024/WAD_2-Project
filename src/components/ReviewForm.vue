@@ -84,42 +84,46 @@ async function submit() {
 </script>
 
 <template>
-  <p v-if="!loggedIn" class="mt-3 text-muted" data-testid="review-login-prompt">
-    <RouterLink to="/login">Log In</RouterLink> to post a review.
+  <p v-if="!loggedIn" class="mt-3 text-muted small" data-testid="review-login-prompt">
+    <RouterLink to="/login" class="link-primary">Log In</RouterLink> to post a review.
   </p>
-  <p v-else-if="alreadyReviewed" class="mt-3 text-muted" data-testid="review-already-posted">
+  <p v-else-if="alreadyReviewed" class="mt-3 text-muted small" data-testid="review-already-posted">
     You have already reviewed this university. You can edit or delete your review above.
   </p>
   <form
     v-else-if="canShow"
-    class="review-form-card card mt-3"
+    class="review-form-card card border rounded-4 mt-3 bg-white"
     data-testid="review-form"
     @submit.prevent="submit"
   >
     <div class="card-body p-3 p-md-4">
-      <h3 class="h6 fw-bold mb-3">{{ editing ? 'Edit Your Review' : 'Write a Review' }}</h3>
-      <StarRating v-model="rating" label="Overall rating" testid="review-rating" />
-      <div class="row row-cols-1 row-cols-md-2 g-1 my-1">
-        <div v-for="t in REVIEW_TOPICS" :key="t.key" class="col">
-          <StarRating v-model="topics[t.key]" :label="t.label" :testid="`review-${t.key}`" />
+      <h3 class="h6 fw-bold text-navy mb-3">{{ editing ? 'Edit Your Review' : 'Write a Review' }}</h3>
+      <div class="d-flex flex-column gap-2">
+        <StarRating v-model="rating" label="Overall rating" testid="review-rating" />
+        
+        <div class="row row-cols-1 row-cols-md-2 g-2">
+          <div v-for="t in REVIEW_TOPICS" :key="t.key" class="col">
+            <StarRating v-model="topics[t.key]" :label="t.label" :testid="`review-${t.key}`" />
+          </div>
         </div>
       </div>
-      <label class="form-label mt-2" :for="`${uid}-body`">Your review</label>
+      <label class="form-label fw-semibold small text-navy mt-3" :for="`${uid}-body`">Your review</label>
       <textarea
         :id="`${uid}-body`"
         v-model="body"
-        class="form-control mb-2"
+        class="form-control shadow-none mb-3"
         rows="3"
         maxlength="2000"
         required
         data-testid="review-body-input"
+        placeholder="Share your thoughts about this partner university..."
       ></textarea>
 
-      <div v-if="editing && review.image_path" class="mb-2">
+      <div v-if="editing && review.image_path" class="mb-3">
         <img
           :src="reviewImageUrl(review.image_path)"
           alt="Current photo"
-          class="img-thumbnail d-block mb-1"
+          class="img-thumbnail rounded-3 d-block mb-1"
           style="max-height: 6rem"
         />
         <div class="form-check">
@@ -127,32 +131,32 @@ async function submit() {
             :id="`${uid}-remove`"
             v-model="removeImage"
             type="checkbox"
-            class="form-check-input"
+            class="form-check-input shadow-none"
             data-testid="review-remove-image"
           />
-          <label class="form-check-label" :for="`${uid}-remove`">Remove this photo</label>
+          <label class="form-check-label small text-secondary" :for="`${uid}-remove`">Remove this photo</label>
         </div>
       </div>
-      <label class="form-label" :for="`${uid}-image`">
-        {{ editing && review.image_path ? 'Replace photo' : 'Photo' }} (optional, JPG, PNG or WebP
-        up to 2 MB)
+      <label class="form-label fw-semibold small text-navy" :for="`${uid}-image`">
+        {{ editing && review.image_path ? 'Replace photo' : 'Photo' }}
+        <span class="optional-label ms-1">(optional, JPG, PNG or WebP up to 2 MB)</span>
       </label>
       <input
         :id="`${uid}-image`"
         ref="imageInput"
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        class="form-control mb-2"
+        class="form-control shadow-none mb-3"
         data-testid="review-image-input"
         @change="pickImage"
       />
 
-      <div v-if="error" class="alert alert-danger py-2" data-testid="review-form-error">
+      <div v-if="error" class="alert alert-danger py-2 small rounded-3" data-testid="review-form-error">
         {{ error }}
       </div>
       <div class="d-flex gap-2">
         <button
-          class="btn btn-primary"
+          class="btn btn-primary rounded-pill px-4"
           :disabled="submitting || reviews.saving"
           data-testid="review-submit-btn"
         >
@@ -163,7 +167,7 @@ async function submit() {
         <button
           v-if="editing"
           type="button"
-          class="btn btn-outline-secondary"
+          class="btn btn-outline-secondary rounded-pill px-3"
           data-testid="review-cancel-btn"
           @click="emit('cancel')"
         >
@@ -175,9 +179,18 @@ async function submit() {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.optional-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6c757d;
+}
+
 .review-form-card {
-  border-color: #e8eaf0;
-  border-radius: var(--app-radius);
-  background: #f8f9fc;
+  border-color: var(--app-border, #e8eaf0) !important;
+  background-color: var(--app-surface, #f8f9fc) !important;
 }
 </style>
