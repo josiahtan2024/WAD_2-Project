@@ -15,6 +15,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const selected = ref(null)
+const mapPanel = ref(null)
 
 const TARGET_REGIONS = [
   'Africa',
@@ -130,9 +131,18 @@ function toggleUniversity(university) {
 
 function handleReset() {
   selected.value = null
+  resetRegions()
   if (route.query.university) {
     router.replace({ query: { ...route.query, university: undefined } })
   }
+}
+
+function goBack() {
+  if (selected.value) {
+    mapPanel.value?.resetMap()
+    return
+  }
+  resetRegions()
 }
 
 onMounted(async () => {
@@ -165,14 +175,12 @@ onMounted(async () => {
         <!-- Regions Panel -->
         <div class="d-flex flex-column border-end-lg p-3 home-university-panel flex-grow-1 overflow-hidden">
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-            <h2 class="region-panel-title mb-0">
-              <span @click="resetRegions" role="button" tabindex="0"
-                @keydown.enter.prevent="resetRegions"
-                @keydown.space.prevent="resetRegions"
-                style="cursor: pointer;">
-                Regions
-              </span>
-            </h2>
+            <div class="d-flex align-items-center gap-2">
+              <button v-if="selected || hasAnyRegionExpanded" type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="goBack" aria-label="Go back">
+                <i class="bi bi-arrow-left me-1"></i>Back
+              </button>
+              <h2 class="region-panel-title mb-0">Regions</h2>
+            </div>
             <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">
               {{ visibleUniversities.length }} Unis
             </span>
@@ -246,6 +254,7 @@ onMounted(async () => {
       <!-- Map Column -->
       <div class="col-12 col-lg-9 map-column">
         <MapPanel
+          ref="mapPanel"
           class="h-100 w-100"
           :universities="visibleUniversities"
           :selected-id="selected?.id ?? null"

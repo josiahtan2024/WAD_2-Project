@@ -338,6 +338,7 @@ const emit = defineEmits([
       :disabled="saving || !validBudget"
     >
       <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      <i v-else :class="['bi', editingBudgetId ? 'bi-save' : 'bi-plus-circle']" class="me-1" aria-hidden="true"></i>
 
       {{ saving ? 'Saving Budget...' : editingBudgetId ? 'Update Budget' : 'Create Budget' }}
     </button>

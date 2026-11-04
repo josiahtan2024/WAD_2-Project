@@ -103,6 +103,7 @@ function formatPreference(value) {
             data-testid="budget-details-close"
             @click="emit('close')"
           >
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
             Close
           </button>
         </div>

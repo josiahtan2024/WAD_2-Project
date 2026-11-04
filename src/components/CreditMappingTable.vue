@@ -96,14 +96,17 @@ function clearFilters() {
               <label for="mapping-search" class="form-label fw-semibold"
                 >Search Course Mappings</label
               >
-              <input
-                id="mapping-search"
-                v-model="search"
-                type="search"
-                class="form-control"
-                placeholder="Search course areas or partner courses"
-                data-testid="mapping-search"
-              />
+              <div class="input-group app-search-group">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input
+                  id="mapping-search"
+                  v-model="search"
+                  type="search"
+                  class="form-control app-search-field border-start-0 shadow-none"
+                  placeholder="Search course areas or partner courses"
+                  data-testid="mapping-search"
+                />
+              </div>
             </div>
             <div class="col-12 col-md-6">
               <label for="mapping-school-filter" class="form-label fw-semibold"
@@ -129,11 +132,11 @@ function clearFilters() {
             <button
               v-if="search || selectedSchool"
               type="button"
-              class="btn btn-sm btn-outline-secondary"
+              class="btn btn-sm btn-outline-secondary rounded-pill px-3 app-filter-reset"
               data-testid="mapping-clear-filters"
               @click="clearFilters"
             >
-              Reset Search and Filters
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
             </button>
           </div>
         </div>

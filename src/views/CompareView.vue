@@ -473,13 +473,13 @@ watch(
     <div class="container py-4 mb-5 min-vh-100 d-flex flex-column p-0">
     <main class="flex-grow-1">
 
-        <section class="compare-hero text-center">
-            <div class="container">
-                <h1 class="compare-hero-title fw-semibold mb-3" data-testid="compare-heading">Compare Partner Universities</h1>
-                <p class="compare-hero-subtitle mb-3">SMU Global Experience</p>
-                <p class="compare-hero-subtitle mb-0"><a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link" 
-                    target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right fs-6 ms-1"></i></a></p>
-            </div>
+        <section class="compare-hero border-bottom pb-3 mb-4">
+            <h1 class="page-title fw-bold text-navy mb-1" data-testid="compare-heading">Compare Partner Universities</h1>
+            <p class="text-muted small mb-0">
+                SMU Global Experience ·
+                <a href="https://geo.smu.edu.sg/" class="link-primary text-decoration-none custom-hover-link"
+                    target="_blank" rel="noopener noreferrer">Learn more about SMU GEO<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></a>
+            </p>
         </section>
 
         <section class="container">
@@ -641,9 +641,9 @@ watch(
                             </div>
                             <div class="btn-group btn-group-sm w-md-down-100">
                                 <button class="btn" :class="uniCurrencies[idx] === 'home' ? 'btn-primary' : 'btn-outline-primary'"
-                                @click="uniCurrencies[idx] = 'home'">{{ uni.cost.currency }}</button>
+                                @click="uniCurrencies[idx] = 'home'"><i class="bi bi-currency-exchange me-1" aria-hidden="true"></i>{{ uni.cost.currency }}</button>
                                 <button class="btn" :class="uniCurrencies[idx] === 'SGD' ? 'btn-primary' : 'btn-outline-primary'"
-                                @click="uniCurrencies[idx] = 'SGD'">SGD</button>
+                                @click="uniCurrencies[idx] = 'SGD'"><i class="bi bi-currency-exchange me-1" aria-hidden="true"></i>SGD</button>
                             </div>
                         </div> 
                     </template>
@@ -794,6 +794,7 @@ watch(
                                     @click="uniProgrammes[idx] = pIdx"
                                     class="btn btn-sm flex-fill text-truncate px-1"
                                     :class="uniProgrammes[idx] === pIdx ? 'btn-primary' : 'btn-outline-primary'">
+                                    <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>
                                     <span class="d-none d-md-inline">{{ formatExchangeDate(period.startDate) }}</span>
                                     <span class="d-md-none d-inline">{{ formatExchangeDate(period.startDate).split(' ')[0] }}</span>
                                 </button>
@@ -802,6 +803,7 @@ watch(
                         <div v-else>
                             <div class="pt-3">
                                 <button class="btn btn-sm btn-outline-secondary w-100 disabled text-truncate" style="opacity: 1;">
+                                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
                                     Not Available
                                 </button>
                             </div>
@@ -896,14 +898,7 @@ watch(
 
 <style scoped>
 .compare-hero {
-    margin-top: 3.75rem;
-    margin-bottom: 2.75rem;
-}
-.compare-hero-title {
-    font-size: 3.5rem;
-}
-.compare-hero-subtitle {
-    font-size: 1.25rem;
+    margin-top: 0;
 }
 .compare-select {
     font-size: 1.25rem;
@@ -950,9 +945,6 @@ watch(
 }
 
 @media (max-width: 991.98px) {
-    .compare-hero-title {
-        font-size: 3rem;
-    }
     .compare-row-header {
         font-size: 1.75rem;
     }
@@ -971,16 +963,6 @@ watch(
 }
 
 @media (max-width: 767.98px) {
-    .compare-hero {
-        margin-top: 0.75rem;
-        margin-bottom: 1rem;
-    }
-    .compare-hero-title {
-        font-size: 2.5rem;
-    }
-    .compare-hero-subtitle {
-        font-size: 1.125rem;
-    }
     .compare-select {
         font-size: 1.0625rem;
         padding-top: 0.625rem;

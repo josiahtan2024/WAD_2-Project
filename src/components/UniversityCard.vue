@@ -12,7 +12,6 @@ const isHovered = ref(false)
 const props = defineProps({
   university: { type: Object, required: true },
   shortlisted: { type: Boolean, default: false },
-  selectedRegion: { type: String, default: null },
 })
 
 defineEmits(['toggle-shortlist'])
@@ -89,8 +88,7 @@ const estimatedMonthlyCost = computed(() => {
             <i class="bi bi-eye-slash"></i>
           </span>
 
-          <span class="badge region-badge rounded-pill px-3 py-2 fw-semibold"
-            :class="selectedRegion === university.region ? 'text-bg-primary' : 'bg-light text-navy border'">
+          <span class="badge region-badge rounded-pill px-3 py-2 fw-semibold bg-light text-navy border">
             <i class="bi bi-geo-alt-fill me-1"></i>{{ university.region }}
           </span>
         </div>

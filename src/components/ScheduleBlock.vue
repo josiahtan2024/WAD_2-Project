@@ -131,6 +131,7 @@ function isBlocked(day, time) {
             class="btn btn-outline-danger"
             @click="isEditMode() ? clearSelection() : $event.stopPropagation()"
           >
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
             Clear
           </button>
           <button
@@ -141,6 +142,7 @@ function isBlocked(day, time) {
                 : $event.stopPropagation()
             "
           >
+            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
             Add
           </button>
         </div>

@@ -61,7 +61,8 @@ function resetFilters() {
           data-testid="budget-create-button"
           @click="emit('create')"
         >
-          ＋ Create New Budget
+          <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
+          Create New Budget
         </button>
       </div>
 
@@ -86,6 +87,7 @@ function resetFilters() {
           data-testid="budget-create-button"
           @click="emit('create')"
         >
+          <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
           Create Your First Budget
         </button>
       </div>
@@ -95,13 +97,16 @@ function resetFilters() {
           <div class="row g-3 align-items-end">
             <div class="col-12 col-lg-5">
               <label for="budgetSearch" class="form-label fw-semibold">Search Budgets</label>
-              <input
-                id="budgetSearch"
-                v-model="searchQuery"
-                type="search"
-                class="form-control"
-                placeholder="Search University, Country, Region or Period"
-              />
+              <div class="input-group app-search-group">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input
+                  id="budgetSearch"
+                  v-model="searchQuery"
+                  type="search"
+                  class="form-control app-search-field border-start-0 shadow-none"
+                  placeholder="Search University, Country, Region or Period"
+                />
+              </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
               <label for="budgetRegion" class="form-label fw-semibold">Filter by Region</label>
@@ -132,10 +137,10 @@ function resetFilters() {
             <button
               v-if="searchQuery || regionFilter || sortBy !== 'recent'"
               type="button"
-              class="btn btn-sm btn-outline-secondary"
+              class="btn btn-sm btn-outline-secondary rounded-pill px-3 app-filter-reset"
               @click="resetFilters"
             >
-              Reset Search and Filters
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
             </button>
           </div>
         </div>
@@ -146,8 +151,8 @@ function resetFilters() {
         >
           <h3 class="h5 fw-bold">No Matching Budgets</h3>
           <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
-          <button type="button" class="btn btn-outline-primary" @click="resetFilters">
-            Clear Filters
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 app-filter-reset" @click="resetFilters">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
           </button>
         </div>
 
@@ -188,6 +193,7 @@ function resetFilters() {
                       data-testid="budget-read-button"
                       @click="emit('read', budget)"
                     >
+                      <i class="bi bi-eye me-1" aria-hidden="true"></i>
                       Read
                     </button>
                     <button
@@ -196,6 +202,7 @@ function resetFilters() {
                       data-testid="budget-edit-button"
                       @click="emit('edit', budget)"
                     >
+                      <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                       Edit
                     </button>
                     <button
@@ -205,6 +212,7 @@ function resetFilters() {
                       :disabled="props.deletingBudgetId === budget.id"
                       @click="emit('delete', budget)"
                     >
+                      <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                       {{ props.deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}
                     </button>
                   </div>
@@ -229,7 +237,7 @@ function resetFilters() {
                 aria-label="Previous page"
                 @click="goToPage(currentPage - 1)"
               >
-                Previous
+                <i class="bi bi-chevron-left me-1" aria-hidden="true"></i>Previous
               </button>
             </li>
             <li
@@ -256,7 +264,7 @@ function resetFilters() {
                 aria-label="Next page"
                 @click="goToPage(currentPage + 1)"
               >
-                Next
+                Next<i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
               </button>
             </li>
           </ul>

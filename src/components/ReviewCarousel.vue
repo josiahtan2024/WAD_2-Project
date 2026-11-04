@@ -179,6 +179,7 @@ const removalDescription = computed(() =>
                 data-testid="review-remove-btn"
                 @click="remove(r)"
               >
+                <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                 Remove
               </button>
               <div v-if="isMine(r)" class="d-flex gap-1">
@@ -189,6 +190,7 @@ const removalDescription = computed(() =>
                   data-testid="review-edit-btn"
                   @click="editingId = r.id"
                 >
+                  <i class="bi bi-pencil me-1" aria-hidden="true"></i>
                   Edit
                 </button>
                 <button
@@ -197,6 +199,7 @@ const removalDescription = computed(() =>
                   data-testid="review-delete-btn"
                   @click="remove(r)"
                 >
+                  <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
                   Delete
                 </button>
               </div>

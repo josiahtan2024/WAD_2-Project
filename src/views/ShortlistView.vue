@@ -255,7 +255,7 @@ onMounted(async () => {
             class="btn btn-sm btn-primary rounded-pill px-3 py-2"
             data-testid="shortlist-schedule-link"
           >
-            <i class="bi bi-calendar-check me-1 d-none d-sm-inline-block"></i> Plan Schedule
+            <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Plan Schedule
           </RouterLink>
 
           <div class="d-flex align-items-center gap-2">
@@ -263,17 +263,15 @@ onMounted(async () => {
             :to="`/universities/${u.id}`"
             class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2"
           >
-            Details
+            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Details
           </RouterLink>
 
           <button
-            class="btn btn-sm btn-outline-danger rounded-circle p-2 lh-1 remove-btn"
+            class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 remove-btn"
             data-testid="shortlist-remove-btn"
             @click="remove(u)"
-            title="Remove from shortlist"
-            aria-label="Remove from shortlist"
           >
-            <i class="bi bi-trash"></i>
+            <i class="bi bi-trash me-1" aria-hidden="true"></i>Remove
           </button>
           </div>
         </div>
@@ -369,11 +367,10 @@ onMounted(async () => {
 }
 
 .remove-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .shortlist-sort {

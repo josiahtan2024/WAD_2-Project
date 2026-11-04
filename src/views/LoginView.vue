@@ -50,6 +50,7 @@ async function submit() {
 
             <button class="btn btn-primary w-100 py-2 rounded-pill shadow-sm" :disabled="loading" data-testid="login-submit-btn">
               <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <i v-if="!loading" class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
               {{ loading ? 'Logging In...' : 'Log In' }}
             </button>
           </form>
