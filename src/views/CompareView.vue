@@ -6,6 +6,7 @@ import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
+import Notice from '@/components/AppNotice.vue'
 
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
