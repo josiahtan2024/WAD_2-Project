@@ -85,11 +85,14 @@ async function submit() {
 
 <template>
   <p v-if="!loggedIn" class="mt-3 text-muted small" data-testid="review-login-prompt">
-    <RouterLink to="/login" class="link-primary">Log In</RouterLink> to post a review.
+    <RouterLink to="/login" class="link-primary">Log in</RouterLink> to post a review.
   </p>
-  <p v-else-if="alreadyReviewed" class="mt-3 text-muted small" data-testid="review-already-posted">
-    You have already reviewed this university. You can edit or delete your review above.
-  </p>
+  <div v-else-if="alreadyReviewed" class="alert alert-light border rounded-4 mt-3 d-flex align-items-center gap-3 p-3 bg-white" data-testid="review-already-posted">
+      <i class="bi bi-check-circle-fill fs-5 text-primary"></i>
+    <div>
+      <p class="text-muted small mb-0">You have already shared your feedback for this university. You can edit or delete your review above.</p>
+    </div>
+  </div>
   <form
     v-else-if="canShow"
     class="review-form-card card border rounded-4 mt-3 bg-white"
@@ -99,7 +102,7 @@ async function submit() {
     <div class="card-body p-3 p-md-4">
       <h3 class="h6 fw-bold text-navy mb-3">{{ editing ? 'Edit Your Review' : 'Write a Review' }}</h3>
       <div class="d-flex flex-column gap-2">
-        <StarRating v-model="rating" label="Overall rating" testid="review-rating" />
+        <StarRating v-model="rating" label="Overall rating" testid="review-rating" :required="true" />
         
         <div class="row row-cols-1 row-cols-md-2 g-2">
           <div v-for="t in REVIEW_TOPICS" :key="t.key" class="col">
@@ -114,7 +117,6 @@ async function submit() {
         class="form-control shadow-none mb-3"
         rows="3"
         maxlength="2000"
-        required
         data-testid="review-body-input"
         placeholder="Share your thoughts about this partner university..."
       ></textarea>
