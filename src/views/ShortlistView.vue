@@ -212,7 +212,7 @@ onMounted(async () => {
       </div>
       <h3 class="h5 fw-semibold text-navy mb-2">Nothing shortlisted yet</h3>
       <p class="text-muted small mb-3">Explore our global network of partner universities and save your favorites here.</p>
-      <RouterLink to="/" class="btn btn-primary px-4 rounded-pill">Browse Partner Universities</RouterLink>
+      <RouterLink to="/universities" class="btn btn-primary px-4 rounded-pill">Browse Partner Universities</RouterLink>
     </div>
 
     <div
@@ -288,7 +288,9 @@ onMounted(async () => {
       data-testid="shortlist-pagination"
     >
       <ul class="pagination justify-content-center flex-wrap mb-0">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+        <li class="page-item"
+           :class="{ disabled: currentPage === 1 }"
+           :title="currentPage === 1 ? 'You are already on the first page.' : undefined">
           <button
             class="page-link rounded-start-pill px-3 shadow-none"
             type="button"
@@ -311,7 +313,9 @@ onMounted(async () => {
             @click="goToPage(page)"
           >{{ page }}</button>
         </li>
-        <li class="page-item" :class="{ disabled: currentPage === pageCount }">
+        <li class="page-item" 
+            :class="{ disabled: currentPage === pageCount }"
+            :title="currentPage === pageCount ? 'You are already on the last page.' : undefined">
           <button
             class="page-link rounded-end-pill px-3 shadow-none"
             type="button"
@@ -401,5 +405,11 @@ onMounted(async () => {
 .shortlist-pagination .page-item.disabled .page-link {
   color: #8793a6;
   background-color: var(--app-surface);
+}
+
+.shortlist-pagination .page-item.disabled .page-link {
+  color: #8793a6;
+  background-color: var(--app-surface);
+  pointer-events: none;
 }
 </style>
