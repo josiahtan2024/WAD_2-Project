@@ -20,12 +20,17 @@ AS $$
     );
 $$;
 
+CREATE UNIQUE INDEX IF NOT EXISTS universities_name_country_key
+    ON universities (lower(name), lower(country));
+
 DROP POLICY IF EXISTS "Allow public read access on universities" ON universities;
+DROP POLICY IF EXISTS "Public can read visible universities" ON universities;
 CREATE POLICY "Public can read visible universities"
     ON universities FOR SELECT
     USING (published OR public.is_admin());
 
 DROP POLICY IF EXISTS "Allow public read access on university_languages" ON university_languages;
+DROP POLICY IF EXISTS "Public can read details of visible university_languages" ON university_languages;
 CREATE POLICY "Public can read details of visible university_languages"
     ON university_languages FOR SELECT
     USING (
@@ -33,6 +38,7 @@ CREATE POLICY "Public can read details of visible university_languages"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on exchange_periods" ON exchange_periods;
+DROP POLICY IF EXISTS "Public can read details of visible exchange_periods" ON exchange_periods;
 CREATE POLICY "Public can read details of visible exchange_periods"
     ON exchange_periods FOR SELECT
     USING (
@@ -40,6 +46,7 @@ CREATE POLICY "Public can read details of visible exchange_periods"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on university_costs" ON university_costs;
+DROP POLICY IF EXISTS "Public can read details of visible university_costs" ON university_costs;
 CREATE POLICY "Public can read details of visible university_costs"
     ON university_costs FOR SELECT
     USING (
@@ -47,6 +54,7 @@ CREATE POLICY "Public can read details of visible university_costs"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on university_modules" ON university_modules;
+DROP POLICY IF EXISTS "Public can read details of visible university_modules" ON university_modules;
 CREATE POLICY "Public can read details of visible university_modules"
     ON university_modules FOR SELECT
     USING (
@@ -54,6 +62,7 @@ CREATE POLICY "Public can read details of visible university_modules"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on credit_mappings" ON credit_mappings;
+DROP POLICY IF EXISTS "Public can read mappings of visible universities" ON credit_mappings;
 CREATE POLICY "Public can read mappings of visible universities"
     ON credit_mappings FOR SELECT
     USING (
@@ -65,6 +74,7 @@ CREATE POLICY "Public can read mappings of visible universities"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on university_reviews" ON university_reviews;
+DROP POLICY IF EXISTS "Public can read reviews of visible universities" ON university_reviews;
 CREATE POLICY "Public can read reviews of visible universities"
     ON university_reviews FOR SELECT
     USING (
@@ -72,6 +82,7 @@ CREATE POLICY "Public can read reviews of visible universities"
     );
 
 DROP POLICY IF EXISTS "Allow public read access on review_comments" ON review_comments;
+DROP POLICY IF EXISTS "Public can read comments of visible reviews" ON review_comments;
 CREATE POLICY "Public can read comments of visible reviews"
     ON review_comments FOR SELECT
     USING (
@@ -82,67 +93,83 @@ CREATE POLICY "Public can read comments of visible reviews"
         )
     );
 
+DROP POLICY IF EXISTS "Admins can add universities" ON universities;
 CREATE POLICY "Admins can add universities"
     ON universities FOR INSERT
     TO authenticated
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can edit universities" ON universities;
 CREATE POLICY "Admins can edit universities"
     ON universities FOR UPDATE
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can delete hidden universities" ON universities;
 CREATE POLICY "Admins can delete hidden universities"
     ON universities FOR DELETE
     TO authenticated
     USING (public.is_admin() AND NOT published);
 
+DROP POLICY IF EXISTS "Admins can manage university_languages" ON university_languages;
 CREATE POLICY "Admins can manage university_languages"
     ON university_languages FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage exchange_periods" ON exchange_periods;
 CREATE POLICY "Admins can manage exchange_periods"
     ON exchange_periods FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage university_costs" ON university_costs;
 CREATE POLICY "Admins can manage university_costs"
     ON university_costs FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage university_modules" ON university_modules;
 CREATE POLICY "Admins can manage university_modules"
     ON university_modules FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage credit_mappings" ON credit_mappings;
 CREATE POLICY "Admins can manage credit_mappings"
     ON credit_mappings FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can manage smu_modules" ON smu_modules;
 CREATE POLICY "Admins can manage smu_modules"
     ON smu_modules FOR ALL
     TO authenticated
     USING (public.is_admin())
     WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can delete any review" ON university_reviews;
 CREATE POLICY "Admins can delete any review"
     ON university_reviews FOR DELETE
     TO authenticated
     USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins can delete any comment" ON review_comments;
 CREATE POLICY "Admins can delete any comment"
     ON review_comments FOR DELETE
     TO authenticated
     USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Allow public read access on university logos" ON storage.objects;
+CREATE POLICY "Allow public read access on university logos"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'university-logos');
 
 DROP POLICY IF EXISTS "Admins can upload university logos" ON storage.objects;
 CREATE POLICY "Admins can upload university logos"
@@ -172,27 +199,35 @@ BEGIN
 END
 $$;
 
+DROP TRIGGER IF EXISTS set_updated_at ON universities;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON universities
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON exchange_periods;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON exchange_periods
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON university_costs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_costs
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON university_modules;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_modules
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON credit_mappings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON credit_mappings
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON smu_modules;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON smu_modules
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON university_reviews;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON university_reviews
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON review_comments;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON review_comments
     FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 

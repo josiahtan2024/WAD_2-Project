@@ -2,15 +2,30 @@ import { test, expect } from '@playwright/test'
 import { login } from './helpers'
 
 // Needs an account whose app_metadata has role = admin (see README, "Admin accounts").
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim()
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim()
+const hasAdminCredentials = Boolean(
+  ADMIN_EMAIL &&
+  ADMIN_PASSWORD &&
+  ADMIN_EMAIL.toLowerCase() !== 'undefined' &&
+  ADMIN_PASSWORD.toLowerCase() !== 'undefined'
+)
 
 async function loginAsAdmin(page) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  }
+
   await page.goto('/login')
   await page.getByTestId('login-email-input').fill(ADMIN_EMAIL)
   await page.getByTestId('login-password-input').fill(ADMIN_PASSWORD)
   await page.getByTestId('login-submit-btn').click()
-  await page.getByTestId('nav-logout-btn').waitFor()
+  const loggedIn = page.getByTestId('nav-logout-btn')
+  const loginError = page.getByTestId('login-error')
+  await expect(loggedIn.or(loginError)).toHaveCount(1)
+  if (await loginError.isVisible()) {
+    throw new Error(`Admin login failed: ${await loginError.innerText()}`)
+  }
 }
 
 async function openFirstUniversity(page) {
@@ -19,35 +34,55 @@ async function openFirstUniversity(page) {
   await expect(page.getByTestId('university-page')).toBeVisible()
 }
 
-test.describe('students', () => {
-  test('see no staff controls', async ({ page }) => {
-    await login(page)
-    await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
-    await expect(page.getByTestId('admin-bar')).toHaveCount(0)
-    await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await page.goto('/universities')
-    await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
-    await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
-  })
+test('students do not see staff controls', async ({ page }) => {
+  await login(page)
+  await openFirstUniversity(page)
+  await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
+  await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
+  await expect(page.getByTestId('admin-bar')).toHaveCount(0)
+  await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
+  await page.goto('/universities')
+  await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
+  await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
 })
 
 test.describe('admins', () => {
-  test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, 'set ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  test.skip(!hasAdminCredentials, 'set valid ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  /** @type {{ id: number, name: string } | null} */
+  let createdUniversity = null
+
+  test.afterEach(async ({ page }) => {
+    if (!createdUniversity) return
+
+    await page.goto(`/universities/${createdUniversity.id}`)
+    const hideButton = page.getByTestId('admin-hide')
+    if (await hideButton.count()) {
+      await hideButton.click()
+      await expect(page.getByTestId('admin-hidden-banner')).toBeVisible()
+    }
+
+    await page.getByTestId('admin-delete').click()
+    await expect(page.getByTestId('delete-impact')).toBeVisible()
+    await page.getByTestId('confirm-typed-input').fill(createdUniversity.name)
+    await page.getByTestId('confirm-ok').click()
+    await expect(page.getByTestId('universities-page')).toBeVisible()
+    createdUniversity = null
+  })
 
   test('see the staff controls and can switch to the student view', async ({ page }) => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     await expect(page.getByTestId('admin-edit-cost')).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })
@@ -69,7 +104,10 @@ test.describe('admins', () => {
     const visitor = await (await browser.newContext({ baseURL })).newPage()
     const listed = async () => {
       await visitor.goto('/universities')
-      await expect(page.getByTestId('universities-page')).toBeVisible()
+      await expect(visitor.getByTestId('universities-page')).toBeVisible()
+      // The public list is paginated and sorted alphabetically, so find the
+      // newly published university through the same search students can use.
+      await visitor.getByTestId('filter-search-input').fill(name)
       return visitor.getByTestId('university-card-name').filter({ hasText: name }).count()
     }
 
@@ -81,6 +119,7 @@ test.describe('admins', () => {
     await page.getByTestId('admin-field-region').fill('Europe')
     await page.getByTestId('admin-drawer-save').click()
     await expect(page.getByTestId('admin-hidden-banner')).toBeVisible()
+    createdUniversity = { id: Number(page.url().split('/').pop()), name }
     await expect(page.getByTestId('admin-delete')).toBeEnabled()
 
     await page.getByTestId('admin-edit-cost').click()
@@ -107,6 +146,7 @@ test.describe('admins', () => {
     await page.getByTestId('confirm-typed-input').fill(name)
     await page.getByTestId('confirm-ok').click()
     await expect(page.getByTestId('universities-page')).toBeVisible()
+    createdUniversity = null
     await expect(page.getByTestId('university-card-name').filter({ hasText: name })).toHaveCount(0)
     await visitor.context().close()
   })

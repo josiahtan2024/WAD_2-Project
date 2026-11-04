@@ -23,8 +23,8 @@ let map
 let clusterGroup
 
 const markers = new Map()
-const DEFAULT_CENTER = [20, 0]
-const DEFAULT_ZOOM = 1.5
+const DEFAULT_CENTER = [25, 0]
+const DEFAULT_ZOOM = 2
 
 function resetMap() {
   if (!map) return
@@ -80,10 +80,12 @@ function draw() {
 
   props.universities.forEach((u) => {
     if (
-      u.lat == null || u.long == null ||
+      u.lat == null ||
+      u.long == null ||
       String(u.lat).trim() === '' ||
       String(u.long).trim() === ''
-    ) return
+    )
+      return
 
     const lat = Number(u.lat)
     const lng = Number(u.long)
@@ -91,17 +93,18 @@ function draw() {
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
-      lat < -90 || lat > 90 ||
-      lng < -180 || lng > 180
-    ) return
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    )
+      return
 
     const tooltip = document.createElement('span')
     tooltip.textContent = u.name ?? ''
 
     const marker = L.marker([lat, lng], {
-      icon: createUniversityIcon(
-        String(u.id) === String(props.selectedId)
-      ),
+      icon: createUniversityIcon(String(u.id) === String(props.selectedId)),
     })
       .bindTooltip(tooltip)
       .on('click', () => emit('select', u))
@@ -115,13 +118,24 @@ function draw() {
 
 onMounted(() => {
   map = L.map(el.value, {
-    minZoom: 1,
+    minZoom: 2,
     worldCopyJump: true,
+    dragging: true,
+    zoomControl: false,
+    touchZoom: true,
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
+  L.control.zoom().addTo(map).getContainer().setAttribute('data-testid', 'map-zoom-controls')
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)
+
+  L.control
+    .scale({
+      metric: true,
+      imperial: true,
+      position: 'bottomleft',
+    })
+    .addTo(map)
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 70,
@@ -158,26 +172,23 @@ watch(
   }
 )
 
-watch(
-  () => props.universities,
-  draw,
-  { deep: true }
-)
+watch(() => props.universities, draw, { deep: true })
 </script>
 
 <template>
   <div class="map-container">
-    <div ref="el" class="map-panel rounded" data-testid="map-panel"></div>
+    <div ref="el" class="map-panel" data-testid="map-panel"></div>
 
     <button
       type="button"
+      data-testid="map-reset-button"
       class="map-reset-button"
       @click="resetMap"
       aria-label="Reset map to world view"
-      title="Reset map"
+      title="Reset Map"
     >
-      <i class="bi bi-globe"></i>
-      Reset map
+      <i class="bi bi-globe me-1"></i>
+      Reset
     </button>
   </div>
 </template>
@@ -189,8 +200,9 @@ watch(
 }
 
 .map-panel {
-  height: 420px;
+  height: 100%;
   width: 100%;
+  border-radius: 0;
 }
 
 :deep(.university-marker-wrapper) {
@@ -201,19 +213,19 @@ watch(
 :deep(.university-marker) {
   width: 18px;
   height: 18px;
-  background: #1f4e9c;
+  background: var(--app-gray-blue);
   border: 2px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 5px rgba(20, 27, 77, 0.35);
   transition: all 0.2s ease;
 }
 
 :deep(.university-marker.selected) {
   width: 22px;
   height: 22px;
-  background: #7dd3fc;
+  background: #38bdf8;
   border: 3px solid #ffffff;
-  box-shadow: 0 0 0 3px #1f4e9c;
+  box-shadow: 0 0 0 3px var(--app-blue);
 }
 
 :deep(.marker-cluster) {
@@ -224,13 +236,13 @@ watch(
 :deep(.marker-cluster-small),
 :deep(.marker-cluster-medium),
 :deep(.marker-cluster-large) {
-  background-color: rgba(31, 78, 156, 0.3);
+  background-color: rgba(20, 27, 77, 0.25);
 }
 
 :deep(.marker-cluster-small div),
 :deep(.marker-cluster-medium div),
 :deep(.marker-cluster-large div) {
-  background-color: #1f4e9c;
+  background-color: var(--app-blue);
   color: white;
   font-weight: 600;
   font-family: inherit;
@@ -245,19 +257,32 @@ watch(
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 6px 12px;
   background: white;
-  color: #1f4e9c;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  color: var(--app-blue);
+  border: 1px solid var(--app-border);
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .map-reset-button:hover {
-  background: #f0f5ff;
+  background: var(--app-surface);
+  border-color: var(--app-gray-blue);
+}
+
+:deep(.leaflet-control-scale-line) {
+  border-color: var(--app-navy);
+  color: var(--app-navy);
+  font-weight: 600;
+  padding: 2px 6px;
+}
+
+:deep(.leaflet-bottom.leaflet-left) {
+  bottom: 6px;
+  left: 6px;
 }
 </style>

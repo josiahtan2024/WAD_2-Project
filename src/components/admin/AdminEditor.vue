@@ -8,7 +8,7 @@ import DetailsForm from '@/components/admin/DetailsForm.vue'
 import CostForm from '@/components/admin/CostForm.vue'
 import AcademicsForm from '@/components/admin/AcademicsForm.vue'
 import PeriodsForm from '@/components/admin/PeriodsForm.vue'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const props = defineProps({
   university: { type: Object, default: null }, // null while adding a new one
@@ -65,7 +65,8 @@ async function save(work, message) {
 
 const id = () => props.university.id
 
-const saveDetails = ({ fields, logo }) => save(() => admin.updateWithLogo(props.university, fields, logo), 'Details saved.')
+const saveDetails = ({ fields, logo }) =>
+  save(() => admin.updateWithLogo(props.university, fields, logo), 'Details saved.')
 const saveLocation = (fields) => save(() => admin.update(id(), fields), 'Location saved.')
 const saveCost = (values) => save(() => admin.saveCost(id(), values), 'Costs saved.')
 const savePeriods = (rows) => save(() => admin.savePeriods(id(), rows), 'Exchange periods saved.')
@@ -111,18 +112,38 @@ watch(
     } catch (e) {
       error.value = e.message
     }
-  },
+  }
 )
 </script>
 
 <template>
-  <AdminDrawer :open="drawerOpen" :title="TITLES[section] ?? ''" :saving="admin.saving" :error="error" :submit-label="section === 'create' ? 'Add University' : 'Save'" @close="close">
+  <AdminDrawer
+    :open="drawerOpen"
+    :title="TITLES[section] ?? ''"
+    :saving="admin.saving"
+    :error="error"
+    :submit-label="section === 'create' ? 'Add University' : 'Save'"
+    @close="close"
+  >
     <LocationForm v-if="section === 'create'" with-name @submit="create" />
     <DetailsForm v-else-if="section === 'details'" :university="university" @submit="saveDetails" />
-    <LocationForm v-else-if="section === 'location'" :university="university" @submit="saveLocation" />
+    <LocationForm
+      v-else-if="section === 'location'"
+      :university="university"
+      @submit="saveLocation"
+    />
     <CostForm v-else-if="section === 'cost'" :cost="cost" @submit="saveCost" />
-    <AcademicsForm v-else-if="section === 'academics'" :languages="languages" :modules-url="university.modules_url ?? ''" @submit="saveAcademics" />
-    <PeriodsForm v-else-if="section === 'exchange'" :periods="details.periods" @submit="savePeriods" />
+    <AcademicsForm
+      v-else-if="section === 'academics'"
+      :languages="languages"
+      :modules-url="university.modules_url ?? ''"
+      @submit="saveAcademics"
+    />
+    <PeriodsForm
+      v-else-if="section === 'exchange'"
+      :periods="details.periods"
+      @submit="savePeriods"
+    />
   </AdminDrawer>
 
   <ConfirmDialog
@@ -136,15 +157,22 @@ watch(
     @cancel="close"
     @confirm="confirmDelete"
   >
-    <p class="mb-2"><strong>{{ university?.name }}</strong> and everything saved against it will be erased. This cannot be undone.</p>
+    <p class="mb-2">
+      <strong>{{ university?.name }}</strong> and everything saved against it will be erased. This
+      cannot be undone.
+    </p>
     <ul v-if="impact" class="mb-0" data-testid="delete-impact">
-      <li>{{ impact.shortlists }} student {{ impact.shortlists === 1 ? 'shortlist' : 'shortlists' }}</li>
+      <li>
+        {{ impact.shortlists }} student {{ impact.shortlists === 1 ? 'shortlist' : 'shortlists' }}
+      </li>
       <li>{{ impact.budgets }} {{ impact.budgets === 1 ? 'budget' : 'budgets' }}</li>
-      <li>{{ impact.reviews }} {{ impact.reviews === 1 ? 'review' : 'reviews' }} and their comments</li>
+      <li>
+        {{ impact.reviews }} {{ impact.reviews === 1 ? 'review' : 'reviews' }} and their comments
+      </li>
       <li>{{ impact.timetables }} {{ impact.timetables === 1 ? 'timetable' : 'timetables' }}</li>
     </ul>
     <p v-else class="mb-0 small">Checking what would be lost...</p>
   </ConfirmDialog>
 
-  <BudgetNotice :success-message="notice" @dismiss-success="notice = ''" />
+  <Notice :success-message="notice" @dismiss-success="notice = ''" />
 </template>

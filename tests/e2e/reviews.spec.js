@@ -4,7 +4,7 @@ import { login } from './helpers'
 // 1x1 PNG, enough to exercise the upload path
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64',
+  'base64'
 )
 
 async function openFirstUniversity(page) {
@@ -24,6 +24,9 @@ async function postReview(page, text, stars = 4) {
 async function deleteMyReview(page) {
   while (await page.getByTestId('review-delete-btn').count()) {
     await page.getByTestId('review-delete-btn').first().click()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
+    await expect(confirmation).toBeVisible()
+    await confirmation.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
   }
 }
@@ -38,7 +41,6 @@ test.describe('reviews (logged out)', () => {
 
 test.describe('reviews', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
     await login(page)
     await openFirstUniversity(page)
     await deleteMyReview(page)
@@ -48,7 +50,9 @@ test.describe('reviews', () => {
     const text = `Great exchange ${Date.now()}`
     await postReview(page, text, 5)
     await expect(page.getByTestId('review-item').first()).toContainText(text)
-    await expect(page.getByTestId('review-item').first().getByTestId('review-rating')).toHaveAttribute('aria-label', '5 out of 5')
+    await expect(
+      page.getByTestId('review-item').first().getByTestId('review-rating')
+    ).toHaveAttribute('aria-label', '5 out of 5')
     await expect(page.getByTestId('reviews-average')).toContainText('5.0 out of 5')
     await page.reload()
     await expect(page.getByTestId('review-carousel')).toContainText(text)
@@ -91,12 +95,16 @@ test.describe('reviews', () => {
   test('a very long unbroken word does not break the layout', async ({ page }) => {
     await postReview(page, 'a'.repeat(1500))
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
-    const overflows = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    )
     expect(overflows).toBe(false)
   })
 
   test('upload a photo with a review', async ({ page }) => {
-    await page.getByTestId('review-image-input').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await page
+      .getByTestId('review-image-input')
+      .setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: TINY_PNG })
     await postReview(page, 'Review with a photo')
     await expect(page.getByTestId('review-image').first()).toBeVisible()
   })
@@ -106,6 +114,9 @@ test.describe('reviews', () => {
     const mine = page.getByTestId('review-item').first()
     await expect(mine.getByTestId('review-edited')).toHaveCount(0)
 
+    // The UI labels a review as edited only when updated_at is over a second
+    // after created_at; wait past that threshold before saving the edit.
+    await page.waitForTimeout(1100)
     await mine.getByTestId('review-edit-btn').click()
     await expect(mine.getByTestId('review-body-input')).toHaveValue('Original text')
     await mine.getByTestId('review-rating-5').click()
@@ -120,7 +131,9 @@ test.describe('reviews', () => {
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
 
     await page.reload()
-    await expect(page.getByTestId('review-item').first()).toContainText('Changed my mind, it was great')
+    await expect(page.getByTestId('review-item').first()).toContainText(
+      'Changed my mind, it was great'
+    )
     await expect(page.getByTestId('review-edited')).toBeVisible()
   })
 
@@ -145,7 +158,9 @@ test.describe('reviews', () => {
   })
 
   test('remove or replace the photo while editing', async ({ page }) => {
-    await page.getByTestId('review-image-input').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await page
+      .getByTestId('review-image-input')
+      .setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: TINY_PNG })
     await postReview(page, 'Photo to remove')
     const mine = page.getByTestId('review-item').first()
     await expect(mine.getByTestId('review-image')).toBeVisible()
@@ -156,7 +171,9 @@ test.describe('reviews', () => {
     await expect(mine.getByTestId('review-image')).toHaveCount(0)
 
     await mine.getByTestId('review-edit-btn').click()
-    await mine.getByTestId('review-image-input').setInputFiles({ name: 'again.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await mine
+      .getByTestId('review-image-input')
+      .setInputFiles({ name: 'again.png', mimeType: 'image/png', buffer: TINY_PNG })
     await mine.getByTestId('review-submit-btn').click()
     await expect(mine.getByTestId('review-image')).toBeVisible()
   })
@@ -178,7 +195,10 @@ test.describe('reviews', () => {
     await postReview(page, 'Review to delete')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
     await page.getByTestId('review-delete-btn').click()
-    await expect(page.getByTestId('reviews-empty')).toBeVisible()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
+    await expect(confirmation).toBeVisible()
+    await confirmation.getByTestId('delete-confirm-action').click()
+    await expect(page.getByTestId('review-delete-btn')).toHaveCount(0)
     await expect(page.getByTestId('review-body-input')).toBeVisible()
   })
 })
@@ -187,13 +207,14 @@ test.describe('reviews on a phone', () => {
   test.use({ viewport: { width: 375, height: 700 } })
 
   test('the form and carousel fit the screen', async ({ page }) => {
-    page.on('dialog', (dialog) => dialog.accept())
     await login(page)
     await openFirstUniversity(page)
     await deleteMyReview(page)
     await postReview(page, 'Phone sized review')
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
-    const overflows = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    )
     expect(overflows).toBe(false)
   })
 })

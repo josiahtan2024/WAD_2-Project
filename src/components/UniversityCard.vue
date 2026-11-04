@@ -7,9 +7,7 @@ import { supabase } from '@/lib/supabase'
 function getLogoUrl(path) {
   const filePath = path.replace(/^university-logos\//, '')
 
-  return supabase.storage
-    .from('university-logos')
-    .getPublicUrl(filePath).data.publicUrl
+  return supabase.storage.from('university-logos').getPublicUrl(filePath).data.publicUrl
 }
 import { ref, computed } from 'vue'
 import { calculateMonthlyCost } from '@/lib/universityCost'
@@ -33,9 +31,7 @@ const estimatedMonthlyCost = computed(() => {
   const rate = exchangeRates.rates[currency]
 
   if (!Number.isFinite(rate) || rate <= 0) {
-    return exchangeRates.loading
-      ? 'Loading...'
-      : 'SGD estimate unavailable'
+    return exchangeRates.loading ? 'Loading...' : 'SGD estimate unavailable'
   }
 
   const totalSGD = total / rate
@@ -61,8 +57,8 @@ defineEmits(['toggle-shortlist'])
   outline-color: var(--bs-primary);
 }
 
-.university-name{
-  font-weight:800;
+.university-name {
+  font-weight: 800;
   color: #01125f;
 }
 .university-info {
@@ -126,58 +122,59 @@ defineEmits(['toggle-shortlist'])
         </div>
 
         <div class="university-info flex-grow-1">
-          <span v-if="university.published === false" class="badge text-bg-secondary mb-1" data-testid="university-hidden-badge">Hidden from students</span>
-          <h2
-            class="h5 card-title university-name mb-2"
-            data-testid="university-card-name"
+          <span
+            v-if="university.published === false"
+            class="badge text-bg-secondary mb-1"
+            data-testid="university-hidden-badge"
+            >Hidden from students</span
           >
+          <h2 class="h5 card-title university-name mb-2" data-testid="university-card-name">
             {{ university.name }}
           </h2>
 
-          <p class="card-text text-muted mb-0">
-            {{ university.city }}, {{ university.country }}
-          </p>
+          <p class="card-text text-muted mb-0">{{ university.city }}, {{ university.country }}</p>
 
-          <p class="small text-muted mb-0">
-  Estimated monthly cost: {{ estimatedMonthlyCost }}
-</p>
+          <p class="small text-muted mb-0">Estimated monthly cost: {{ estimatedMonthlyCost }}</p>
         </div>
       </div>
 
-<div class="mt-auto d-flex align-items-end gap-2">
-  <div class="d-flex flex-wrap gap-2">
-    <RouterLink
-      :to="`/universities/${university.id}`"
-      class="btn btn-outline-primary btn-sm"
-      data-testid="university-card-link"
-    >
-      Details
-    </RouterLink>
+      <div class="mt-auto d-flex align-items-end gap-2">
+        <div class="d-flex flex-wrap gap-2">
+          <RouterLink
+            :to="`/universities/${university.id}`"
+            class="btn btn-outline-primary btn-sm"
+            data-testid="university-card-link"
+          >
+            Details
+          </RouterLink>
 
-    <RouterLink
-      v-if="auth.adminActive"
-      :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
-      class="btn btn-outline-secondary btn-sm"
-      data-testid="university-card-edit"
-    >
-      Edit
-    </RouterLink>
+          <RouterLink
+            v-if="auth.adminActive"
+            :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
+            class="btn btn-outline-secondary btn-sm"
+            data-testid="university-card-edit"
+          >
+            Edit
+          </RouterLink>
 
-    <button
-      class="btn btn-sm"
-      :class="shortlisted ? 'btn-secondary' : 'btn-primary'"
-      :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
-      @click="$emit('toggle-shortlist', university)"
-    >
-      {{ shortlisted ? 'Remove From Shortlist' : 'Add to Shortlist' }}
-    </button>
-  </div>
-  <span class="university-region ms-auto flex-shrink-0 small"
-  v-bind:class="{
-    'is-filtered':selectedRegion === university.region}">
-    {{ university.region }}
-  </span>
+          <button
+            class="btn btn-sm"
+            :class="shortlisted ? 'btn-secondary' : 'btn-primary'"
+            :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
+            @click="$emit('toggle-shortlist', university)"
+          >
+            {{ shortlisted ? 'Remove From Shortlist' : 'Add to Shortlist' }}
+          </button>
+        </div>
+        <span
+          class="university-region ms-auto flex-shrink-0 small"
+          v-bind:class="{
+            'is-filtered': selectedRegion === university.region,
+          }"
+        >
+          {{ university.region }}
+        </span>
+      </div>
     </div>
   </div>
-</div>
 </template>

@@ -1,30 +1,73 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-import HomeView from '@/views/HomeView.vue'
-import LoginView from '@/views/LoginView.vue'
-import SignupView from '@/views/SignupView.vue'
-import UniversitiesView from '@/views/UniversitiesView.vue'
-import UniversityView from '@/views/UniversityView.vue'
-import ShortlistView from '@/views/ShortlistView.vue'
-import CompareView from '@/views/CompareView.vue'
-import ScheduleView from '@/views/ScheduleView.vue'
-import CostEstimator from '@/views/CostEstimatorView.vue'
-import CourseSearchView from '@/views/CourseSearchView.vue'
-import AboutView from '@/views/AboutView.vue'
-
 const routes = [
-  { path: '/', name: 'home', component: HomeView },
-  { path: '/about', name: 'about', component: AboutView },
-  { path: '/login', name: 'login', component: LoginView },
-  { path: '/signup', name: 'signup', component: SignupView },
-  { path: '/universities', name: 'universities', component: UniversitiesView },
-  { path: '/universities/:id', name: 'university', component: UniversityView },
-  { path: '/shortlist', name: 'shortlist', component: ShortlistView, meta: { requiresAuth: true } },
-  { path: '/compare', name: 'compare', component: CompareView },
-  { path: '/courses', name: 'courses', component: CourseSearchView },
-  { path: '/cost-estimator', name: 'cost-estimator', component: CostEstimator, meta: { requiresAuth: true }, },
-  { path: '/schedule/:universityId?', name: 'schedule', component: ScheduleView, meta: { requiresAuth: true } },
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { title: 'Home' },
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: () => import('@/views/AboutView.vue'),
+    meta: { title: 'About Us' },
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { title: 'Login' },
+  },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: () => import('@/views/SignupView.vue'),
+    meta: { title: 'Sign Up' },
+  },
+  {
+    path: '/universities',
+    name: 'universities',
+    component: () => import('@/views/UniversitiesView.vue'),
+    meta: { title: 'Partner Universities' },
+  },
+  {
+    path: '/universities/:id',
+    name: 'university',
+    component: () => import('@/views/UniversityView.vue'),
+    meta: { title: 'University Details' },
+  },
+  {
+    path: '/shortlist',
+    name: 'shortlist',
+    component: () => import('@/views/ShortlistView.vue'),
+    meta: { title: 'My Shortlist', requiresAuth: true },
+  },
+  {
+    path: '/compare',
+    name: 'compare',
+    component: () => import('@/views/CompareView.vue'),
+    meta: { title: 'Compare Universities' },
+  },
+  {
+    path: '/courses',
+    name: 'courses',
+    component: () => import('@/views/CourseSearchView.vue'),
+    meta: { title: 'Course Search' },
+  },
+  {
+    path: '/cost-estimator',
+    name: 'cost-estimator',
+    component: () => import('@/views/CostEstimatorView.vue'),
+    meta: { title: 'Cost Estimator', requiresAuth: true },
+  },
+  {
+    path: '/schedule/:universityId?',
+    name: 'schedule',
+    component: () => import('@/views/ScheduleView.vue'),
+    meta: { title: 'My Schedule', requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
@@ -40,9 +83,13 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   const auth = useAuthStore()
-  // TODO(student): auth.init() should restore the session before this check (see stores/auth.js)
+  await auth.init()
   if (!auth.user) return { name: 'login', query: { redirect: to.fullPath } }
   return true
+})
+
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} | SMUXchange` : 'SMUXchange'
 })
 
 export default router

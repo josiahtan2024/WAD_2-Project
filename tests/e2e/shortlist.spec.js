@@ -9,12 +9,26 @@ test.describe('shortlist', () => {
 
   test('add, persist after reload, remove', async ({ page }) => {
     await page.goto('/universities')
-    await page.getByTestId('shortlist-add-btn').first().click()
+    const firstCard = page.getByTestId('university-card').first()
+    await firstCard.getByTestId('shortlist-add-btn').click()
+    await expect(firstCard.getByTestId('shortlist-remove-btn')).toBeVisible()
     await page.goto('/shortlist')
     await expect(page.getByTestId('shortlist-item')).toHaveCount(1)
     await page.reload()
     await expect(page.getByTestId('shortlist-item')).toHaveCount(1)
     await page.getByTestId('shortlist-remove-btn').click()
     await expect(page.getByTestId('shortlist-empty')).toBeVisible()
+  })
+
+  test('university details can add and remove the university from shortlist', async ({ page }) => {
+    await page.goto('/universities')
+    await page.getByTestId('university-card-link').first().click()
+
+    const button = page.getByTestId('university-shortlist-btn')
+    await expect(button).toHaveText('Shortlist')
+    await button.click()
+    await expect(button).toHaveText('Shortlisted')
+    await button.click()
+    await expect(button).toHaveText('Shortlist')
   })
 })

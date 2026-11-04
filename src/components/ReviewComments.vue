@@ -2,7 +2,7 @@
 import { onUnmounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
-import BudgetNotice from '@/components/BudgetNotice.vue'
+import Notice from '@/components/AppNotice.vue'
 
 const props = defineProps({ review: { type: Object, required: true } })
 
@@ -54,9 +54,11 @@ async function remove(comment) {
   const deletingOwnComment = comment.user_id === auth.user?.id
   try {
     await reviews.removeComment(props.review.id, comment.id)
-    showSuccess(deletingOwnComment
-      ? 'Your comment was deleted successfully.'
-      : 'The comment was removed successfully.')
+    showSuccess(
+      deletingOwnComment
+        ? 'Your comment was deleted successfully.'
+        : 'The comment was removed successfully.'
+    )
   } catch (e) {
     error.value = e.message
   }
@@ -65,21 +67,55 @@ async function remove(comment) {
 
 <template>
   <Teleport to="body">
-    <BudgetNotice :success-message="successMessage" @dismiss-success="dismissSuccess" />
+    <Notice :success-message="successMessage" @dismiss-success="dismissSuccess" />
   </Teleport>
   <div class="mt-3 pt-2 border-top" data-testid="review-comments">
     <h3 class="h6 text-muted">Comments ({{ review.review_comments.length }})</h3>
     <ul class="list-unstyled small mb-2">
-      <li v-for="c in review.review_comments" :key="c.id" class="d-flex justify-content-between gap-2 mb-1" data-testid="comment-item">
+      <li
+        v-for="c in review.review_comments"
+        :key="c.id"
+        class="d-flex justify-content-between gap-2 mb-1"
+        data-testid="comment-item"
+      >
         <span class="text-break" style="white-space: pre-line">{{ c.body }}</span>
-        <button v-if="c.user_id === auth.user?.id" type="button" class="btn btn-outline-danger btn-sm" data-testid="comment-delete-btn" @click="remove(c)">Delete</button>
-        <button v-else-if="auth.adminActive" type="button" class="btn btn-outline-danger btn-sm" data-testid="comment-remove-btn" @click="remove(c)">Remove</button>
+        <button
+          v-if="c.user_id === auth.user?.id"
+          type="button"
+          class="btn btn-outline-danger btn-sm"
+          data-testid="comment-delete-btn"
+          @click="remove(c)"
+        >
+          Delete
+        </button>
+        <button
+          v-else-if="auth.adminActive"
+          type="button"
+          class="btn btn-outline-danger btn-sm"
+          data-testid="comment-remove-btn"
+          @click="remove(c)"
+        >
+          Remove
+        </button>
       </li>
     </ul>
     <div v-if="error" class="text-danger small mb-1" data-testid="comment-error">{{ error }}</div>
     <form v-if="auth.user" class="d-flex gap-2" data-testid="comment-form" @submit.prevent="send">
-      <input v-model="text" class="form-control form-control-sm" maxlength="500" placeholder="Add a Comment" aria-label="Add a Comment" data-testid="comment-input" />
-      <button class="btn btn-outline-primary btn-sm" :disabled="sending" data-testid="comment-submit-btn">Post</button>
+      <input
+        v-model="text"
+        class="form-control form-control-sm"
+        maxlength="500"
+        placeholder="Add a Comment"
+        aria-label="Add a Comment"
+        data-testid="comment-input"
+      />
+      <button
+        class="btn btn-outline-primary btn-sm"
+        :disabled="sending"
+        data-testid="comment-submit-btn"
+      >
+        Post
+      </button>
     </form>
     <p v-else class="small text-muted mb-0" data-testid="comment-login-prompt">
       <RouterLink to="/login">Log In</RouterLink> to comment.
