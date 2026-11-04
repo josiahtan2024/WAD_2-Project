@@ -41,20 +41,16 @@ const pageSize = 6
 const saved = computed(() => {
   const universities = shortlist.items
     .map((item) => {
-      const university = uni.items.find(
-        (u) => u.id === item.university_id
-      )
+      const university = uni.items.find((u) => u.id === item.university_id)
 
-      return university
-        ? { ...university, shortlistId: item.id }
-        : null
+      return university ? { ...university, shortlistId: item.id } : null
     })
     .filter(Boolean)
     .filter((university) => auth.adminActive || university.published !== false)
 
   const compareName = (a, b) =>
     (a.name ?? '').localeCompare(b.name ?? '', 'en', {
-      sensitivity: 'base'
+      sensitivity: 'base',
     })
 
   return universities.sort((a, b) => {
@@ -63,11 +59,9 @@ const saved = computed(() => {
     }
 
     if (sortBy.value === 'country') {
-      const countryOrder = (a.country ?? '').localeCompare(
-        b.country ?? '',
-        'en',
-        { sensitivity: 'base' }
-      )
+      const countryOrder = (a.country ?? '').localeCompare(b.country ?? '', 'en', {
+        sensitivity: 'base',
+      })
 
       return countryOrder || compareName(a, b)
     }
@@ -93,9 +87,7 @@ function getLogoUrl(path) {
   if (!path) return ''
   if (/^https?:\/\//i.test(path)) return path
   const filePath = path.replace(/^\/?university-logos\//, '')
-  return supabase.storage
-    .from('university-logos')
-    .getPublicUrl(filePath).data.publicUrl
+  return supabase.storage.from('university-logos').getPublicUrl(filePath).data.publicUrl
 }
 
 async function remove(u) {
@@ -109,14 +101,17 @@ async function remove(u) {
   }
 }
 
+function dismissError() {
+  errorMessage.value = ''
+  shortlist.error = null
+  pageError.value = ''
+}
+
 onMounted(async () => {
   pageLoading.value = true
   pageError.value = ''
   try {
-    await Promise.all([
-      uni.items.length ? Promise.resolve() : uni.load(),
-      shortlist.load(),
-    ])
+    await Promise.all([uni.items.length ? Promise.resolve() : uni.load(), shortlist.load()])
   } catch (error) {
     pageError.value = error.message
   } finally {
@@ -131,152 +126,136 @@ onMounted(async () => {
       :data-testid="shortlist.error || pageError ? 'shortlist-error' : undefined"
       :error-message="errorMessage || shortlist.error || pageError"
       :success-message="successMessage"
-      @dismiss-error="errorMessage = ''; shortlist.error = null; pageError = ''"
+      @dismiss-error="dismissError"
       @dismiss-success="successMessage = ''"
     />
     <div class="d-flex flex-column gap-3 mb-3">
-    <h1 class="page-title h3 fw-bold text-center mb-0">Your Shortlist</h1>
+      <h1 class="page-title h3 fw-bold text-center mb-0">Your Shortlist</h1>
 
-    <div class="d-flex justify-content-end align-items-center gap-2">
-      <label for="shortlist-sort" class="visually-hidden">
-        Sort Shortlist
-      </label>
+      <div class="d-flex justify-content-end align-items-center gap-2">
+        <label for="shortlist-sort" class="visually-hidden"> Sort Shortlist </label>
 
-      <select
-        id="shortlist-sort"
-        v-model="sortBy"
-        class="form-select form-select-sm shortlist-sort"
-      >
-        <option value="name">University Name (A–Z)</option>
-        <option value="country">Country (A–Z)</option>
-        <option value="added">Recently Added</option>
-      </select>
-
-    </div>
-  </div>
-<div
-  v-if="pageLoading || shortlist.loading"
-  class="text-muted"
-  data-testid="shortlist-loading"
->
-  Loading shortlist...
-</div>
-
-<p
-  v-else-if="!saved.length && !pageError"
-  class="text-muted text-center"
-  data-testid="shortlist-empty"
->
-  Nothing shortlisted yet.
-  <br />
-  <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
-</p>
-<ul
-  v-else-if="saved.length"
-  class="list-group"
-  data-testid="shortlist-list"
->
-  <li
-    v-for="u in paginatedSaved"
-    :key="u.id"
-    class="list-group-item shortlist-row"
-    data-testid="shortlist-item"
-  >
-    <div class="shortlist-main">
-      <div class="shortlist-logo-box">
-        <img
-          v-if="u.logo_url"
-          :src="getLogoUrl(u.logo_url)"
-          :alt="`${u.name} logo`"
-          class="shortlist-logo"
-          loading="lazy"
-        />
-        <i
-          v-else
-          class="bi bi-mortarboard fs-2 text-muted"
-          aria-hidden="true"
-        ></i>
-      </div>
-
-      <div class="shortlist-info">
-        <div class="shortlist-name">{{ u.name }}</div>
-        <div class="shortlist-location text-muted">
-          {{ u.city }}, {{ u.country }}
-        </div>
-      </div>
-    </div>
-    <div class="shortlist-actions">
-      <RouterLink
-        :to="`/schedule/${u.id}`"
-        class="btn btn-outline-primary"
-        data-testid="shortlist-schedule-link"
-      >
-        Plan Schedule
-      </RouterLink>
-
-      <div class="shortlist-secondary-actions">
-        <RouterLink
-          :to="`/universities/${u.id}`"
-          class="btn btn-outline-secondary"
+        <select
+          id="shortlist-sort"
+          v-model="sortBy"
+          class="form-select form-select-sm shortlist-sort"
         >
-          Details
-        </RouterLink>
-
-        <button
-          class="btn btn-outline-danger"
-          data-testid="shortlist-remove-btn"
-          @click="remove(u)"
-        >
-          Remove
-        </button>
+          <option value="name">University Name (A–Z)</option>
+          <option value="country">Country (A–Z)</option>
+          <option value="added">Recently Added</option>
+        </select>
       </div>
     </div>
-  </li>
-</ul>
+    <div v-if="pageLoading || shortlist.loading" class="text-muted" data-testid="shortlist-loading">
+      Loading shortlist...
+    </div>
 
-<nav
-  v-if="pageCount > 1 && !pageLoading && !shortlist.loading"
-  class="shortlist-pagination mt-4"
-  aria-label="Shortlist pages"
-  data-testid="shortlist-pagination"
->
-  <ul class="pagination justify-content-center flex-wrap mb-0">
-    <li class="page-item" :class="{ disabled: currentPage === 1 }">
-      <button
-        class="page-link"
-        type="button"
-        :disabled="currentPage === 1"
-        aria-label="Previous page"
-        @click="goToPage(currentPage - 1)"
-      >Previous</button>
-    </li>
-    <li
-      v-for="page in pageCount"
-      :key="page"
-      class="page-item"
-      :class="{ active: currentPage === page }"
+    <p
+      v-else-if="!saved.length && !pageError"
+      class="text-muted text-center"
+      data-testid="shortlist-empty"
     >
-      <button
-        class="page-link"
-        type="button"
-        :aria-current="currentPage === page ? 'page' : undefined"
-        :aria-label="`Page ${page}`"
-        @click="goToPage(page)"
-      >{{ page }}</button>
-    </li>
-    <li class="page-item" :class="{ disabled: currentPage === pageCount }">
-      <button
-        class="page-link"
-        type="button"
-        :disabled="currentPage === pageCount"
-        aria-label="Next page"
-        @click="goToPage(currentPage + 1)"
-      >Next</button>
-    </li>
-  </ul>
-</nav>
+      Nothing shortlisted yet.
+      <br />
+      <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
+    </p>
+    <ul v-else-if="saved.length" class="list-group" data-testid="shortlist-list">
+      <li
+        v-for="u in paginatedSaved"
+        :key="u.id"
+        class="list-group-item shortlist-row"
+        data-testid="shortlist-item"
+      >
+        <div class="shortlist-main">
+          <div class="shortlist-logo-box">
+            <img
+              v-if="u.logo_url"
+              :src="getLogoUrl(u.logo_url)"
+              :alt="`${u.name} logo`"
+              class="shortlist-logo"
+              loading="lazy"
+            />
+            <i v-else class="bi bi-mortarboard fs-2 text-muted" aria-hidden="true"></i>
+          </div>
 
+          <div class="shortlist-info">
+            <div class="shortlist-name">{{ u.name }}</div>
+            <div class="shortlist-location text-muted">{{ u.city }}, {{ u.country }}</div>
+          </div>
+        </div>
+        <div class="shortlist-actions">
+          <RouterLink
+            :to="`/schedule/${u.id}`"
+            class="btn btn-outline-primary"
+            data-testid="shortlist-schedule-link"
+          >
+            Plan Schedule
+          </RouterLink>
 
+          <div class="shortlist-secondary-actions">
+            <RouterLink :to="`/universities/${u.id}`" class="btn btn-outline-secondary">
+              Details
+            </RouterLink>
+
+            <button
+              class="btn btn-outline-danger"
+              data-testid="shortlist-remove-btn"
+              @click="remove(u)"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <nav
+      v-if="pageCount > 1 && !pageLoading && !shortlist.loading"
+      class="shortlist-pagination mt-4"
+      aria-label="Shortlist pages"
+      data-testid="shortlist-pagination"
+    >
+      <ul class="pagination justify-content-center flex-wrap mb-0">
+        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+          <button
+            class="page-link"
+            type="button"
+            :disabled="currentPage === 1"
+            aria-label="Previous page"
+            @click="goToPage(currentPage - 1)"
+          >
+            Previous
+          </button>
+        </li>
+        <li
+          v-for="page in pageCount"
+          :key="page"
+          class="page-item"
+          :class="{ active: currentPage === page }"
+        >
+          <button
+            class="page-link"
+            type="button"
+            :aria-current="currentPage === page ? 'page' : undefined"
+            :aria-label="`Page ${page}`"
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage === pageCount }">
+          <button
+            class="page-link"
+            type="button"
+            :disabled="currentPage === pageCount"
+            aria-label="Next page"
+            @click="goToPage(currentPage + 1)"
+          >
+            Next
+          </button>
+        </li>
+      </ul>
+    </nav>
   </section>
 </template>
 
@@ -393,7 +372,6 @@ onMounted(async () => {
   .shortlist-name {
     font-size: 1.1rem;
   }
-
 }
 
 .shortlist-sort {

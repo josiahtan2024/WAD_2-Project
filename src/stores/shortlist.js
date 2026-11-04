@@ -5,10 +5,12 @@ import { useUniversitiesStore } from '@/stores/universities'
 
 function getUserId() {
   const user = useAuthStore().user
-  if (!user) {throw new Error('User not logged in')}
+  if (!user) {
+    throw new Error('User not logged in')
+  }
   return user.id
 }
-  
+
 export const useShortlistStore = defineStore('shortlist', {
   state: () => ({ items: [], loading: false, saving: false, error: null }),
   actions: {
@@ -23,8 +25,9 @@ export const useShortlistStore = defineStore('shortlist', {
           .eq('user_id', userId)
           .order('id', { ascending: true })
         if (error) throw error
-        if(useAuthStore().user?.id !== userId)return
-        this.items= data??[]}catch (error) {
+        if (useAuthStore().user?.id !== userId) return
+        this.items = data ?? []
+      } catch (error) {
         this.error = error.message
         throw error
       } finally {
@@ -33,7 +36,7 @@ export const useShortlistStore = defineStore('shortlist', {
     },
     /** @param {number|string} universityId */
     async add(universityId) {
-      if(this.saving) return
+      if (this.saving) return
       this.saving = true
       this.error = null
       try {
@@ -48,10 +51,11 @@ export const useShortlistStore = defineStore('shortlist', {
           .insert({ user_id: userId, university_id: universityId })
           .select('id, user_id, university_id')
           .single()
-        if(useAuthStore().user?.id !== userId)return
+        if (useAuthStore().user?.id !== userId) return
         if (error?.code === '23505') {
           await this.load()
-          return}
+          return
+        }
         if (error) throw error
         if (!this.items.some((item) => item.id === data.id)) {
           this.items.push(data)
@@ -65,7 +69,7 @@ export const useShortlistStore = defineStore('shortlist', {
     },
     /** @param {number|string} universityId */
     async remove(universityId) {
-      if(this.saving) return
+      if (this.saving) return
       this.saving = true
       this.error = null
       try {
@@ -76,9 +80,9 @@ export const useShortlistStore = defineStore('shortlist', {
           .eq('user_id', userId)
           .eq('university_id', universityId)
           .select('id')
-        if(error) throw error
-        if(useAuthStore().user?.id !== userId)return
-        if (!data?.length){
+        if (error) throw error
+        if (useAuthStore().user?.id !== userId) return
+        if (!data?.length) {
           throw new Error('No item found to remove')
         }
         this.items = this.items.filter((item) => item.university_id !== universityId)

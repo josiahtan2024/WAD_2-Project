@@ -9,16 +9,8 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 
 <template>
   <Transition name="notice">
-    <div
-      v-if="errorMessage || successMessage"
-      class="notice-wrap"
-      aria-live="polite"
-    >
-      <div
-        v-if="errorMessage"
-        class="notice notice-error card border-0 shadow-lg"
-        role="alert"
-      >
+    <div v-if="errorMessage || successMessage" class="notice-wrap" aria-live="polite">
+      <div v-if="errorMessage" class="notice notice-error card border-0 shadow-lg" role="alert">
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
           <div class="notice-icon notice-icon-error" aria-hidden="true">!</div>
           <div class="flex-grow-1">
@@ -26,15 +18,16 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
             <p class="mb-0">{{ errorMessage }}</p>
             <slot name="actions" />
           </div>
-          <button type="button" class="btn-close" aria-label="Dismiss error message" @click="emit('dismiss-error')"></button>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="Dismiss error message"
+            @click="emit('dismiss-error')"
+          ></button>
         </div>
       </div>
 
-      <div
-        v-else
-        class="notice notice-success card border-0 shadow-lg"
-        role="status"
-      >
+      <div v-else class="notice notice-success card border-0 shadow-lg" role="status">
         <div class="card-body d-flex align-items-start gap-3 p-3 p-md-4">
           <div class="notice-icon notice-icon-success" aria-hidden="true">✓</div>
           <div class="flex-grow-1">
@@ -42,7 +35,13 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
             <p class="mb-0" data-testid="notice-success-message">{{ successMessage }}</p>
             <slot name="actions" />
           </div>
-          <button type="button" class="btn-close" aria-label="Dismiss success message" data-testid="notice-dismiss-success" @click="emit('dismiss-success')"></button>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="Dismiss success message"
+            data-testid="notice-dismiss-success"
+            @click="emit('dismiss-success')"
+          ></button>
         </div>
       </div>
     </div>
@@ -67,9 +66,15 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
   animation: notice-enter 180ms ease-out;
 }
 
-.notice .card-body { background: #fff; }
-.notice-error { border-left: 5px solid #dc3545 !important; }
-.notice-success { border-left: 5px solid #198754 !important; }
+.notice .card-body {
+  background: #fff;
+}
+.notice-error {
+  border-left: 5px solid #dc3545 !important;
+}
+.notice-success {
+  border-left: 5px solid #198754 !important;
+}
 
 .notice-icon {
   width: 2.25rem;
@@ -83,13 +88,26 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
   font-weight: 800;
 }
 
-.notice-icon-error { background: #fce8ea; color: #b02a37; }
-.notice-icon-success { background: #dff4e7; color: #146c43; }
+.notice-icon-error {
+  background: #fce8ea;
+  color: #b02a37;
+}
+.notice-icon-success {
+  background: #dff4e7;
+  color: #146c43;
+}
 
 .notice-enter-active,
-.notice-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
+.notice-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
 .notice-enter-from,
-.notice-leave-to { opacity: 0; transform: translateY(-0.5rem); }
+.notice-leave-to {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
 
 @media (max-width: 991.98px) {
   .notice-wrap {
@@ -99,7 +117,13 @@ const emit = defineEmits(['dismiss-error', 'dismiss-success'])
 }
 
 @keyframes notice-enter {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

@@ -4,17 +4,25 @@ import { login } from './helpers'
 // Needs an account whose app_metadata has role = admin (see README, "Admin accounts").
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim()
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim()
-const hasAdminCredentials = ADMIN_EMAIL && ADMIN_PASSWORD &&
-  ADMIN_EMAIL.toLowerCase() !== 'undefined' && ADMIN_PASSWORD.toLowerCase() !== 'undefined'
+const hasAdminCredentials = Boolean(
+  ADMIN_EMAIL &&
+  ADMIN_PASSWORD &&
+  ADMIN_EMAIL.toLowerCase() !== 'undefined' &&
+  ADMIN_PASSWORD.toLowerCase() !== 'undefined'
+)
 
 async function loginAsAdmin(page) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  }
+
   await page.goto('/login')
   await page.getByTestId('login-email-input').fill(ADMIN_EMAIL)
   await page.getByTestId('login-password-input').fill(ADMIN_PASSWORD)
   await page.getByTestId('login-submit-btn').click()
   const loggedIn = page.getByTestId('nav-logout-btn')
   const loginError = page.getByTestId('login-error')
-  await expect(loggedIn.or(loginError)).toBeVisible()
+  await expect(loggedIn.or(loginError)).toHaveCount(1)
   if (await loginError.isVisible()) {
     throw new Error(`Admin login failed: ${await loginError.innerText()}`)
   }
@@ -26,22 +34,21 @@ async function openFirstUniversity(page) {
   await expect(page.getByTestId('university-page')).toBeVisible()
 }
 
-test.describe('students', () => {
-  test('see no staff controls', async ({ page }) => {
-    await login(page)
-    await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
-    await expect(page.getByTestId('admin-bar')).toHaveCount(0)
-    await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await page.goto('/universities')
-    await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
-    await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
-  })
+test('students do not see staff controls', async ({ page }) => {
+  await login(page)
+  await openFirstUniversity(page)
+  await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
+  await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
+  await expect(page.getByTestId('admin-bar')).toHaveCount(0)
+  await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
+  await page.goto('/universities')
+  await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
+  await expect(page.getByTestId('university-card-edit')).toHaveCount(0)
 })
 
 test.describe('admins', () => {
   test.skip(!hasAdminCredentials, 'set valid ADMIN_EMAIL and ADMIN_PASSWORD to run the admin tests')
+  /** @type {{ id: number, name: string } | null} */
   let createdUniversity = null
 
   test.afterEach(async ({ page }) => {
@@ -65,15 +72,17 @@ test.describe('admins', () => {
   test('see the staff controls and can switch to the student view', async ({ page }) => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     await expect(page.getByTestId('admin-edit-cost')).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-badge')).toBeVisible()
+    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
 
+    await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })

@@ -18,9 +18,11 @@ const auth = useAuthStore()
 const router = useRouter()
 const adminSection = ref(null)
 const showHidden = ref(true)
-const availableUniversities = computed(() => uni.items.filter((university) =>
-  university.published !== false || (auth.adminActive && showHidden.value)
-))
+const availableUniversities = computed(() =>
+  uni.items.filter(
+    (university) => university.published !== false || (auth.adminActive && showHidden.value)
+  )
+)
 
 // Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
 function getMonthlyCostSGD(university) {
@@ -44,41 +46,39 @@ function getMonthlyCostSGD(university) {
 const results = computed(() => {
   const keyword = uni.query.trim().toLowerCase()
   const filtered = availableUniversities.value.filter((university) => {
-    const fields = [
-      university.name,
-      university.country,
-      university.city,
-    ]
- 
-    const matchesKeyword = fields.some((value) => 
-        String(value ?? '').toLowerCase().includes(keyword))
-    
+    const fields = [university.name, university.country, university.city]
+
+    const matchesKeyword = fields.some((value) =>
+      String(value ?? '')
+        .toLowerCase()
+        .includes(keyword)
+    )
+
     const matchesRegion = !uni.filters.region || university.region === uni.filters.region
     return matchesKeyword && matchesRegion
   })
 
   return filtered.sort((a, b) => {
-  if (uni.sortBy === 'country') {
-    const countryOrder = (a.country ?? '').localeCompare(
-      b.country ?? ''
-    )
+    if (uni.sortBy === 'country') {
+      const countryOrder = (a.country ?? '').localeCompare(b.country ?? '')
 
-    if (countryOrder !== 0) return countryOrder
-  }
+      if (countryOrder !== 0) return countryOrder
+    }
 
-  if (uni.sortBy === 'cost') {
-    const costA = getMonthlyCostSGD(a)
-    const costB = getMonthlyCostSGD(b)
+    if (uni.sortBy === 'cost') {
+      const costA = getMonthlyCostSGD(a)
+      const costB = getMonthlyCostSGD(b)
 
-    if (costA < costB) return -1
-    if (costA > costB) return 1
-  }
+      if (costA < costB) return -1
+      if (costA > costB) return 1
+    }
 
-  return a.name.localeCompare(b.name)
+    return a.name.localeCompare(b.name)
+  })
 })
-
-})
-const regions = computed(() => Array.from(new Set(availableUniversities.value.map((u) => u.region))).sort())
+const regions = computed(() =>
+  Array.from(new Set(availableUniversities.value.map((u) => u.region))).sort()
+)
 const currentPage = ref(1)
 const pageSize = 6
 const pageCount = computed(() => Math.ceil(results.value.length / pageSize))
@@ -87,9 +87,12 @@ const pageResults = computed(() => {
   return results.value.slice(start, start + pageSize)
 })
 
-watch(() => [uni.query, uni.filters.region, uni.sortBy], () => {
-  currentPage.value = 1
-})
+watch(
+  () => [uni.query, uni.filters.region, uni.sortBy],
+  () => {
+    currentPage.value = 1
+  }
+)
 
 watch(pageCount, (count) => {
   if (count > 0 && currentPage.value > count) currentPage.value = count
@@ -131,56 +134,142 @@ onMounted(async () => {
 
 <template>
   <Notice
-    :data-testid="shortlist.error ? 'shortlist-error' : uni.error ? 'universities-error' : exchangeRates.error ? 'exchange-rates-error' : undefined"
-    :error-message="shortlist.error || (uni.error ? `Could not load partner universities: ${uni.error}` : exchangeRates.error ? 'Unable to load SGD exchange rates.' : '')"
-    @dismiss-error="shortlist.error ? shortlist.error = null : uni.error ? uni.error = null : exchangeRates.error = null"
+    :data-testid="
+      shortlist.error
+        ? 'shortlist-error'
+        : uni.error
+          ? 'universities-error'
+          : exchangeRates.error
+            ? 'exchange-rates-error'
+            : undefined
+    "
+    :error-message="
+      shortlist.error ||
+      (uni.error
+        ? `Could not load partner universities: ${uni.error}`
+        : exchangeRates.error
+          ? 'Unable to load SGD exchange rates.'
+          : '')
+    "
+    @dismiss-error="
+      shortlist.error
+        ? (shortlist.error = null)
+        : uni.error
+          ? (uni.error = null)
+          : (exchangeRates.error = null)
+    "
   >
     <template #actions>
-      <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
+      <button
+        v-if="exchangeRates.error && !shortlist.error && !uni.error"
+        class="btn btn-link btn-sm px-0"
+        type="button"
+        @click="exchangeRates.load()"
+      >
+        Retry
+      </button>
     </template>
   </Notice>
   <section class="container py-4 mb-5" data-testid="universities-page">
     <h1 class="page-title h3 fw-bold text-center mb-3">Partner Universities</h1>
     <template v-if="auth.adminActive">
-      <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">
+      <div
+        class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3"
+        data-testid="admin-list-tools"
+      >
         <div class="form-check mb-0">
-          <input id="show-hidden" v-model="showHidden" class="form-check-input" type="checkbox" data-testid="admin-show-hidden" />
+          <input
+            id="show-hidden"
+            v-model="showHidden"
+            class="form-check-input"
+            type="checkbox"
+            data-testid="admin-show-hidden"
+          />
           <label class="form-check-label" for="show-hidden">Show Hidden Universities</label>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" data-testid="admin-add-university" @click="adminSection = 'create'">
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          data-testid="admin-add-university"
+          @click="adminSection = 'create'"
+        >
           <i class="bi bi-plus-lg" aria-hidden="true"></i> Add University
         </button>
       </div>
       <AdminEditor v-model:section="adminSection" @created="openCreated" />
     </template>
-    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
+    <FilterBar
+      v-model:query="uni.query"
+      v-model:region="uni.filters.region"
+      v-model:sort-by="uni.sortBy"
+      :regions="regions"
+      :result-count="results.length"
+      :total-count="availableUniversities.length"
+    />
 
-    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading partner universities...</div>
-    <p v-else-if="!uni.error && !results.length" class="text-muted" data-testid="universities-empty">No partner universities match your search.</p>
+    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">
+      Loading partner universities...
+    </div>
+    <p
+      v-else-if="!uni.error && !results.length"
+      class="text-muted"
+      data-testid="universities-empty"
+    >
+      No partner universities match your search.
+    </p>
     <div v-else-if="!uni.error" class="row g-3" data-testid="universities-grid">
       <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
-        <UniversityCard 
-        :university="u" 
-        :shortlisted="isShortlisted(u.id)" 
-        :selected-region="uni.filters.region" 
-        @toggle-shortlist="toggle" />
+        <UniversityCard
+          :university="u"
+          :shortlisted="isShortlisted(u.id)"
+          :selected-region="uni.filters.region"
+          @toggle-shortlist="toggle"
+        />
       </div>
     </div>
 
-    <nav v-if="pageCount > 1" class="university-pagination mt-4" aria-label="University list pages" data-testid="universities-pagination">
+    <nav
+      v-if="pageCount > 1"
+      class="university-pagination mt-4"
+      aria-label="University list pages"
+      data-testid="universities-pagination"
+    >
       <ul class="pagination justify-content-center flex-wrap mb-0">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
+          <button
+            class="page-link"
+            type="button"
+            :disabled="currentPage === 1"
+            aria-label="Previous page"
+            @click="currentPage--"
+          >
             Previous
           </button>
         </li>
-        <li v-for="page in pageCount" :key="page" class="page-item" :class="{ active: currentPage === page }">
-          <button class="page-link" type="button" :aria-current="currentPage === page ? 'page' : undefined" :aria-label="`Page ${page}`" @click="currentPage = page">
+        <li
+          v-for="page in pageCount"
+          :key="page"
+          class="page-item"
+          :class="{ active: currentPage === page }"
+        >
+          <button
+            class="page-link"
+            type="button"
+            :aria-current="currentPage === page ? 'page' : undefined"
+            :aria-label="`Page ${page}`"
+            @click="currentPage = page"
+          >
             {{ page }}
           </button>
         </li>
         <li class="page-item" :class="{ disabled: currentPage === pageCount }">
-          <button class="page-link" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
+          <button
+            class="page-link"
+            type="button"
+            :disabled="currentPage === pageCount"
+            aria-label="Next page"
+            @click="currentPage++"
+          >
             Next
           </button>
         </li>

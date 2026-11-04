@@ -80,10 +80,12 @@ function draw() {
 
   props.universities.forEach((u) => {
     if (
-      u.lat == null || u.long == null ||
+      u.lat == null ||
+      u.long == null ||
       String(u.lat).trim() === '' ||
       String(u.long).trim() === ''
-    ) return
+    )
+      return
 
     const lat = Number(u.lat)
     const lng = Number(u.long)
@@ -91,17 +93,18 @@ function draw() {
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
-      lat < -90 || lat > 90 ||
-      lng < -180 || lng > 180
-    ) return
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    )
+      return
 
     const tooltip = document.createElement('span')
     tooltip.textContent = u.name ?? ''
 
     const marker = L.marker([lat, lng], {
-      icon: createUniversityIcon(
-        String(u.id) === String(props.selectedId)
-      ),
+      icon: createUniversityIcon(String(u.id) === String(props.selectedId)),
     })
       .bindTooltip(tooltip)
       .on('click', () => emit('select', u))
@@ -117,17 +120,22 @@ onMounted(() => {
   map = L.map(el.value, {
     minZoom: 2,
     worldCopyJump: true,
-    dragging: !L.Browser.mobile,
-    zoomControl: !L.Browser.mobile
+    dragging: true,
+    zoomControl: false,
+    touchZoom: true,
   }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
+
+  L.control.zoom().addTo(map).getContainer().setAttribute('data-testid', 'map-zoom-controls')
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map)
 
-  L.control.scale({
-    metric: true,
-    imperial: true,
-    position: 'bottomleft'
-  }).addTo(map)
+  L.control
+    .scale({
+      metric: true,
+      imperial: true,
+      position: 'bottomleft',
+    })
+    .addTo(map)
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 70,
@@ -164,11 +172,7 @@ watch(
   }
 )
 
-watch(
-  () => props.universities,
-  draw,
-  { deep: true }
-)
+watch(() => props.universities, draw, { deep: true })
 </script>
 
 <template>
@@ -177,6 +181,7 @@ watch(
 
     <button
       type="button"
+      data-testid="map-reset-button"
       class="map-reset-button"
       @click="resetMap"
       aria-label="Reset map to world view"

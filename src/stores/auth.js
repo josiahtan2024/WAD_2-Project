@@ -61,11 +61,9 @@ export const useAuthStore = defineStore('auth', {
 
         try {
           if (!authSubscription) {
-            const { data } = supabase.auth.onAuthStateChange(
-              (_event, session) => {
-                this.setUser(session?.user ?? null)
-              }
-            )
+            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+              this.setUser(session?.user ?? null)
+            })
 
             authSubscription = data.subscription
           }
@@ -76,7 +74,6 @@ export const useAuthStore = defineStore('auth', {
 
           this.setUser(data.session?.user ?? null)
           this.initialized = true
-
         } catch (error) {
           this.error = error.message
 
@@ -123,11 +120,10 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const { data, error } =
-          await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          })
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        })
 
         if (error) throw error
 

@@ -17,7 +17,10 @@ defineProps({
   formatMoney: { type: Function, required: true },
   formatDate: { type: Function, required: true },
 })
-const selectedUniversityId = defineModel('selectedUniversityId', { type: [String, Number], default: '' })
+const selectedUniversityId = defineModel('selectedUniversityId', {
+  type: [String, Number],
+  default: '',
+})
 const selectedPeriodId = defineModel('selectedPeriodId', { type: [String, Number], default: '' })
 const durationMonths = defineModel('durationMonths', { type: [String, Number], default: 1 })
 const housingType = defineModel('housingType', { type: String, default: '' })
@@ -28,379 +31,322 @@ const food = defineModel('food', { type: [String, Number], default: 0 })
 const transport = defineModel('transport', { type: [String, Number], default: 0 })
 const personalExpenses = defineModel('personalExpenses', { type: [String, Number], default: 0 })
 const otherExpenses = defineModel('otherExpenses', { type: [String, Number], default: 0 })
-const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-price', 'update-transport-price'])
+const emit = defineEmits([
+  'submit',
+  'update-accommodation-price',
+  'update-food-price',
+  'update-transport-price',
+])
 </script>
 
 <template>
-<form @submit.prevent="emit('submit')">
-                <div class="mb-4">
-                  <label for="university" class="form-label fw-semibold">
-                    Destination University
-                  </label>
+  <form @submit.prevent="emit('submit')">
+    <div class="mb-4">
+      <label for="university" class="form-label fw-semibold"> Destination University </label>
 
-                  <select
-                    id="university"
-                    data-testid="budget-university-select"
-                    v-model="selectedUniversityId"
-                    class="form-select form-select-lg"
-                  >
-                    <option value="">Select a University</option>
+      <select
+        id="university"
+        data-testid="budget-university-select"
+        v-model="selectedUniversityId"
+        class="form-select form-select-lg"
+      >
+        <option value="">Select a University</option>
 
-                    <option
-                      v-for="university in universities"
-                      :key="university.id"
-                      :value="String(university.id)"
-                    >
-                      {{ university.name }} — {{ university.country }}
-                    </option>
-                  </select>
+        <option
+          v-for="university in universities"
+          :key="university.id"
+          :value="String(university.id)"
+        >
+          {{ university.name }} — {{ university.country }}
+        </option>
+      </select>
 
-                  <div
-                    v-if="selectedUniversity"
-                    class="small text-secondary mt-2"
-                  >
-                    <span v-if="selectedUniversity.city">
-                      {{ selectedUniversity.city }},
-                    </span>
+      <div v-if="selectedUniversity" class="small text-secondary mt-2">
+        <span v-if="selectedUniversity.city"> {{ selectedUniversity.city }}, </span>
 
-                    {{ selectedUniversity.country }}
+        {{ selectedUniversity.country }}
 
-                    <span v-if="selectedUniversity.region">
-                      · {{ selectedUniversity.region }}
-                    </span>
-                  </div>
-                </div>
+        <span v-if="selectedUniversity.region"> · {{ selectedUniversity.region }} </span>
+      </div>
+    </div>
 
-                <div class="mb-4">
-                  <label for="exchangePeriod" class="form-label fw-semibold">
-                    Exchange Period
-                    <span class="optional-label">(Optional)</span>
-                  </label>
+    <div class="mb-4">
+      <label for="exchangePeriod" class="form-label fw-semibold">
+        Exchange Period
+        <span class="optional-label">(Optional)</span>
+      </label>
 
-                  <select
-                    id="exchangePeriod"
-                    v-model="selectedPeriodId"
-                    class="form-select form-select-lg"
-                    :disabled="!selectedUniversityId || exchangePeriods.length === 0"
-                  >
-                    <option value="">Select a Period (Optional)</option>
+      <select
+        id="exchangePeriod"
+        v-model="selectedPeriodId"
+        class="form-select form-select-lg"
+        :disabled="!selectedUniversityId || exchangePeriods.length === 0"
+      >
+        <option value="">Select a Period (Optional)</option>
 
-                    <option
-                      v-for="period in exchangePeriods"
-                      :key="period.id"
-                      :value="String(period.id)"
-                    >
-                      {{ period.period_name }}
-                      <template v-if="period.term">
-                        — {{ period.term }}
-                      </template>
-                      <template v-if="period.academic_year">
-                        ({{ period.academic_year }})
-                      </template>
-                    </option>
-                  </select>
+        <option v-for="period in exchangePeriods" :key="period.id" :value="String(period.id)">
+          {{ period.period_name }}
+          <template v-if="period.term"> — {{ period.term }} </template>
+          <template v-if="period.academic_year"> ({{ period.academic_year }}) </template>
+        </option>
+      </select>
 
-                  <div
-                    v-if="selectedPeriod"
-                    class="period-details rounded-3 p-3 mt-3"
-                  >
-                    <div class="mb-3">
-                      <div class="small text-secondary">Exchange dates</div>
-                      <div class="fw-semibold">
-                        {{ formatDate(selectedPeriod.start_date) }}
-                        –
-                        {{ formatDate(selectedPeriod.end_date) }}
-                      </div>
-                    </div>
+      <div v-if="selectedPeriod" class="period-details rounded-3 p-3 mt-3">
+        <div class="mb-3">
+          <div class="small text-secondary">Exchange dates</div>
+          <div class="fw-semibold">
+            {{ formatDate(selectedPeriod.start_date) }}
+            –
+            {{ formatDate(selectedPeriod.end_date) }}
+          </div>
+        </div>
 
-                    <div>
-                      <div class="small text-secondary">
-                        Calculated duration
-                      </div>
-                      <div class="fw-semibold">
-                        {{ durationMonths }}
-                        month<span v-if="Number(durationMonths) !== 1">s</span>
-                      </div>
-                    </div>
+        <div>
+          <div class="small text-secondary">Calculated duration</div>
+          <div class="fw-semibold">
+            {{ durationMonths }}
+            month<span v-if="Number(durationMonths) !== 1">s</span>
+          </div>
+        </div>
 
-                    <p class="small text-secondary mt-2 mb-0">
-                      Duration updates automatically from the selected dates.
-                      You can adjust it below.
-                    </p>
-                  </div>
+        <p class="small text-secondary mt-2 mb-0">
+          Duration updates automatically from the selected dates. You can adjust it below.
+        </p>
+      </div>
 
-                  <p
-                    v-else-if="selectedUniversityId && exchangePeriods.length === 0"
-                    class="form-text"
-                  >
-                    No exchange periods are available for this university.
-                    You can enter the duration manually.
-                  </p>
-                </div>
+      <p v-else-if="selectedUniversityId && exchangePeriods.length === 0" class="form-text">
+        No exchange periods are available for this university. You can enter the duration manually.
+      </p>
+    </div>
 
-                <div class="mb-4">
-                  <label for="duration" class="form-label fw-semibold">
-                    Exchange Duration (Months)
-                  </label>
+    <div class="mb-4">
+      <label for="duration" class="form-label fw-semibold"> Exchange Duration (Months) </label>
 
-                  <input
-                    id="duration"
-                    data-testid="budget-duration-input"
-                    v-model.number="durationMonths"
-                    type="number"
-                    class="form-control form-control-lg"
-                    min="1"
-                    max="12"
-                    step="1"
-                    required
-                  />
+      <input
+        id="duration"
+        data-testid="budget-duration-input"
+        v-model.number="durationMonths"
+        type="number"
+        class="form-control form-control-lg"
+        min="1"
+        max="12"
+        step="1"
+        required
+      />
 
-                  <div class="form-text">
-                    Choose an exchange period to calculate the duration
-                    automatically, or enter the duration yourself.
-                  </div>
-                </div>
+      <div class="form-text">
+        Choose an exchange period to calculate the duration automatically, or enter the duration
+        yourself.
+      </div>
+    </div>
 
-                <hr class="my-4" />
+    <hr class="my-4" />
 
-                <div class="mb-4">
-                  <h3 class="h5 fw-bold mb-1">Monthly Expenses</h3>
+    <div class="mb-4">
+      <h3 class="h5 fw-bold mb-1">Monthly Expenses</h3>
 
-                  <p class="small text-secondary mb-0">
-                    All lifestyle dropdowns are optional. Leave them blank
-                    and enter your own amounts if you prefer.
-                  </p>
-                </div>
+      <p class="small text-secondary mb-0">
+        All lifestyle dropdowns are optional. Leave them blank and enter your own amounts if you
+        prefer.
+      </p>
+    </div>
 
-                <div class="mb-3">
-                  <label for="housingType" class="form-label fw-semibold">
-                    Accommodation Type
-                    <span class="optional-label">(Optional)</span>
-                  </label>
+    <div class="mb-3">
+      <label for="housingType" class="form-label fw-semibold">
+        Accommodation Type
+        <span class="optional-label">(Optional)</span>
+      </label>
 
-                  <select
-                    id="housingType"
-                    v-model="housingType"
-                    class="form-select form-select-lg"
-                    @change="emit('update-accommodation-price')"
-                  >
-                    <option value="">Select Accommodation (Optional)</option>
+      <select
+        id="housingType"
+        v-model="housingType"
+        class="form-select form-select-lg"
+        @change="emit('update-accommodation-price')"
+      >
+        <option value="">Select Accommodation (Optional)</option>
 
-                    <option
-                      v-for="option in housingOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
+        <option v-for="option in housingOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
 
-                <div class="mb-4">
-                  <label for="accommodation" class="form-label">
-                    Monthly Accommodation Cost
-                  </label>
+    <div class="mb-4">
+      <label for="accommodation" class="form-label"> Monthly Accommodation Cost </label>
 
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text">{{ currencyCode }}</span>
 
-                    <input
-                      id="accommodation"
-                      data-testid="budget-accommodation-input"
-                      v-model.number="accommodation"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
+        <input
+          id="accommodation"
+          data-testid="budget-accommodation-input"
+          v-model.number="accommodation"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+    </div>
 
-                </div>
+    <div class="mb-3">
+      <label for="foodOption" class="form-label fw-semibold">
+        Food Preference
+        <span class="optional-label">(Optional)</span>
+      </label>
 
-                <div class="mb-3">
-                  <label for="foodOption" class="form-label fw-semibold">
-                    Food Preference
-                    <span class="optional-label">(Optional)</span>
-                  </label>
+      <select
+        id="foodOption"
+        v-model="foodOption"
+        class="form-select form-select-lg"
+        @change="emit('update-food-price')"
+      >
+        <option value="">Select Food Preference (Optional)</option>
 
-                  <select
-                    id="foodOption"
-                    v-model="foodOption"
-                    class="form-select form-select-lg"
-                    @change="emit('update-food-price')"
-                  >
-                    <option value="">Select Food Preference (Optional)</option>
+        <option v-for="option in foodOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
 
-                    <option
-                      v-for="option in foodOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
+    <div class="mb-4">
+      <label for="food" class="form-label"> Monthly Food and Groceries Cost </label>
 
-                <div class="mb-4">
-                  <label for="food" class="form-label">
-                    Monthly Food and Groceries Cost
-                  </label>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text">{{ currencyCode }}</span>
 
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
+        <input
+          id="food"
+          data-testid="budget-food-input"
+          v-model.number="food"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+    </div>
 
-                    <input
-                      id="food"
-                      data-testid="budget-food-input"
-                      v-model.number="food"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
+    <div class="mb-3">
+      <label for="transportOption" class="form-label fw-semibold">
+        Transport Method
+        <span class="optional-label">(Optional)</span>
+      </label>
 
-                <div class="mb-3">
-                  <label for="transportOption" class="form-label fw-semibold">
-                    Transport Method
-                    <span class="optional-label">(Optional)</span>
-                  </label>
+      <select
+        id="transportOption"
+        v-model="transportOption"
+        class="form-select form-select-lg"
+        @change="emit('update-transport-price')"
+      >
+        <option value="">Select Transport (Optional)</option>
 
-                  <select
-                    id="transportOption"
-                    v-model="transportOption"
-                    class="form-select form-select-lg"
-                    @change="emit('update-transport-price')"
-                  >
-                    <option value="">Select Transport (Optional)</option>
+        <option v-for="option in transportOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
 
-                    <option
-                      v-for="option in transportOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
+    <div class="mb-4">
+      <label for="transport" class="form-label"> Monthly Transport Cost </label>
 
-                <div class="mb-4">
-                  <label for="transport" class="form-label">
-                    Monthly Transport Cost
-                  </label>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text">{{ currencyCode }}</span>
 
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
+        <input
+          id="transport"
+          data-testid="budget-transport-input"
+          v-model.number="transport"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+    </div>
 
-                    <input
-                      id="transport"
-                      data-testid="budget-transport-input"
-                      v-model.number="transport"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
+    <div class="mb-3">
+      <label for="personalExpenses" class="form-label"> Personal Expenses </label>
 
-                <div class="mb-3">
-                  <label for="personalExpenses" class="form-label">
-                    Personal Expenses
-                  </label>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text">{{ currencyCode }}</span>
 
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
+        <input
+          id="personalExpenses"
+          data-testid="budget-personal-input"
+          v-model.number="personalExpenses"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+    </div>
 
-                    <input
-                      id="personalExpenses"
-                      data-testid="budget-personal-input"
-                      v-model.number="personalExpenses"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
+    <div class="mb-4">
+      <label for="otherExpenses" class="form-label"> Other Expenses </label>
 
-                <div class="mb-4">
-                  <label for="otherExpenses" class="form-label">
-                    Other Expenses
-                  </label>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text">{{ currencyCode }}</span>
 
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text">{{ currencyCode }}</span>
+        <input
+          id="otherExpenses"
+          data-testid="budget-other-input"
+          v-model.number="otherExpenses"
+          type="number"
+          class="form-control"
+          min="0"
+          step="0.01"
+          required
+        />
+      </div>
+    </div>
 
-                    <input
-                      id="otherExpenses"
-                      data-testid="budget-other-input"
-                      v-model.number="otherExpenses"
-                      type="number"
-                      class="form-control"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
+    <div class="form-total rounded-3 p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+        <span class="text-secondary">Monthly total</span>
+        <strong>{{ formatMoney(monthlyBudget) }}</strong>
+      </div>
 
-                <div class="form-total rounded-3 p-3 mb-4">
-                  <div
-                    class="d-flex justify-content-between align-items-center gap-3 mb-2"
-                  >
-                    <span class="text-secondary">Monthly total</span>
-                    <strong>{{ formatMoney(monthlyBudget) }}</strong>
-                  </div>
+      <div class="d-flex justify-content-between align-items-center gap-3">
+        <span class="fw-semibold">Total for exchange</span>
+        <strong class="fs-5 text-primary text-end">
+          {{ formatMoney(totalExchangeBudget) }}
+        </strong>
+      </div>
 
-                  <div
-                    class="d-flex justify-content-between align-items-center gap-3"
-                  >
-                    <span class="fw-semibold">Total for exchange</span>
-                    <strong class="fs-5 text-primary text-end">
-                      {{ formatMoney(totalExchangeBudget) }}
-                    </strong>
-                  </div>
+      <div
+        v-if="totalBudgetSGD !== null && currencyCode !== 'SGD'"
+        class="d-flex justify-content-between align-items-center gap-3 mt-2"
+      >
+        <span class="small text-secondary"> Approximate total in SGD </span>
 
-                  <div
-                    v-if="totalBudgetSGD !== null && currencyCode !== 'SGD'"
-                    class="d-flex justify-content-between align-items-center gap-3 mt-2"
-                  >
-                    <span class="small text-secondary">
-                      Approximate total in SGD
-                    </span>
+        <strong class="small">
+          {{ formatMoney(totalBudgetSGD, 'SGD') }}
+        </strong>
+      </div>
+    </div>
 
-                    <strong class="small">
-                      {{ formatMoney(totalBudgetSGD, 'SGD') }}
-                    </strong>
-                  </div>
-                </div>
+    <button
+      type="submit"
+      class="btn btn-primary btn-lg w-100"
+      data-testid="budget-submit-button"
+      :disabled="saving || !validBudget"
+    >
+      <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
 
-                <button
-                  type="submit"
-                  class="btn btn-primary btn-lg w-100"
-                  data-testid="budget-submit-button"
-                  :disabled="saving || !validBudget"
-                >
-                  <span
-                    v-if="saving"
-                    class="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  ></span>
+      {{ saving ? 'Saving Budget...' : editingBudgetId ? 'Update Budget' : 'Create Budget' }}
+    </button>
 
-                  {{ saving ? 'Saving Budget...' : (editingBudgetId ? 'Update Budget' : 'Create Budget') }}
-                </button>
-
-                <p class="small text-secondary text-center mt-3 mb-0">
-                  Choose a destination university before saving. Exchange
-                  period and lifestyle preferences can remain blank.
-                </p>
-              </form>
+    <p class="small text-secondary text-center mt-3 mb-0">
+      Choose a destination university before saving. Exchange period and lifestyle preferences can
+      remain blank.
+    </p>
+  </form>
 </template>
 
 <style scoped>
@@ -418,7 +364,9 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 
 .form-control,
 .form-select,
-.input-group-text { min-width: 0; }
+.input-group-text {
+  min-width: 0;
+}
 
 .form-select:disabled {
   background-color: #f5f6f8;
@@ -426,9 +374,13 @@ const emit = defineEmits(['submit', 'update-accommodation-price', 'update-food-p
 }
 
 @media (max-width: 575.98px) {
-  .card-body { padding: 1.25rem !important; }
+  .card-body {
+    padding: 1.25rem !important;
+  }
 
   .input-group-lg > .form-control,
-  .input-group-lg > .input-group-text { font-size: 1rem; }
+  .input-group-lg > .input-group-text {
+    font-size: 1rem;
+  }
 }
 </style>

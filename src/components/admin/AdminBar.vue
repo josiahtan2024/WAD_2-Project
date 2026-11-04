@@ -38,7 +38,12 @@ async function setPublished(published) {
 
 <template>
   <div class="mb-3" data-testid="admin-bar">
-    <div v-if="hidden" class="alert alert-warning d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2" role="status" data-testid="admin-hidden-banner">
+    <div
+      v-if="hidden"
+      class="alert alert-warning d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2"
+      role="status"
+      data-testid="admin-hidden-banner"
+    >
       <div>
         <strong>Hidden from students.</strong>
         <span v-if="missing.length"> Still missing: {{ missing.join(', ') }}.</span>
@@ -47,7 +52,12 @@ async function setPublished(published) {
     </div>
 
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-      <button type="button" class="btn btn-outline-primary btn-sm" data-testid="admin-edit-details" @click="emit('edit', 'details')">
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        data-testid="admin-edit-details"
+        @click="emit('edit', 'details')"
+      >
         <i class="bi bi-pencil" aria-hidden="true"></i> Edit Details
       </button>
       <button
@@ -72,7 +82,14 @@ async function setPublished(published) {
         <i class="bi bi-trash" aria-hidden="true"></i> Delete
       </button>
     </div>
-    <div v-if="error" class="text-danger small text-end mt-1" role="alert" data-testid="admin-bar-error">{{ error }}</div>
+    <div
+      v-if="error"
+      class="text-danger small text-end mt-1"
+      role="alert"
+      data-testid="admin-bar-error"
+    >
+      {{ error }}
+    </div>
   </div>
 </template>
 

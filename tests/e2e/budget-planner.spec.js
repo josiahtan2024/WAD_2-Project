@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test'
 import { login } from './helpers'
 
 test.describe('saved budget planner', () => {
-  test.skip(!process.env.TEST_EMAIL || !process.env.TEST_PASSWORD, 'set TEST_EMAIL and TEST_PASSWORD to run budget planner tests')
+  test.skip(
+    !process.env.TEST_EMAIL || !process.env.TEST_PASSWORD,
+    'set TEST_EMAIL and TEST_PASSWORD to run budget planner tests'
+  )
   let budgetCreated = false
 
   test.beforeEach(async ({ page }) => {
@@ -21,11 +24,13 @@ test.describe('saved budget planner', () => {
   })
 
   test('create, read, edit, cancel and confirm deletion of a budget', async ({ page }) => {
-    await page.route('https://api.frankfurter.dev/**', (route) => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ rates: { USD: 0.74, EUR: 0.68, GBP: 0.59, JPY: 110, CAD: 1.01 } }),
-    }))
+    await page.route('https://api.frankfurter.dev/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ rates: { USD: 0.74, EUR: 0.68, GBP: 0.59, JPY: 110, CAD: 1.01 } }),
+      })
+    )
 
     await page.goto('/cost-estimator')
     await expect(page.getByTestId('budget-heading')).toBeVisible()
@@ -38,15 +43,22 @@ test.describe('saved budget planner', () => {
     await page.getByTestId('budget-create-button').first().click()
 
     const university = page.getByTestId('budget-university-select')
-    const universityOptions = await university.evaluate((select) => Array.from(select.options).slice(1).map((option) => ({
-        value: option.value,
-        name: option.textContent.split(/\s+(?:â€”|—|–|-)\s+/u)[0].trim(),
-      })))
-    const availableUniversity = universityOptions.find((option) =>
-      !savedRows.some((row) => row.includes(option.name))
+    const universityOptions = await university.evaluate((select) =>
+      Array.from(select.options)
+        .slice(1)
+        .map((option) => ({
+          value: option.value,
+          name: option.textContent.split(/\s+(?:—|–|-)\s+/u)[0].trim(),
+        }))
+    )
+    const availableUniversity = universityOptions.find(
+      (option) => !savedRows.some((row) => row.includes(option.name))
     )
     if (!availableUniversity) {
-      test.skip(true, 'Budget tests need a published university without an existing budget for this account.')
+      test.skip(
+        true,
+        'Budget tests need a published university without an existing budget for this account.'
+      )
     }
     await university.selectOption(availableUniversity.value)
     await page.getByTestId('budget-duration-input').fill('4')
@@ -59,9 +71,13 @@ test.describe('saved budget planner', () => {
     await expect(page.getByTestId('budget-total')).not.toHaveText(totalBeforeExpenses)
 
     await page.getByTestId('budget-submit-button').click()
-    await expect(page.getByTestId('notice-success-message')).toContainText('Your new budget has been created successfully.')
+    await expect(page.getByTestId('notice-success-message')).toContainText(
+      'Your new budget has been created successfully.'
+    )
     budgetCreated = true
-    const createdBudget = page.getByTestId('budget-row').filter({ hasText: availableUniversity.name })
+    const createdBudget = page
+      .getByTestId('budget-row')
+      .filter({ hasText: availableUniversity.name })
     await expect(createdBudget).toHaveCount(1)
     await page.getByTestId('notice-dismiss-success').click()
 
@@ -77,7 +93,9 @@ test.describe('saved budget planner', () => {
     await expect(page.getByTestId('budget-duration-input')).toHaveValue('4')
     await page.getByTestId('budget-duration-input').fill('5')
     await page.getByTestId('budget-submit-button').click()
-    await expect(page.getByTestId('notice-success-message')).toContainText('Your budget has been updated successfully.')
+    await expect(page.getByTestId('notice-success-message')).toContainText(
+      'Your budget has been updated successfully.'
+    )
 
     const updatedBudget = page.getByTestId('budget-row').first()
     await expect(updatedBudget).toContainText('5 months')
@@ -89,7 +107,9 @@ test.describe('saved budget planner', () => {
 
     await page.getByTestId('budget-row').first().getByTestId('budget-delete-button').click()
     await page.getByTestId('delete-confirm-action').click()
-    await expect(page.getByTestId('notice-success-message')).toContainText('Budget deleted successfully.')
+    await expect(page.getByTestId('notice-success-message')).toContainText(
+      'Budget deleted successfully.'
+    )
     budgetCreated = false
   })
 })

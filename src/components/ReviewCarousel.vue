@@ -25,7 +25,7 @@ const carouselElement = ref(null)
 watch(
   () => route.params.id,
   (id) => store.load(id).catch(() => {}),
-  { immediate: true },
+  { immediate: true }
 )
 
 const ready = computed(() => store.isLoadedFor(route.params.id))
@@ -90,9 +90,12 @@ async function confirmRemoval() {
   try {
     await store.remove(pendingRemoval.value.id)
     pendingRemoval.value = null
-    emit('success', deletingOwnReview
-      ? 'Your review was deleted successfully.'
-      : 'The review was removed successfully.')
+    emit(
+      'success',
+      deletingOwnReview
+        ? 'Your review was deleted successfully.'
+        : 'The review was removed successfully.'
+    )
   } catch (e) {
     actionError.value = e.message
     pendingRemoval.value = null
@@ -101,11 +104,15 @@ async function confirmRemoval() {
   }
 }
 
-const removalIsMine = computed(() => pendingRemoval.value ? isMine(pendingRemoval.value) : false)
-const removalTitle = computed(() => removalIsMine.value ? 'Delete This Review?' : 'Remove This Review?')
-const removalDescription = computed(() => removalIsMine.value
-  ? 'Are you sure you want to delete your review? This action cannot be undone.'
-  : 'This review will be removed. The student will not be told. This action cannot be undone.')
+const removalIsMine = computed(() => (pendingRemoval.value ? isMine(pendingRemoval.value) : false))
+const removalTitle = computed(() =>
+  removalIsMine.value ? 'Delete This Review?' : 'Remove This Review?'
+)
+const removalDescription = computed(() =>
+  removalIsMine.value
+    ? 'Are you sure you want to delete your review? This action cannot be undone.'
+    : 'This review will be removed. The student will not be told. This action cannot be undone.'
+)
 </script>
 
 <template>
@@ -121,49 +128,139 @@ const removalDescription = computed(() => removalIsMine.value
       @confirm="confirmRemoval"
     />
     <h2 class="h5 fw-bold">Reviews</h2>
-    <p v-if="!ready && !store.error" class="text-muted" data-testid="reviews-loading">Loading reviews...</p>
-    <p v-else-if="ready && !reviews.length" class="text-muted" data-testid="reviews-empty">No reviews yet. Be the first to post one.</p>
+    <p v-if="!ready && !store.error" class="text-muted" data-testid="reviews-loading">
+      Loading reviews...
+    </p>
+    <p v-else-if="ready && !reviews.length" class="text-muted" data-testid="reviews-empty">
+      No reviews yet. Be the first to post one.
+    </p>
     <template v-else-if="ready">
       <p class="mb-2" data-testid="reviews-average">
         <span class="text-warning">{{ stars(average) }}</span>
-        {{ average.toFixed(1) }} out of 5 from {{ reviews.length }} {{ reviews.length === 1 ? 'review' : 'reviews' }}
+        {{ average.toFixed(1) }} out of 5 from {{ reviews.length }}
+        {{ reviews.length === 1 ? 'review' : 'reviews' }}
       </p>
-      <div v-if="actionError" class="alert alert-danger" data-testid="review-action-error">{{ actionError }}</div>
-      <div :key="carouselKey" ref="carouselElement" id="review-carousel" class="carousel slide" data-bs-interval="false">
+      <div v-if="actionError" class="alert alert-danger" data-testid="review-action-error">
+        {{ actionError }}
+      </div>
+      <div
+        :key="carouselKey"
+        ref="carouselElement"
+        id="review-carousel"
+        class="carousel slide"
+        data-bs-interval="false"
+      >
         <div class="carousel-inner px-4">
-          <div v-for="(r, i) in reviews" :key="r.id" class="carousel-item" :class="{ active: i === 0 }" data-testid="review-item">
+          <div
+            v-for="(r, i) in reviews"
+            :key="r.id"
+            class="carousel-item"
+            :class="{ active: i === 0 }"
+            data-testid="review-item"
+          >
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div>
-                <span class="text-warning fs-5" :aria-label="`${r.rating} out of 5`" data-testid="review-rating">{{ stars(r.rating) }}</span>
+                <span
+                  class="text-warning fs-5"
+                  :aria-label="`${r.rating} out of 5`"
+                  data-testid="review-rating"
+                  >{{ stars(r.rating) }}</span
+                >
                 <small class="text-muted ms-2">
-                  {{ isMine(r) ? 'You' : 'SMU student' }} &middot; {{ new Date(r.created_at).toLocaleDateString() }}
+                  {{ isMine(r) ? 'You' : 'SMU student' }} &middot;
+                  {{ new Date(r.created_at).toLocaleDateString() }}
                   <span v-if="wasEdited(r)" data-testid="review-edited">(edited)</span>
                 </small>
               </div>
-              <button v-if="!isMine(r) && auth.adminActive" type="button" class="btn btn-outline-danger btn-sm" data-testid="review-remove-btn" @click="remove(r)">Remove</button>
+              <button
+                v-if="!isMine(r) && auth.adminActive"
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                data-testid="review-remove-btn"
+                @click="remove(r)"
+              >
+                Remove
+              </button>
               <div v-if="isMine(r)" class="d-flex gap-1">
-                <button v-if="editingId !== r.id" type="button" class="btn btn-outline-secondary btn-sm" data-testid="review-edit-btn" @click="editingId = r.id">Edit</button>
-                <button type="button" class="btn btn-outline-danger btn-sm" data-testid="review-delete-btn" @click="remove(r)">Delete</button>
+                <button
+                  v-if="editingId !== r.id"
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-testid="review-edit-btn"
+                  @click="editingId = r.id"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  data-testid="review-delete-btn"
+                  @click="remove(r)"
+                >
+                  Delete
+                </button>
               </div>
             </div>
-            <ReviewForm v-if="editingId === r.id" :review="r" logged-in @saved="editingId = null" @success="emit('success', $event)" @cancel="editingId = null" />
+            <ReviewForm
+              v-if="editingId === r.id"
+              :review="r"
+              logged-in
+              @saved="editingId = null"
+              @success="emit('success', $event)"
+              @cancel="editingId = null"
+            />
             <template v-else>
               <ul v-if="topicsFor(r).length" class="list-inline small text-muted my-1">
-                <li v-for="t in topicsFor(r)" :key="t.key" class="list-inline-item">{{ t.label }} {{ r[t.key] }}/5</li>
+                <li v-for="t in topicsFor(r)" :key="t.key" class="list-inline-item">
+                  {{ t.label }} {{ r[t.key] }}/5
+                </li>
               </ul>
-              <blockquote class="my-2 text-break" style="white-space: pre-line" data-testid="review-body">{{ r.review }}</blockquote>
-              <img v-if="r.image_path" :src="reviewImageUrl(r.image_path)" alt="Photo shared with this review" class="img-fluid rounded mb-2" style="max-height: 16rem" data-testid="review-image" />
+              <blockquote
+                class="my-2 text-break"
+                style="white-space: pre-line"
+                data-testid="review-body"
+              >
+                {{ r.review }}
+              </blockquote>
+              <img
+                v-if="r.image_path"
+                :src="reviewImageUrl(r.image_path)"
+                alt="Photo shared with this review"
+                class="img-fluid rounded mb-2"
+                style="max-height: 16rem"
+                data-testid="review-image"
+              />
             </template>
             <ReviewComments :review="r" />
           </div>
         </div>
-        <nav v-if="reviews.length > 1" class="review-pagination d-flex justify-content-center align-items-center gap-3 mt-3" aria-label="Review pages">
-          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-target="#review-carousel" data-bs-slide="prev" aria-label="Previous Review" data-testid="review-prev-btn">
+        <nav
+          v-if="reviews.length > 1"
+          class="review-pagination d-flex justify-content-center align-items-center gap-3 mt-3"
+          aria-label="Review pages"
+        >
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+            data-bs-target="#review-carousel"
+            data-bs-slide="prev"
+            aria-label="Previous Review"
+            data-testid="review-prev-btn"
+          >
             <i class="bi bi-arrow-left" aria-hidden="true"></i>
             <span class="visually-hidden">Previous Review</span>
           </button>
-          <span class="small text-secondary" aria-live="polite">{{ activeIndex + 1 }} / {{ reviews.length }}</span>
-          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-target="#review-carousel" data-bs-slide="next" aria-label="Next Review" data-testid="review-next-btn">
+          <span class="small text-secondary" aria-live="polite"
+            >{{ activeIndex + 1 }} / {{ reviews.length }}</span
+          >
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+            data-bs-target="#review-carousel"
+            data-bs-slide="next"
+            aria-label="Next Review"
+            data-testid="review-next-btn"
+          >
             <i class="bi bi-arrow-right" aria-hidden="true"></i>
             <span class="visually-hidden">Next Review</span>
           </button>

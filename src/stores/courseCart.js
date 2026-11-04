@@ -12,10 +12,6 @@ const CART_SELECT = `
   )
 `
 
-// Postgres "foreign key violation": the cart row is still used by a saved schedule (planned_modules).
-const IN_SCHEDULE_ERROR = '23503'
-const IN_SCHEDULE_MESSAGE = 'This course is in a saved schedule. Remove it from the schedule first.'
-
 // Shared by every caller of ensureLoaded() while one load is in flight
 let loadPromise = null
 
@@ -144,7 +140,7 @@ export const useCourseCartStore = defineStore('courseCart', {
           .delete()
           .eq('id', item.cartModuleId)
           .eq('user_id', getUserId())
-        if (error) throw error.code === IN_SCHEDULE_ERROR ? new Error(IN_SCHEDULE_MESSAGE) : error
+        if (error) throw error
         this.items = this.items.filter((i) => i.cartModuleId !== item.cartModuleId)
       } catch (error) {
         this.error = error.message
@@ -160,10 +156,11 @@ export const useCourseCartStore = defineStore('courseCart', {
         let query = supabase.from('cart_modules').delete().eq('user_id', getUserId())
         if (universityId != null) query = query.eq('university_id', universityId)
         const { error } = await query
-        if (error) throw error.code === IN_SCHEDULE_ERROR ? new Error(IN_SCHEDULE_MESSAGE) : error
-        this.items = universityId == null
-          ? []
-          : this.items.filter((item) => item.universityId !== Number(universityId))
+        if (error) throw error
+        this.items =
+          universityId == null
+            ? []
+            : this.items.filter((item) => item.universityId !== Number(universityId))
       } catch (error) {
         this.error = error.message
         throw error
