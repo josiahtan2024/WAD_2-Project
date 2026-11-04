@@ -363,9 +363,9 @@ onMounted(async () => {
         >
           <b
             >{{ schedule.moduleData.length }} module{{
-              schedule.moduleData.length === 1 ? '' : 's'
+              schedule.moduleData.length === 1 ? ' is' : 's are'
             }}
-            are available from your cart and saved schedule.</b
+            available from your cart and saved schedule.</b
           >
         </p>
       </div>

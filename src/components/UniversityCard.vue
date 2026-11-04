@@ -63,7 +63,6 @@ const estimatedMonthlyCost = computed(() => {
   >
     <div class="card-body d-flex flex-column p-4">
       
-      <!-- Top header row with logo and badges -->
       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
         <div
           v-if="university.logo_url"
@@ -98,7 +97,8 @@ const estimatedMonthlyCost = computed(() => {
 
       <div class="mb-4 flex-grow-1 min-width-0">
         <h2
-          class="h5 card-title university-name mb-1"
+          class="h5 card-title university-name mb-1 text-truncate"
+          :title="university.name"
           data-testid="university-card-name"
         >
           {{ university.name }}
@@ -168,10 +168,6 @@ const estimatedMonthlyCost = computed(() => {
 .university-name {
   font-weight: 700;
   color: var(--app-navy, #0b2348);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .university-logo-box {

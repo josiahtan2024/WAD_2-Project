@@ -73,8 +73,6 @@ const visibleSavedBudgets = computed(() =>
       )
 )
 
-// Automatically dismiss success/error notifications after five seconds.
-// Users can also close either notification immediately with its X button.
 let noticeTimeout = null
 watch([errorMessage, successMessage], ([error, success]) => {
   if (noticeTimeout) {
@@ -168,8 +166,6 @@ const filteredBudgets = computed(() => {
     if (budgetSortBy.value === 'cost') {
       return Number(a.total_budget || 0) - Number(b.total_budget || 0)
     }
-    // IDs are generated in insertion order, so descending IDs act as a
-    // recently-added fallback when the table has no created_at column.
     return Number(b.id) - Number(a.id)
   })
 })
@@ -543,9 +539,6 @@ async function loadBudgets() {
       .order('id', { ascending: false })
     if (error) throw error
 
-    // The form's exchangePeriods list only contains periods for the currently
-    // selected university. Load all periods separately so the table can show
-    // the correct period for every saved budget, including different universities.
     const { data: allPeriods, error: periodsError } = await supabase
       .from('exchange_periods')
       .select('id, university_id, period_name, term, academic_year, start_date, end_date')
@@ -628,14 +621,12 @@ async function editBudget(budget) {
   transport.value = Number(budget.transport_budget) || 0
   personalExpenses.value = Number(budget.personal_budget) || 0
   otherExpenses.value = Number(budget.other_budget) || 0
-  // Restore saved dropdown choices so editing preserves every form input.
   housingType.value = budget.housing_type || ''
   foodOption.value = budget.food_option || ''
   transportOption.value = budget.transport_option || ''
 }
 
 function deleteBudget(budget) {
-  // Open the app's own confirmation card instead of the browser's confirm popup.
   budgetToDelete.value = budget
 }
 
@@ -709,7 +700,6 @@ async function saveBudget() {
       transport_budget: Number(transport.value),
       personal_budget: Number(personalExpenses.value),
       other_budget: Number(otherExpenses.value),
-      // Save optional lifestyle selections alongside the expense amounts.
       housing_type: housingType.value || null,
       food_option: foodOption.value || null,
       transport_option: transportOption.value || null,
@@ -728,14 +718,11 @@ async function saveBudget() {
     const savedMessage = editingBudgetId.value
       ? 'Your budget has been updated successfully.'
       : 'Your new budget has been created successfully.'
-    // Switch back to the table after the database write succeeds.
     currentView.value = 'list'
     resetBudgetForm()
     await loadBudgets()
-    // loadBudgets can show its own error, so restore the save confirmation after it completes.
     errorMessage.value = ''
     successMessage.value = savedMessage
-    // Wait for the list view and notification to render, then scroll to the top.
     await nextTick()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (error) {
@@ -764,21 +751,16 @@ onMounted(async () => {
 
 <template>
   <main class="container py-4 mb-5">
-    <div class="mb-3">
-      <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
-
-      <p class="text-secondary text-center mb-0">
-        Estimate your exchange expenses, compare published costs, and plan your budget before you
-        go.
+    <div class="mb-4 pb-3 border-bottom">
+      <h1 class="page-title h3 fw-bold text-navy mb-1">Exchange Budget Planner</h1>
+      <p class="text-muted small mb-0">
+        Estimate your exchange expenses, compare published costs, and plan your finances.
       </p>
     </div>
 
-    <div v-if="loading" class="d-flex flex-column align-items-center justify-content-center py-5">
-      <div class="spinner-border text-primary mb-3" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-
-      <p class="text-secondary mb-0">Loading your exchange budget...</p>
+    <div v-if="loading" class="py-5 text-muted text-center">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading exchange budget planner...
     </div>
 
     <template v-else>
@@ -819,14 +801,13 @@ onMounted(async () => {
         @delete="deleteBudget"
       />
 
-      <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
-        No partner universities are available yet. Please add partner universities to your database
-        before creating a budget.
+      <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info rounded-4 border-0">
+        No partner universities are available yet. Please add partner universities to your database before creating a budget.
       </div>
 
-      <div v-if="currentView === 'planner' && universities.length > 0" class="mb-3">
-        <button type="button" class="btn btn-outline-secondary" @click="backToBudgetList">
-          ← Back to My Budgets
+      <div v-if="currentView === 'planner' && universities.length > 0" class="mb-4">
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="backToBudgetList">
+          <i class="bi bi-arrow-left me-1"></i> Back to My Budgets
         </button>
       </div>
 
@@ -895,14 +876,14 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
 @media (max-width: 575.98px) {
   main.container {
     padding-left: 1rem;
     padding-right: 1rem;
-  }
-
-  .display-6 {
-    font-size: 1.9rem;
   }
 }
 </style>

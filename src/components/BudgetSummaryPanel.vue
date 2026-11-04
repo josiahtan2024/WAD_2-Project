@@ -23,183 +23,173 @@ const emit = defineEmits(['use-published-estimates'])
 <template>
   <section class="col-12 col-lg-5">
     <div class="summary-column">
-      <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <!-- Main Budget Result -->
+      <div class="card border rounded-4 shadow-sm mb-4 bg-white overflow-hidden">
         <div class="card-body p-4">
-          <p class="text-secondary small mb-1">Your Estimated Exchange Budget</p>
+          <p class="text-muted small mb-1 fw-semibold text-uppercase tracking-wider fs-9">Estimated Exchange Budget</p>
 
-          <h2 class="display-6 fw-bold mb-1" data-testid="budget-total">
+          <h2 class="display-6 fw-bold text-navy mb-1" data-testid="budget-total">
             {{ formatMoney(totalExchangeBudget) }}
           </h2>
 
-          <p class="text-secondary small mb-0">
+          <p class="text-muted small mb-3">
             For {{ durationMonths }} Month<span v-if="Number(durationMonths) !== 1">s</span>
           </p>
 
-          <hr />
+          <div class="pt-3 border-top">
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <span class="text-secondary small">Monthly Budget</span>
+              <strong class="text-navy small">{{ formatMoney(monthlyBudget) }}</strong>
+            </div>
 
-          <div class="d-flex justify-content-between gap-3 mb-3">
-            <span class="text-secondary">Monthly Budget</span>
-            <strong>{{ formatMoney(monthlyBudget) }}</strong>
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <span class="text-secondary small">Exchange Duration</span>
+              <strong class="text-navy small">
+                {{ durationMonths }} month<span v-if="Number(durationMonths) !== 1">s</span>
+              </strong>
+            </div>
+
+            <div class="d-flex justify-content-between gap-3 pt-2 border-top">
+              <span class="text-secondary small fw-semibold">Estimated in SGD</span>
+              <strong class="text-primary small">
+                {{ totalBudgetSGD === null ? 'Not available' : formatMoney(totalBudgetSGD, 'SGD') }}
+              </strong>
+            </div>
           </div>
 
-          <div class="d-flex justify-content-between gap-3 mb-3">
-            <span class="text-secondary">Exchange Duration</span>
-            <strong>
-              {{ durationMonths }}
-              month<span v-if="Number(durationMonths) !== 1">s</span>
-            </strong>
-          </div>
-
-          <div class="d-flex justify-content-between gap-3">
-            <span class="text-secondary">Estimated in SGD</span>
-            <strong>
-              {{ totalBudgetSGD === null ? 'Not available' : formatMoney(totalBudgetSGD, 'SGD') }}
-            </strong>
-          </div>
-
-          <p v-if="rateLoading" class="small text-secondary mt-3 mb-0">
+          <p v-if="rateLoading" class="small text-muted mt-3 mb-0 fs-8">
+            <span class="spinner-border spinner-border-sm me-1 text-primary"></span>
             Updating currency conversion...
           </p>
 
           <p
             v-else-if="currencyCode !== 'SGD' && exchangeRate === 1"
-            class="small text-warning mt-3 mb-0"
+            class="small text-warning mt-3 mb-0 fs-8"
           >
-            SGD conversion may be unavailable. Check the exchange rate before relying on the
-            converted amount.
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            SGD conversion may be unavailable. Check exchange rates directly.
           </p>
 
-          <p v-else-if="currencyCode !== 'SGD'" class="small text-secondary mt-3 mb-0">
-            Indicative conversion using the latest available Frankfurter rate. Your bank may use a
-            different rate.
+          <p v-else-if="currencyCode !== 'SGD'" class="small text-muted mt-3 mb-0 fs-8">
+            Indicative conversion using the latest Frankfurter rate. Bank rates may vary.
           </p>
         </div>
       </div>
 
-      <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <!-- Published Costs -->
+      <div class="card border rounded-4 shadow-sm mb-4 bg-white">
         <div class="card-body p-4">
           <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
             <div>
-              <h2 class="h5 fw-bold mb-1">Estimated University Costs</h2>
-
-              <p class="small text-secondary mb-0">
+              <h2 class="h6 fw-bold text-navy mb-1">Published Cost Estimates</h2>
+              <p class="small text-muted mb-0">
                 {{ selectedUniversity?.name || 'Select a university to view costs' }}
               </p>
             </div>
-
-            <span class="badge text-bg-light border"> Published Estimate </span>
+            <span class="badge bg-light text-navy border rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+              Published
+            </span>
           </div>
 
-          <div v-if="!selectedUniversityId">
-            <p class="text-secondary mb-0">
-              Choose a destination university on the right to view its available cost estimates.
-            </p>
+          <div v-if="!selectedUniversityId" class="text-center py-4 text-muted bg-light rounded-3 border border-dashed">
+            <i class="bi bi-building fs-3 mb-1 d-block text-secondary"></i>
+            <p class="small mb-0">Choose a destination university to view published estimates.</p>
           </div>
 
-          <div v-else-if="!publishedCost">
-            <p class="text-secondary mb-0">
-              No published cost estimate is available for this university yet.
-            </p>
+          <div v-else-if="!publishedCost" class="text-center py-4 text-muted bg-light rounded-3 border border-dashed">
+            <i class="bi bi-slash-circle fs-3 mb-1 d-block text-secondary"></i>
+            <p class="small mb-0">No published cost estimate available for this university.</p>
           </div>
 
           <div v-else>
-            <div
-              v-for="item in [
-                { label: 'Accommodation', value: publishedCost.accommodation },
-                { label: 'Food', value: publishedCost.food },
-                { label: 'Transport', value: publishedCost.transport },
-                { label: 'Personal Expenses', value: publishedCost.personal_expenses },
-                { label: 'Other Expenses', value: publishedCost.other_expenses },
-              ]"
-              :key="item.label"
-              class="d-flex justify-content-between gap-3 mb-3"
-            >
-              <span class="text-secondary">{{ item.label }}</span>
-
-              <span class="fw-semibold text-end">
-                {{
-                  item.value === null || item.value === undefined ? '—' : formatMoney(item.value)
-                }}
-              </span>
+            <div class="py-2">
+              <div
+                v-for="item in [
+                  { label: 'Accommodation', value: publishedCost.accommodation },
+                  { label: 'Food', value: publishedCost.food },
+                  { label: 'Transport', value: publishedCost.transport },
+                  { label: 'Personal Expenses', value: publishedCost.personal_expenses },
+                  { label: 'Other Expenses', value: publishedCost.other_expenses },
+                ]"
+                :key="item.label"
+                class="d-flex justify-content-between gap-3 mb-2"
+              >
+                <span class="text-muted small">{{ item.label }}</span>
+                <span class="fw-semibold text-end text-navy small">
+                  {{ item.value === null || item.value === undefined ? '—' : formatMoney(item.value) }}
+                </span>
+              </div>
             </div>
 
-            <hr />
+            <div class="pt-3 border-top mt-2">
+              <div class="d-flex justify-content-between gap-3 mb-2">
+                <span class="fw-semibold small text-navy">Estimated Monthly Total</span>
+                <strong class="small text-navy">
+                  {{ publishedMonthlyCost === null ? 'Not available' : formatMoney(publishedMonthlyCost) }}
+                </strong>
+              </div>
 
-            <div class="d-flex justify-content-between gap-3 mb-2">
-              <span class="fw-semibold">Estimated Monthly Total</span>
-              <strong>
-                {{
-                  publishedMonthlyCost === null
-                    ? 'Not available'
-                    : formatMoney(publishedMonthlyCost)
-                }}
-              </strong>
-            </div>
+              <div class="d-flex justify-content-between gap-3 mb-2">
+                <span class="fw-semibold small text-navy">Estimated Total for Period</span>
+                <strong class="text-primary text-end">
+                  {{ publishedTotalCost === null ? 'Not available' : formatMoney(publishedTotalCost) }}
+                </strong>
+              </div>
 
-            <div class="d-flex justify-content-between gap-3">
-              <span class="fw-semibold"> Estimated Total for Your Period </span>
-
-              <strong class="text-primary text-end">
-                {{
-                  publishedTotalCost === null ? 'Not available' : formatMoney(publishedTotalCost)
-                }}
-              </strong>
-            </div>
-
-            <div
-              v-if="publishedTotalSGD !== null && currencyCode !== 'SGD'"
-              class="d-flex justify-content-between gap-3 mt-2"
-            >
-              <span class="small text-secondary"> Approximate SGD Total </span>
-
-              <span class="small fw-semibold">
-                {{ formatMoney(publishedTotalSGD, 'SGD') }}
-              </span>
+              <div
+                v-if="publishedTotalSGD !== null && currencyCode !== 'SGD'"
+                class="d-flex justify-content-between gap-3 pt-2 border-top"
+              >
+                <span class="small text-muted fs-8">Approximate SGD Total</span>
+                <span class="small fw-semibold text-navy fs-8">
+                  {{ formatMoney(publishedTotalSGD, 'SGD') }}
+                </span>
+              </div>
             </div>
 
             <button
               type="button"
-              class="btn btn-outline-primary w-100 mt-4"
+              class="btn btn-outline-primary btn-sm rounded-pill w-100 mt-4 py-2"
               @click="emit('use-published-estimates')"
             >
               Use Published Estimates
             </button>
 
-            <p class="small text-secondary mt-3 mb-0">
-              Check the original source and reporting period before using these estimates. They may
-              not reflect current prices.
+            <p class="small text-muted mt-2 mb-0 fs-8 text-center">
+              Copies published numbers directly into your editable budget.
             </p>
           </div>
         </div>
       </div>
 
-      <div v-if="publishedTotalCost !== null" class="card border-0 shadow-sm rounded-4">
+      <!-- Comparison -->
+      <div v-if="publishedTotalCost !== null" class="card border rounded-4 shadow-sm bg-white">
         <div class="card-body p-4">
-          <h2 class="h5 fw-bold mb-3">Budget Comparison</h2>
+          <h2 class="h6 fw-bold text-navy mb-3">Budget Comparison</h2>
 
-          <div class="d-flex justify-content-between gap-3 mb-3">
-            <span class="text-secondary">Your budget</span>
-            <strong class="text-end">
+          <div class="d-flex justify-content-between gap-3 mb-2">
+            <span class="text-muted small">Your Budget</span>
+            <strong class="text-end text-navy small">
               {{ formatMoney(totalExchangeBudget) }}
             </strong>
           </div>
 
           <div class="d-flex justify-content-between gap-3 mb-3">
-            <span class="text-secondary">Published Estimate</span>
-            <strong class="text-end">
+            <span class="text-muted small">Published Estimate</span>
+            <strong class="text-end text-navy small">
               {{ formatMoney(publishedTotalCost) }}
             </strong>
           </div>
 
           <div
-            class="rounded-3 p-3"
+            class="rounded-3 p-3 border"
             :class="{
               'comparison-below': budgetStatus === 'below',
               'comparison-above': budgetStatus === 'above',
               'comparison-equal': budgetStatus === 'equal',
             }"
           >
-            <p class="small mb-1">
+            <p class="small mb-1 font-medium">
               {{
                 budgetStatus === 'below'
                   ? 'Your budget is below the published estimate by'
@@ -209,7 +199,7 @@ const emit = defineEmits(['use-published-estimates'])
               }}
             </p>
 
-            <strong>
+            <strong class="fs-6">
               {{ formatMoney(Math.abs(remainingBudget)) }}
             </strong>
           </div>
@@ -220,32 +210,52 @@ const emit = defineEmits(['use-published-estimates'])
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
 .summary-column {
   position: sticky;
-  top: 1.5rem;
+  top: 5rem;
 }
+
+.fs-8 {
+  font-size: 0.75rem;
+}
+
+.fs-9 {
+  font-size: 0.6875rem;
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
 .comparison-below {
   background: #e8f6ee;
   color: #17663a;
+  border-color: #c2e9d2 !important;
 }
+
 .comparison-above {
   background: #fff0ed;
   color: #a32e20;
+  border-color: #f7ceca !important;
 }
+
 .comparison-equal {
   background: #edf2ff;
   color: #2448a5;
+  border-color: #cfdbfe !important;
 }
 
 @media (max-width: 991.98px) {
   .summary-column {
     position: static;
-  }
-}
-
-@media (max-width: 575.98px) {
-  .card-body {
-    padding: 1.25rem !important;
   }
 }
 </style>

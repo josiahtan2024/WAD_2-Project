@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useShortlistStore } from '@/stores/shortlist'
@@ -91,24 +91,34 @@ const currentPage = ref(1)
 const pageSize = 6
 const pageCount = computed(() => Math.ceil(results.value.length / pageSize))
 
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isMobile = computed(() => windowWidth.value < 768)
 const displayedPages = computed(() => {
   const total = pageCount.value
   const current = currentPage.value
-  const maxVisible = 5
+  const maxVisible = isMobile.value ? 3 : 5 
   
   if (total <= maxVisible) {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
+  
   let start = Math.max(1, current - Math.floor(maxVisible / 2))
   let end = start + maxVisible - 1
+  
   if (end > total) {
     end = total
     start = Math.max(1, end - maxVisible + 1)
   }
+  
   const range = []
   for (let i = start; i <= end; i++) {
     range.push(i)
   }
+  
   return range
 })
 
@@ -205,11 +215,14 @@ onMounted(async () => {
 
     <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
     <div ref="gridTopRef">
-    <div v-if="uni.loading" class="text-muted text-center py-5" data-testid="universities-loading">Loading partner universities...</div>
-    <div v-else-if="!uni.error && !results.length" class="text-muted text-center py-5 bg-light rounded-4 border border-dashed my-3" data-testid="universities-empty">
+    <div v-if="uni.loading" class="text-muted text-center py-5" data-testid="universities-loading">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading partner universities...
+    </div>
+    <div v-else-if="!uni.error && !results.length" class="text-muted text-center py-5 px-3 bg-light rounded-4 border border-dashed my-3" data-testid="universities-empty">
       <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No partner universities match your search.</div>
     <div v-else-if="!uni.error" class="row g-3" data-testid="universities-grid">
-      <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
+      <div v-for="u in pageResults" :key="u.id" class="col-12 col-md-6 col-lg-4">
         <UniversityCard 
         :university="u" 
         :shortlisted="isShortlisted(u.id)" 

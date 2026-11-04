@@ -77,24 +77,34 @@ const saved = computed(() => {
 
 const pageCount = computed(() => Math.ceil(saved.value.length / pageSize))
 
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isMobile = computed(() => windowWidth.value < 768)
 const displayedPages = computed(() => {
   const total = pageCount.value
   const current = currentPage.value
-  const maxVisible = 5
+  const maxVisible = isMobile.value ? 3 : 5 
   
   if (total <= maxVisible) {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
+  
   let start = Math.max(1, current - Math.floor(maxVisible / 2))
   let end = start + maxVisible - 1
+  
   if (end > total) {
     end = total
     start = Math.max(1, end - maxVisible + 1)
   }
+  
   const range = []
   for (let i = start; i <= end; i++) {
     range.push(i)
   }
+  
   return range
 })
 
@@ -226,8 +236,8 @@ onMounted(async () => {
         class="list-group-item d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 p-md-4 bg-white border rounded-4 shortlist-row-item"
         data-testid="shortlist-item"
       >
-        <div class="d-flex align-items-center gap-3 mb-3 mb-md-0 min-width-0">
-          <div class="shortlist-logo-box">
+        <div class="d-flex align-items-center gap-3 mb-3 mb-md-0 flex-grow-1 min-width-0">
+          <div class="shortlist-logo-box flex-shrink-0">
             <img
               v-if="u.logo_url"
               :src="getLogoUrl(u.logo_url)"
@@ -241,8 +251,8 @@ onMounted(async () => {
               aria-hidden="true"
             ></i>
           </div>
-          <div class="min-width-0">
-            <h3 class="shortlist-name text-navy mb-1 text-truncate">{{ u.name }}</h3>
+          <div class="flex-grow-1 min-width-0">
+            <h3 class="shortlist-name text-navy mb-1">{{ u.name }}</h3>
             <p class="text-muted small mb-0 text-truncate">
               <i class="bi bi-geo-alt text-primary me-1"></i>{{ u.city }}, {{ u.country }}
             </p>
@@ -362,6 +372,7 @@ onMounted(async () => {
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
+  word-break: break-word;
 }
 
 .remove-btn {

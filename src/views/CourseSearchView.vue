@@ -200,10 +200,10 @@ onMounted(async () => {
       :error-message="cartLimitNotice"
       @dismiss-error="cartLimitNotice = ''"
     />
-    <div class="mb-4 pb-3 border-bottom text-center">
+    <div class="mb-4 pb-3 border-bottom">
       <h1 class="page-title h3 fw-bold text-navy mb-1">Course Search</h1>
       <p class="text-muted small mb-0">
-        Pick an SMU course area to see the partner university courses mapped to it, <br class="d-none d-md-block">then add the ones you want to your cart for scheduling.
+        Pick an SMU course area to view partner university courses mapped to it, then add your selections to your cart for schedule planning.
       </p>
     </div>
 
