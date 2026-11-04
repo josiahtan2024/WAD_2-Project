@@ -1,5 +1,5 @@
 -- Run in the Supabase SQL Editor. 
--- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- schema.sql >> seed.sql >> policies.sql >> admin.sql
 -- Replace 'staff@smu.edu.sg' with the email of the staff to promote
 UPDATE auth.users
 SET raw_app_meta_data =

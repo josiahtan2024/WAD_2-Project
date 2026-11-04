@@ -1,16 +1,12 @@
 <script setup>
+import { ref, computed } from 'vue'
 import { useExchangeRatesStore } from '@/stores/exchangeRates'
 import { useAuthStore } from '@/stores/auth'
+import { supabase } from '@/lib/supabase'
+import { calculateMonthlyCost } from '@/lib/universityCost'
+
 const exchangeRates = useExchangeRatesStore()
 const auth = useAuthStore()
-import { supabase } from '@/lib/supabase'
-function getLogoUrl(path) {
-  const filePath = path.replace(/^university-logos\//, '')
-
-  return supabase.storage.from('university-logos').getPublicUrl(filePath).data.publicUrl
-}
-import { ref, computed } from 'vue'
-import { calculateMonthlyCost } from '@/lib/universityCost'
 const isHovered = ref(false)
 
 const props = defineProps({
@@ -18,6 +14,16 @@ const props = defineProps({
   shortlisted: { type: Boolean, default: false },
   selectedRegion: { type: String, default: null },
 })
+
+defineEmits(['toggle-shortlist'])
+
+function getLogoUrl(path) {
+  if (!path) return ''
+  const filePath = path.replace(/^university-logos\//, '')
+  return supabase.storage
+    .from('university-logos')
+    .getPublicUrl(filePath).data.publicUrl
+}
 
 const estimatedMonthlyCost = computed(() => {
   const cost = props.university.university_costs
@@ -31,7 +37,9 @@ const estimatedMonthlyCost = computed(() => {
   const rate = exchangeRates.rates[currency]
 
   if (!Number.isFinite(rate) || rate <= 0) {
-    return exchangeRates.loading ? 'Loading...' : 'SGD estimate unavailable'
+    return exchangeRates.loading
+      ? 'Loading...'
+      : 'SGD estimate unavailable'
   }
 
   const totalSGD = total / rate
@@ -43,75 +51,23 @@ const estimatedMonthlyCost = computed(() => {
     maximumFractionDigits: 0,
   }).format(totalSGD)
 })
-defineEmits(['toggle-shortlist'])
 </script>
-
-<style scoped>
-.university-card {
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  transition: outline-color 0.15s ease;
-}
-
-.university-card.is-hovered {
-  outline-color: var(--bs-primary);
-}
-
-.university-name {
-  font-weight: 800;
-  color: #01125f;
-}
-.university-info {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.university-logo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.university-logo-box {
-  width: 88px;
-  aspect-ratio: 1 / 1;
-  align-self: flex-start;
-}
-
-@media (max-width: 575.98px) {
-  .university-logo {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-.university-region {
-  color: #adb5bd;
-  font-weight: 400;
-}
-
-.university-region.is-filtered {
-  color: #000;
-  font-weight: 700;
-}
-</style>
 
 <template>
   <div
-    class="card h-100 shadow-sm university-card"
+    class="card h-100 university-card border rounded-4 overflow-hidden bg-white d-flex flex-column"
     :class="{ 'is-hovered': isHovered }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     data-testid="university-card"
   >
-    <div class="card-body d-flex flex-column">
-      <div class="d-flex align-items-stretch gap-3 mb-3">
+    <div class="card-body d-flex flex-column p-4">
+      
+      <!-- Top header row with logo and badges -->
+      <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
         <div
           v-if="university.logo_url"
-          class="university-logo-box position-relative flex-shrink-0 rounded-3 overflow-hidden bg-white"
+          class="university-logo-box position-relative flex-shrink-0 rounded-3 overflow-hidden border bg-light"
         >
           <img
             :src="getLogoUrl(university.logo_url)"
@@ -120,61 +76,128 @@ defineEmits(['toggle-shortlist'])
             loading="lazy"
           />
         </div>
+        <div v-else class="university-logo-box d-flex align-items-center justify-content-center rounded-3 border bg-light">
+          <i class="bi bi-mortarboard fs-4 text-muted"></i>
+        </div>
 
-        <div class="university-info flex-grow-1">
+        <div class="d-flex align-items-center gap-2">
           <span
             v-if="university.published === false"
-            class="badge text-bg-secondary mb-1"
-            data-testid="university-hidden-badge"
-            >Hidden from students</span
-          >
-          <h2 class="h5 card-title university-name mb-2" data-testid="university-card-name">
-            {{ university.name }}
-          </h2>
+            class="badge bg-secondary rounded-pill p-2 d-flex align-items-center justify-content-center"
+            title="Hidden from students"
+            data-testid="university-hidden-badge">
+            <i class="bi bi-eye-slash"></i>
+          </span>
 
-          <p class="card-text text-muted mb-0">{{ university.city }}, {{ university.country }}</p>
-
-          <p class="small text-muted mb-0">Estimated monthly cost: {{ estimatedMonthlyCost }}</p>
+          <span class="badge region-badge rounded-pill px-3 py-2 fw-semibold"
+            :class="selectedRegion === university.region ? 'text-bg-primary' : 'bg-light text-navy border'">
+            <i class="bi bi-geo-alt-fill me-1"></i>{{ university.region }}
+          </span>
         </div>
       </div>
 
-      <div class="mt-auto d-flex align-items-end gap-2">
-        <div class="d-flex flex-wrap gap-2">
-          <RouterLink
-            :to="`/universities/${university.id}`"
-            class="btn btn-outline-primary btn-sm"
-            data-testid="university-card-link"
-          >
-            Details
-          </RouterLink>
-
-          <RouterLink
-            v-if="auth.adminActive"
-            :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
-            class="btn btn-outline-secondary btn-sm"
-            data-testid="university-card-edit"
-          >
-            Edit
-          </RouterLink>
-
-          <button
-            class="btn btn-sm"
-            :class="shortlisted ? 'btn-secondary' : 'btn-primary'"
-            :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
-            @click="$emit('toggle-shortlist', university)"
-          >
-            {{ shortlisted ? 'Remove From Shortlist' : 'Add to Shortlist' }}
-          </button>
-        </div>
-        <span
-          class="university-region ms-auto flex-shrink-0 small"
-          v-bind:class="{
-            'is-filtered': selectedRegion === university.region,
-          }"
+      <div class="mb-4 flex-grow-1 min-width-0">
+        <h2
+          class="h5 card-title university-name mb-1"
+          data-testid="university-card-name"
         >
-          {{ university.region }}
-        </span>
+          {{ university.name }}
+        </h2>
+
+        <p class="card-text text-muted small mb-3">
+          {{ university.city }}, {{ university.country }}
+        </p>
+
+        <div class="cost-stat-card p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-wallet2 text-primary fs-7"></i>
+            <span class="text-secondary fw-medium small">Est. Monthly Cost</span>
+          </div>
+          <span class="fw-bold text-navy small">{{ estimatedMonthlyCost }}</span>
+        </div>
       </div>
+
+      <div class="mt-auto pt-4 border-top d-flex gap-2 flex-wrap flex-sm-nowrap">
+        <RouterLink
+          :to="`/universities/${university.id}`"
+          class="btn btn-primary btn-sm flex-fill rounded-pill py-2"
+          data-testid="university-card-link"
+        >
+          Details
+        </RouterLink>
+
+        <RouterLink
+          v-if="auth.adminActive"
+          :to="{ path: `/universities/${university.id}`, query: { edit: 'details' } }"
+          class="btn btn-outline-secondary btn-sm rounded-pill py-2 px-3"
+          data-testid="university-card-edit"
+        >
+          Edit
+        </RouterLink>
+
+        <button
+          class="btn btn-sm flex-fill rounded-pill py-2"
+          :class="shortlisted ? 'btn-primary' : 'btn-outline-primary'"
+          :data-testid="shortlisted ? 'shortlist-remove-btn' : 'shortlist-add-btn'"
+          @click="$emit('toggle-shortlist', university)"
+        >
+          <i class="bi me-1" :class="shortlisted ? 'bi-bookmark-fill' : 'bi-bookmark-plus'"></i>
+          {{ shortlisted ? 'Shortlisted' : 'Shortlist' }}
+        </button>
+      </div>
+
     </div>
   </div>
 </template>
+
+<style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.university-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.university-card.is-hovered {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(44, 51, 102, 0.2) !important;
+}
+
+.university-name {
+  font-weight: 700;
+  color: var(--app-navy, #0b2348);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.university-logo-box {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.university-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.region-badge {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+.cost-stat-card {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+</style>
