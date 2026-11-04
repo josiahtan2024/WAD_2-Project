@@ -21,6 +21,26 @@ function getUserId() {
   return user.id
 }
 
+/**
+ * Narrow a planned_modules query to the user's timeslots that use some of their cart rows.
+ * @param {object} query A supabase.from('planned_modules') select or delete.
+ * @param {{ cartModuleIds?: number[], universityId?: number|string }} scope cart rows by id, or every row for one university, or (empty) the whole cart
+ */
+function plannedSlots(query, { cartModuleIds, universityId } = {}) {
+  query = query.eq('user_id', getUserId())
+  if (cartModuleIds) query = query.in('cart_module_id', cartModuleIds)
+  if (universityId != null) query = query.eq('university_id', universityId)
+  return query
+}
+
+// A course's timeslots go with it when it leaves the cart, so a schedule never points at a removed course.
+// The database also cascades this (planned_modules -> cart_modules ON DELETE CASCADE); deleting here first
+// keeps it working on a database set up before that cascade was added.
+async function deletePlannedSlots(scope) {
+  const { error } = await plannedSlots(supabase.from('planned_modules').delete(), scope)
+  if (error) throw error
+}
+
 /** Turn a cart_modules row into the cart item shape used by the pages. */
 function toItem(row) {
   const um = row.university_module
@@ -105,6 +125,22 @@ export const useCourseCartStore = defineStore('courseCart', {
       if (loadPromise) await loadPromise
       if (this.loadedUserId !== userId) await this.load()
     },
+    /**
+     * How many saved schedule timeslots would be deleted along with these cart items (pages ask before removing).
+     * @param {number} [universityModuleId] One course, or omit for every course (in `universityId`, if given).
+     * @param {number|string} [universityId]
+     */
+    async scheduledSlotCount(universityModuleId, universityId) {
+      const item = universityModuleId == null ? null : this.items.find((i) => i.universityModuleId === universityModuleId)
+      if (universityModuleId != null && !item) return 0
+      const scope = item ? { cartModuleIds: [item.cartModuleId] } : { universityId }
+      const { count, error } = await plannedSlots(
+        supabase.from('planned_modules').select('id', { count: 'exact', head: true }),
+        scope
+      )
+      if (error) throw error
+      return count ?? 0
+    },
     /** @param {object} mapping A credit_mappings row loaded with MAPPING_SELECT. */
     async add(mapping) {
       const um = mapping.university_module
@@ -135,6 +171,7 @@ export const useCourseCartStore = defineStore('courseCart', {
       this.error = null
       this.pendingIds.push(universityModuleId)
       try {
+        await deletePlannedSlots({ cartModuleIds: [item.cartModuleId] })
         const { error } = await supabase
           .from('cart_modules')
           .delete()
@@ -153,6 +190,7 @@ export const useCourseCartStore = defineStore('courseCart', {
     async clear(universityId) {
       this.error = null
       try {
+        await deletePlannedSlots({ universityId })
         let query = supabase.from('cart_modules').delete().eq('user_id', getUserId())
         if (universityId != null) query = query.eq('university_id', universityId)
         const { error } = await query
