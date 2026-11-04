@@ -25,7 +25,7 @@ export const useUniversitiesStore = defineStore('universities', {
     sortBy: 'name',
     loading: false,
     error: null,
-    scheduleUniName:null,
+    scheduleUniName: null,
   }),
   actions: {
     /** Load all universities from Supabase into `items`. Set loading and error. */
@@ -34,9 +34,7 @@ export const useUniversitiesStore = defineStore('universities', {
       this.error = null
 
       try {
-        const { data, error } = await supabase
-          .from('universities')
-          .select(`
+        const { data, error } = await supabase.from('universities').select(`
             *,
             university_costs (
               currency_code,
@@ -113,11 +111,13 @@ export const useUniversitiesStore = defineStore('universities', {
       this.modules = data ?? []
     },
 
-    async getUniversityName(universityId){
-      const {data,error} = await supabase.from('universities').select('name').eq('id',universityId)
+    async getUniversityName(universityId) {
+      const { data, error } = await supabase
+        .from('universities')
+        .select('name')
+        .eq('id', universityId)
       if (error) throw error // shown by the schedule page's error alert
       this.scheduleUniName = data?.[0]?.name ?? null
-    }
-
+    },
   },
 })

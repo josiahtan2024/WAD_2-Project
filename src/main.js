@@ -20,7 +20,6 @@ async function bootstrap() {
     await auth.init()
   } catch (error) {
     console.error('Unable to initialize authentication:', error.message)
-
   }
 
   app.use(router)

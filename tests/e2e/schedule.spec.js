@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test'
 import { login } from './helpers'
 
 test.describe('schedule', () => {
-  test.skip(!process.env.TEST_EMAIL || !process.env.TEST_PASSWORD, 'set TEST_EMAIL and TEST_PASSWORD to run the schedule tests')
+  test.skip(
+    !process.env.TEST_EMAIL || !process.env.TEST_PASSWORD,
+    'set TEST_EMAIL and TEST_PASSWORD to run the schedule tests'
+  )
 
   test.beforeEach(async ({ page }) => {
     await login(page)

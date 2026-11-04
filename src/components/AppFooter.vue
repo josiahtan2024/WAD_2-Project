@@ -1,27 +1,41 @@
 <template>
-  <footer class="app-footer">
+  <footer class="app-footer" data-testid="app-footer">
     <div class="container-xl py-4 py-md-5">
       <div class="row g-4 align-items-start pb-4">
         <div class="col-12 col-lg-7">
-          <RouterLink class="footer-brand d-inline-flex align-items-center gap-2 mb-2" :to="{ name: 'home' }">
-            <span class="footer-brand-mark"><i class="bi bi-compass-fill" aria-hidden="true"></i></span>
+          <RouterLink
+            class="footer-brand d-inline-flex align-items-center gap-2 mb-2"
+            :to="{ name: 'home' }"
+          >
+            <span class="footer-brand-mark"
+              ><i class="bi bi-globe-americas" aria-hidden="true"></i
+            ></span>
             <span>SMUXchange</span>
           </RouterLink>
           <p class="footer-description mb-0">
-            Explore your exchange options and bring your university, course, schedule, and budget plans together.
+            Explore your exchange options and bring your university, course,
+            schedule, and budget plans together.
           </p>
         </div>
         <div class="col-12 col-lg-5">
-          <nav class="d-flex flex-column flex-sm-row justify-content-lg-end gap-3 gap-sm-4 footer-links" aria-label="Footer navigation">
+          <nav
+            class="d-flex flex-column flex-sm-row justify-content-lg-end gap-3 gap-sm-4 footer-links"
+            aria-label="Footer navigation"
+          >
             <RouterLink :to="{ name: 'universities' }">Universities</RouterLink>
             <RouterLink :to="{ name: 'courses' }">Course Search</RouterLink>
             <RouterLink :to="{ name: 'about' }">About Us</RouterLink>
           </nav>
         </div>
       </div>
-      <div class="footer-bottom pt-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+      <div
+        class="footer-bottom pt-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2"
+      >
         <small>&copy; 2026 SMUXchange. All rights reserved.</small>
-        <small>Made for your next chapter abroad <i class="bi bi-globe-asia-australia ms-1" aria-hidden="true"></i></small>
+        <small
+          >Made for your next chapter abroad
+          <i class="bi bi-globe-asia-australia ms-1" aria-hidden="true"></i
+        ></small>
       </div>
     </div>
   </footer>

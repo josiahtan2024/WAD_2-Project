@@ -32,7 +32,9 @@ function getUserId() {
 
 function explain(error) {
   if (error.code === '23505') {
-    return new Error('You have already reviewed this university. Edit or delete your review instead.')
+    return new Error(
+      'You have already reviewed this university. Edit or delete your review instead.'
+    )
   }
   if (error.code === '42501') return new Error('You are not allowed to do that.')
   // .single() finds no row when the review is gone or belongs to someone else
@@ -51,7 +53,9 @@ async function uploadImage(userId, file) {
   if (!IMAGE_TYPES.includes(file.type)) throw new Error('Photos must be JPG, PNG or WebP.')
   if (file.size > MAX_IMAGE_BYTES) throw new Error('Photos must be 2 MB or smaller.')
   const path = `${userId}/${crypto.randomUUID()}.${file.type.split('/')[1]}`
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type })
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type })
   if (error) throw error
   return path
 }
@@ -72,7 +76,8 @@ export const useReviewsStore = defineStore('reviews', {
   }),
   getters: {
     // the store can still hold the previous university's reviews until the next load starts
-    isLoadedFor: (state) => (universityId) => state.loaded && state.universityId === String(universityId),
+    isLoadedFor: (state) => (universityId) =>
+      state.loaded && state.universityId === String(universityId),
     reviewOf: (state) => (userId) => state.items.find((r) => r.user_id === userId),
   },
   actions: {
@@ -119,7 +124,12 @@ export const useReviewsStore = defineStore('reviews', {
         if (draft.image) imagePath = await uploadImage(userId, draft.image)
         const { data, error } = await supabase
           .from('university_reviews')
-          .insert({ ...reviewFields(draft), user_id: userId, university_id: universityId, image_path: imagePath })
+          .insert({
+            ...reviewFields(draft),
+            user_id: userId,
+            university_id: universityId,
+            image_path: imagePath,
+          })
           .select(REVIEW_COLUMNS)
           .single()
         if (error) throw error
@@ -169,9 +179,11 @@ export const useReviewsStore = defineStore('reviews', {
 
       // keep the comments we already have, they may have changed while the form was open
       const index = this.items.findIndex((r) => r.id === reviewId)
-      if (index !== -1) this.items[index] = { ...saved, review_comments: this.items[index].review_comments }
+      if (index !== -1)
+        this.items[index] = { ...saved, review_comments: this.items[index].review_comments }
       // only drop the old photo once the new row is safely saved
-      if (before?.image_path && before.image_path !== saved.image_path) await deleteImage(before.image_path)
+      if (before?.image_path && before.image_path !== saved.image_path)
+        await deleteImage(before.image_path)
     },
     /** @param {number} reviewId Delete one of the current user's reviews. */
     async remove(reviewId) {

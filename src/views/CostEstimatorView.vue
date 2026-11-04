@@ -11,9 +11,9 @@ import BudgetDetailsDialog from '@/components/BudgetDetailsDialog.vue'
 
 const auth = useAuthStore()
 const allUniversities = ref([])
-const universities = computed(() => allUniversities.value.filter((university) =>
-  auth.adminActive || university.published !== false
-))
+const universities = computed(() =>
+  allUniversities.value.filter((university) => auth.adminActive || university.published !== false)
+)
 const exchangePeriods = ref([])
 const publishedCost = ref(null)
 
@@ -21,17 +21,20 @@ const selectedUniversityId = ref('')
 const selectedPeriodId = ref('')
 const durationMonths = ref(1)
 
-watch(() => auth.adminActive, (adminActive) => {
-  if (adminActive) return
-  const selected = allUniversities.value.find((university) =>
-    String(university.id) === String(selectedUniversityId.value)
-  )
-  if (selected?.published === false) {
-    selectedUniversityId.value = ''
-    selectedPeriodId.value = ''
-    publishedCost.value = null
+watch(
+  () => auth.adminActive,
+  (adminActive) => {
+    if (adminActive) return
+    const selected = allUniversities.value.find(
+      (university) => String(university.id) === String(selectedUniversityId.value)
+    )
+    if (selected?.published === false) {
+      selectedUniversityId.value = ''
+      selectedPeriodId.value = ''
+      publishedCost.value = null
+    }
   }
-})
+)
 
 const housingType = ref('')
 const foodOption = ref('')
@@ -60,11 +63,14 @@ const budgetToRead = ref(null)
 
 const errorMessage = ref('')
 const successMessage = ref('')
-const visibleSavedBudgets = computed(() => auth.adminActive
-  ? savedBudgets.value
-  : savedBudgets.value.filter((budget) => universities.value.some((university) =>
-      String(university.id) === String(budget.university_id)
-    ))
+const visibleSavedBudgets = computed(() =>
+  auth.adminActive
+    ? savedBudgets.value
+    : savedBudgets.value.filter((budget) =>
+        universities.value.some(
+          (university) => String(university.id) === String(budget.university_id)
+        )
+      )
 )
 
 // Automatically dismiss success/error notifications after five seconds.
@@ -119,25 +125,22 @@ const transportOptions = [
 ]
 
 const selectedUniversity = computed(() =>
-  universities.value.find(
-    item => String(item.id) === String(selectedUniversityId.value),
-  ),
+  universities.value.find((item) => String(item.id) === String(selectedUniversityId.value))
 )
 
 const selectedPeriod = computed(() =>
-  exchangePeriods.value.find(
-    item => String(item.id) === String(selectedPeriodId.value),
-  ),
+  exchangePeriods.value.find((item) => String(item.id) === String(selectedPeriodId.value))
 )
 
 const availableBudgetRegions = computed(() =>
-  [...new Set(visibleSavedBudgets.value.map(budget => budget.university_region).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b)),
+  [
+    ...new Set(visibleSavedBudgets.value.map((budget) => budget.university_region).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b))
 )
 
 const filteredBudgets = computed(() => {
   const query = budgetSearchQuery.value.trim().toLocaleLowerCase()
-  const filtered = visibleSavedBudgets.value.filter(budget => {
+  const filtered = visibleSavedBudgets.value.filter((budget) => {
     const matchesRegion =
       !selectedRegionFilter.value || budget.university_region === selectedRegionFilter.value
     const searchableText = [
@@ -145,7 +148,10 @@ const filteredBudgets = computed(() => {
       budget.university_country,
       budget.university_region,
       budget.period_name,
-    ].filter(Boolean).join(' ').toLocaleLowerCase()
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase()
     return matchesRegion && (!query || searchableText.includes(query))
   })
 
@@ -154,8 +160,10 @@ const filteredBudgets = computed(() => {
       return a.university_name.localeCompare(b.university_name)
     }
     if (budgetSortBy.value === 'country') {
-      return a.university_country.localeCompare(b.university_country) ||
+      return (
+        a.university_country.localeCompare(b.university_country) ||
         a.university_name.localeCompare(b.university_name)
+      )
     }
     if (budgetSortBy.value === 'cost') {
       return Number(a.total_budget || 0) - Number(b.total_budget || 0)
@@ -166,9 +174,7 @@ const filteredBudgets = computed(() => {
   })
 })
 
-const currencyCode = computed(
-  () => publishedCost.value?.currency_code || 'SGD',
-)
+const currencyCode = computed(() => publishedCost.value?.currency_code || 'SGD')
 
 const monthlyBudget = computed(() =>
   [
@@ -177,11 +183,11 @@ const monthlyBudget = computed(() =>
     transport.value,
     personalExpenses.value,
     otherExpenses.value,
-  ].reduce((sum, value) => sum + (Number(value) || 0), 0),
+  ].reduce((sum, value) => sum + (Number(value) || 0), 0)
 )
 
 const totalExchangeBudget = computed(
-  () => monthlyBudget.value * (Number(durationMonths.value) || 0),
+  () => monthlyBudget.value * (Number(durationMonths.value) || 0)
 )
 
 const publishedMonthlyCost = computed(() => {
@@ -193,17 +199,15 @@ const publishedMonthlyCost = computed(() => {
     publishedCost.value.transport,
     publishedCost.value.personal_expenses,
     publishedCost.value.other_expenses,
-  ].filter(value => value !== null && value !== undefined)
+  ].filter((value) => value !== null && value !== undefined)
 
-  return values.length
-    ? values.reduce((sum, value) => sum + Number(value), 0)
-    : null
+  return values.length ? values.reduce((sum, value) => sum + Number(value), 0) : null
 })
 
 const publishedTotalCost = computed(() =>
   publishedMonthlyCost.value === null
     ? null
-    : publishedMonthlyCost.value * (Number(durationMonths.value) || 0),
+    : publishedMonthlyCost.value * (Number(durationMonths.value) || 0)
 )
 
 const monthlyBudgetSGD = computed(() => {
@@ -215,7 +219,7 @@ const monthlyBudgetSGD = computed(() => {
 const totalBudgetSGD = computed(() =>
   monthlyBudgetSGD.value === null
     ? null
-    : monthlyBudgetSGD.value * (Number(durationMonths.value) || 0),
+    : monthlyBudgetSGD.value * (Number(durationMonths.value) || 0)
 )
 
 const publishedTotalSGD = computed(() => {
@@ -227,9 +231,7 @@ const publishedTotalSGD = computed(() => {
 })
 
 const remainingBudget = computed(() =>
-  publishedTotalCost.value === null
-    ? null
-    : publishedTotalCost.value - totalExchangeBudget.value,
+  publishedTotalCost.value === null ? null : publishedTotalCost.value - totalExchangeBudget.value
 )
 
 const budgetStatus = computed(() => {
@@ -253,21 +255,12 @@ const validBudget = computed(() => {
     Number.isInteger(Number(durationMonths.value)) &&
     Number(durationMonths.value) >= 1 &&
     Number(durationMonths.value) <= 12 &&
-    values.every(
-      value =>
-        value !== '' &&
-        Number.isFinite(Number(value)) &&
-        Number(value) >= 0,
-    )
+    values.every((value) => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0)
   )
 })
 
 function formatMoney(amount, currency = currencyCode.value) {
-  if (
-    amount === null ||
-    amount === undefined ||
-    !Number.isFinite(Number(amount))
-  ) {
+  if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) {
     return 'Not available'
   }
 
@@ -301,21 +294,14 @@ function calculateDuration(startDate, endDate) {
   const start = new Date(`${startDate}T00:00:00`)
   const end = new Date(`${endDate}T00:00:00`)
 
-  if (
-    Number.isNaN(start.getTime()) ||
-    Number.isNaN(end.getTime()) ||
-    end < start
-  ) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
     return null
   }
 
   const monthDifference =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    end.getMonth() -
-    start.getMonth()
+    (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth()
 
-  const months =
-    monthDifference + (end.getDate() > start.getDate() ? 1 : 0)
+  const months = monthDifference + (end.getDate() > start.getDate() ? 1 : 0)
 
   return Math.min(12, Math.max(1, months))
 }
@@ -333,15 +319,11 @@ function applyOptionPrice(category, options, selectedValue) {
 
   const base = publishedCost.value[category]
 
-  if (
-    base === null ||
-    base === undefined ||
-    !Number.isFinite(Number(base))
-  ) {
+  if (base === null || base === undefined || !Number.isFinite(Number(base))) {
     return
   }
 
-  const option = options.find(item => item.value === selectedValue)
+  const option = options.find((item) => item.value === selectedValue)
   if (!option) return
 
   const amount = Number(base) * option.multiplier
@@ -382,9 +364,7 @@ async function loadPublishedCost() {
 
   const { data, error } = await supabase
     .from('university_costs')
-    .select(
-      'currency_code, accommodation, food, transport, personal_expenses, other_expenses',
-    )
+    .select('currency_code, accommodation, food, transport, personal_expenses, other_expenses')
     .eq('university_id', selectedUniversityId.value)
     .maybeSingle()
 
@@ -401,9 +381,7 @@ async function loadExchangePeriods() {
 
   const { data, error } = await supabase
     .from('exchange_periods')
-    .select(
-      'id, university_id, period_name, term, academic_year, start_date, end_date',
-    )
+    .select('id, university_id, period_name, term, academic_year, start_date, end_date')
     .eq('university_id', selectedUniversityId.value)
     .order('start_date', { ascending: true })
 
@@ -423,7 +401,7 @@ async function loadExchangeRate() {
 
   try {
     const response = await fetch(
-      `https://api.frankfurter.dev/v1/latest?base=SGD&symbols=${encodeURIComponent(currency)}`,
+      `https://api.frankfurter.dev/v1/latest?base=SGD&symbols=${encodeURIComponent(currency)}`
     )
 
     if (!response.ok) {
@@ -480,10 +458,7 @@ async function loadSelectedUniversityData() {
   if (!selectedUniversityId.value) return
 
   try {
-    await Promise.all([
-      loadPublishedCost(),
-      loadExchangePeriods(),
-    ])
+    await Promise.all([loadPublishedCost(), loadExchangePeriods()])
 
     if (currentVersion !== loadVersion) return
 
@@ -496,8 +471,7 @@ async function loadSelectedUniversityData() {
     console.error('Error loading cost estimator:', error)
 
     if (currentVersion === loadVersion) {
-      errorMessage.value =
-        error.message || 'Unable to load the university budget information.'
+      errorMessage.value = error.message || 'Unable to load the university budget information.'
     }
   }
 }
@@ -521,12 +495,10 @@ watch(selectedUniversityId, async (newId, oldId) => {
   }
 })
 
-watch(selectedPeriodId, newId => {
+watch(selectedPeriodId, (newId) => {
   if (!newId) return
 
-  const period = exchangePeriods.value.find(
-    item => String(item.id) === String(newId),
-  )
+  const period = exchangePeriods.value.find((item) => String(item.id) === String(newId))
 
   if (period) applyPeriodDuration(period)
 })
@@ -537,8 +509,7 @@ function usePublishedEstimates() {
   accommodation.value = Number(publishedCost.value.accommodation) || 0
   food.value = Number(publishedCost.value.food) || 0
   transport.value = Number(publishedCost.value.transport) || 0
-  personalExpenses.value =
-    Number(publishedCost.value.personal_expenses) || 0
+  personalExpenses.value = Number(publishedCost.value.personal_expenses) || 0
   otherExpenses.value = Number(publishedCost.value.other_expenses) || 0
 
   resetLifestyleSelections()
@@ -554,13 +525,20 @@ async function getCurrentUser() {
   return data.user
 }
 
+function backToBudgetList() {
+  currentView.value = 'list'
+  loadBudgets()
+}
+
 async function loadBudgets() {
   budgetsLoading.value = true
   try {
     const user = await getCurrentUser()
     const { data, error } = await supabase
       .from('user_budgets')
-      .select('id, university_id, exchange_period_id, duration_months, currency_code, total_budget, accommodation_budget, food_budget, transport_budget, personal_budget, other_budget, housing_type, food_option, transport_option')
+      .select(
+        'id, university_id, exchange_period_id, duration_months, currency_code, total_budget, accommodation_budget, food_budget, transport_budget, personal_budget, other_budget, housing_type, food_option, transport_option'
+      )
       .eq('user_id', user.id)
       .order('id', { ascending: false })
     if (error) throw error
@@ -573,15 +551,20 @@ async function loadBudgets() {
       .select('id, university_id, period_name, term, academic_year, start_date, end_date')
     if (periodsError) throw periodsError
 
-    const periodsById = new Map(
-      (allPeriods || []).map(period => [String(period.id), period]),
-    )
+    const periodsById = new Map((allPeriods || []).map((period) => [String(period.id), period]))
 
-    savedBudgets.value = (data || []).map(budget => {
-      const university = universities.value.find(item => String(item.id) === String(budget.university_id))
+    savedBudgets.value = (data || []).map((budget) => {
+      const university = universities.value.find(
+        (item) => String(item.id) === String(budget.university_id)
+      )
       const period = periodsById.get(String(budget.exchange_period_id))
-      const monthly = ['accommodation_budget', 'food_budget', 'transport_budget', 'personal_budget', 'other_budget']
-        .reduce((sum, key) => sum + Number(budget[key] || 0), 0)
+      const monthly = [
+        'accommodation_budget',
+        'food_budget',
+        'transport_budget',
+        'personal_budget',
+        'other_budget',
+      ].reduce((sum, key) => sum + Number(budget[key] || 0), 0)
       return {
         ...budget,
         university_name: university?.name || `University #${budget.university_id}`,
@@ -592,9 +575,15 @@ async function loadBudgets() {
               period.period_name,
               period.term,
               period.academic_year ? `(${period.academic_year})` : '',
-            ].filter(Boolean).join(' — ').replace(/ — \(/g, ' (')
+            ]
+              .filter(Boolean)
+              .join(' — ')
+              .replace(/ — \(/g, ' (')
           : '',
-        total_budget: budget.total_budget == null ? monthly * (Number(budget.duration_months) || 1) : Number(budget.total_budget),
+        total_budget:
+          budget.total_budget == null
+            ? monthly * (Number(budget.duration_months) || 1)
+            : Number(budget.total_budget),
       }
     })
   } catch (error) {
@@ -681,7 +670,7 @@ async function confirmDeleteBudget() {
 
     if (error) throw error
 
-    savedBudgets.value = savedBudgets.value.filter(item => item.id !== budget.id)
+    savedBudgets.value = savedBudgets.value.filter((item) => item.id !== budget.id)
     budgetToDelete.value = null
     successMessage.value = 'Budget deleted successfully.'
   } catch (error) {
@@ -700,7 +689,8 @@ async function saveBudget() {
     return
   }
   if (!validBudget.value) {
-    errorMessage.value = 'Please enter a valid duration from 1 to 12 months. Expenses cannot be negative.'
+    errorMessage.value =
+      'Please enter a valid duration from 1 to 12 months. Expenses cannot be negative.'
     return
   }
 
@@ -726,7 +716,11 @@ async function saveBudget() {
     }
 
     const query = editingBudgetId.value
-      ? supabase.from('user_budgets').update(payload).eq('id', editingBudgetId.value).eq('user_id', user.id)
+      ? supabase
+          .from('user_budgets')
+          .update(payload)
+          .eq('id', editingBudgetId.value)
+          .eq('user_id', user.id)
       : supabase.from('user_budgets').insert(payload)
     const { error } = await query
     if (error) throw error
@@ -761,8 +755,7 @@ onMounted(async () => {
     await loadBudgets()
   } catch (error) {
     console.error('Initial cost estimator load failed:', error)
-    errorMessage.value =
-      error.message || 'Unable to load the cost estimator.'
+    errorMessage.value = error.message || 'Unable to load the cost estimator.'
   } finally {
     loading.value = false
   }
@@ -772,26 +765,20 @@ onMounted(async () => {
 <template>
   <main class="container py-4 mb-5">
     <div class="mb-3">
-
       <h1 class="page-title h3 fw-bold text-center mb-3">Exchange Budget Planner</h1>
 
       <p class="text-secondary text-center mb-0">
-        Estimate your exchange expenses, compare published costs,
-        and plan your budget before you go.
+        Estimate your exchange expenses, compare published costs, and plan your budget before you
+        go.
       </p>
     </div>
 
-    <div
-      v-if="loading"
-      class="d-flex flex-column align-items-center justify-content-center py-5"
-    >
+    <div v-if="loading" class="d-flex flex-column align-items-center justify-content-center py-5">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
 
-      <p class="text-secondary mb-0">
-        Loading your exchange budget...
-      </p>
+      <p class="text-secondary mb-0">Loading your exchange budget...</p>
     </div>
 
     <template v-else>
@@ -833,15 +820,20 @@ onMounted(async () => {
       />
 
       <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info">
-        No partner universities are available yet. Please add partner universities
-        to your database before creating a budget.
+        No partner universities are available yet. Please add partner universities to your database
+        before creating a budget.
       </div>
 
       <div v-if="currentView === 'planner' && universities.length > 0" class="mb-3">
-        <button type="button" class="btn btn-outline-secondary" @click="currentView = 'list'; loadBudgets()">← Back to My Budgets</button>
+        <button type="button" class="btn btn-outline-secondary" @click="backToBudgetList">
+          ← Back to My Budgets
+        </button>
       </div>
 
-      <div v-if="currentView === 'planner' && universities.length > 0" class="row g-4 align-items-start">
+      <div
+        v-if="currentView === 'planner' && universities.length > 0"
+        class="row g-4 align-items-start"
+      >
         <BudgetSummaryPanel
           :selected-university="selectedUniversity"
           :selected-university-id="selectedUniversityId"
@@ -863,39 +855,39 @@ onMounted(async () => {
         />
 
         <section class="col-12 col-lg-7">
-        <BudgetPlannerForm
-          v-model:selected-university-id="selectedUniversityId"
-          v-model:selected-period-id="selectedPeriodId"
-          v-model:duration-months="durationMonths"
-          v-model:housing-type="housingType"
-          v-model:food-option="foodOption"
-          v-model:transport-option="transportOption"
-          v-model:accommodation="accommodation"
-          v-model:food="food"
-          v-model:transport="transport"
-          v-model:personal-expenses="personalExpenses"
-          v-model:other-expenses="otherExpenses"
-          :universities="universities"
-          :exchange-periods="exchangePeriods"
-          :selected-university="selectedUniversity"
-          :selected-period="selectedPeriod"
-          :currency-code="currencyCode"
-          :monthly-budget="monthlyBudget"
-          :total-exchange-budget="totalExchangeBudget"
-          :total-budget-s-g-d="totalBudgetSGD"
-          :saving="saving"
-          :editing-budget-id="editingBudgetId"
-          :valid-budget="validBudget"
-          :housing-options="housingOptions"
-          :food-options="foodOptions"
-          :transport-options="transportOptions"
-          :format-money="formatMoney"
-          :format-date="formatDate"
-          @submit="saveBudget"
-          @update-accommodation-price="updateAccommodationPrice"
-          @update-food-price="updateFoodPrice"
-          @update-transport-price="updateTransportPrice"
-        />
+          <BudgetPlannerForm
+            v-model:selected-university-id="selectedUniversityId"
+            v-model:selected-period-id="selectedPeriodId"
+            v-model:duration-months="durationMonths"
+            v-model:housing-type="housingType"
+            v-model:food-option="foodOption"
+            v-model:transport-option="transportOption"
+            v-model:accommodation="accommodation"
+            v-model:food="food"
+            v-model:transport="transport"
+            v-model:personal-expenses="personalExpenses"
+            v-model:other-expenses="otherExpenses"
+            :universities="universities"
+            :exchange-periods="exchangePeriods"
+            :selected-university="selectedUniversity"
+            :selected-period="selectedPeriod"
+            :currency-code="currencyCode"
+            :monthly-budget="monthlyBudget"
+            :total-exchange-budget="totalExchangeBudget"
+            :total-budget-s-g-d="totalBudgetSGD"
+            :saving="saving"
+            :editing-budget-id="editingBudgetId"
+            :valid-budget="validBudget"
+            :housing-options="housingOptions"
+            :food-options="foodOptions"
+            :transport-options="transportOptions"
+            :format-money="formatMoney"
+            :format-date="formatDate"
+            @submit="saveBudget"
+            @update-accommodation-price="updateAccommodationPrice"
+            @update-food-price="updateFoodPrice"
+            @update-transport-price="updateTransportPrice"
+          />
         </section>
       </div>
     </template>
@@ -912,6 +904,5 @@ onMounted(async () => {
   .display-6 {
     font-size: 1.9rem;
   }
-
 }
 </style>

@@ -26,6 +26,8 @@ function pick(n) {
       :aria-label="`${n} out of 5`"
       :data-testid="`${testid}-${n}`"
       @click="pick(n)"
-    >&#9733;</button>
+    >
+      &#9733;
+    </button>
   </div>
 </template>
