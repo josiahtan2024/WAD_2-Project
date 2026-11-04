@@ -841,12 +841,14 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            <span class="text-nowrap me-1">
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
-                            </span>
-                            <span class="text-nowrap">
-                                <span class="me-1">-</span>
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-inline-flex align-items-baseline flex-wrap">
+                                <span class="text-nowrap me-1">
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
+                                </span>
+                                <span class="text-nowrap">
+                                    <span class="mx-1">-</span>
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                                </span>
                             </span>
                         </div>
                     </template>
