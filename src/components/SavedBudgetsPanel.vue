@@ -93,7 +93,7 @@ function resetFilters() {
           data-testid="budget-create-button"
           @click="emit('create')"
         >
-          <i class="bi bi-plus-lg me-1"></i> Create New Budget
+          <i class="bi bi-plus-lg me-1"></i> New Budget
         </button>
       </div>
 
@@ -109,7 +109,7 @@ function resetFilters() {
         <i class="bi bi-wallet2 fs-2 text-muted mb-2 d-block"></i>
         <h3 class="h5 fw-semibold text-navy mb-1" data-testid="budget-empty-state">No Budgets Yet</h3>
         <p class="text-muted small mb-3">
-          Create your first exchange budget to start planning your expenses.
+          Create your first budget to start planning your expenses.
         </p>
         <button
           type="button"
@@ -117,7 +117,7 @@ function resetFilters() {
           data-testid="budget-create-button"
           @click="emit('create')"
         >
-          Create Your First Budget
+          Create First Budget
         </button>
       </div>
 
@@ -179,7 +179,7 @@ function resetFilters() {
           v-if="props.filteredBudgets.length === 0"
           class="empty-state text-center py-5 px-3 rounded-4 border border-dashed my-3"
         >
-          <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No partner universities match your search.
+          <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No budgets match your search.
         </div>
 
         <div v-else class="table-responsive">
@@ -201,29 +201,26 @@ function resetFilters() {
                     <div class="small text-muted"><i class="bi bi-geo-alt me-1 text-primary"></i>{{ budget.university_country }}</div>
                   </div>
                 </td>
-                <td data-label="Exchange period" class="small text-secondary">{{ budget.period_name || 'Not specified' }}</td>
+                <td data-label="Exchange Period" class="small text-secondary">{{ budget.period_name || 'Not specified' }}</td>
                 <td data-label="Duration" class="small text-secondary">
-                  {{ budget.duration_months }} month<span
-                    v-if="Number(budget.duration_months) !== 1"
-                    >s</span
-                  >
+                  {{ budget.duration_months }} month{{ Number(budget.duration_months) !== 1 ? 's' : '' }}
                 </td>
-                <td data-label="Total budget" class="fw-bold text-navy text-nowrap">
+                <td data-label="Total Budget" class="fw-bold text-navy text-nowrap">
                   {{ props.formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}
                 </td>
                 <td data-label="Actions" class="pe-3">
                   <div class="d-flex justify-content-end align-items-center gap-2 budget-actions">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1"
+                      class="btn btn-sm btn-primary rounded-pill px-3 py-2"
                       data-testid="budget-read-button"
                       @click="emit('read', budget)"
                     >
-                      Read
+                      Details
                     </button>
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1"
+                      class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2"
                       data-testid="budget-edit-button"
                       @click="emit('edit', budget)"
                     >
@@ -231,13 +228,14 @@ function resetFilters() {
                     </button>
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1"
-                      data-testid="budget-delete-button"
+                      class="btn btn-sm btn-outline-danger rounded-circle p-2 lh-1 remove-btn"
+                      data-testid="budget-delete-btn"
                       :disabled="props.deletingBudgetId === budget.id"
                       @click="emit('delete', budget)"
+                      title="Delete"
+                      aria-label="Delete"
                     >
-                      <span v-if="props.deletingBudgetId === budget.id" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                      {{ props.deletingBudgetId === budget.id ? 'Deleting...' : 'Delete' }}
+                      <i class="bi bi-trash"></i>
                     </button>
                   </div>
                 </td>
@@ -390,7 +388,7 @@ function resetFilters() {
   .budget-table td {
     display: grid;
     grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
-    align-items: center;
+    align-items: start;
     gap: 0.75rem;
     padding: 0.5rem 0 !important;
     border: 0;
@@ -414,22 +412,22 @@ function resetFilters() {
     padding-top: 0.75rem !important;
   }
   .budget-table td[data-label='Actions']::before {
-    display: block;
-    margin-bottom: 0.5rem;
+    display: none;
   }
   .budget-actions {
     justify-content: flex-start !important;
   }
-  .budget-actions .btn {
+  .budget-actions .btn:not(.remove-btn) {
     flex: 1 1 0;
   }
 }
 
 .remove-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 !important;
 }
 </style>

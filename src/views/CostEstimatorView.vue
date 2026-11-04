@@ -511,7 +511,7 @@ function usePublishedEstimates() {
   resetLifestyleSelections()
 
   successMessage.value =
-    'Published estimates copied into your budget. Preferences and transport method have been reset. You can edit the amounts before saving.'
+    'Published estimates copied into your budget. Preferences have been reset.'
 }
 
 async function getCurrentUser() {
@@ -802,12 +802,12 @@ onMounted(async () => {
       />
 
       <div v-if="currentView === 'planner' && universities.length === 0" class="alert alert-info rounded-4 border-0">
-        No partner universities are available yet. Please add partner universities to your database before creating a budget.
+        No partner universities available. Please add universities to your database first.
       </div>
 
       <div v-if="currentView === 'planner' && universities.length > 0" class="mb-4">
         <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="backToBudgetList">
-          <i class="bi bi-arrow-left me-1"></i> Back to My Budgets
+          <i class="bi bi-chevron-left me-1"></i> Back to Budgets
         </button>
       </div>
 

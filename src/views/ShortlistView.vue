@@ -209,7 +209,7 @@ onMounted(async () => {
       data-testid="shortlist-loading"
     >
       <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
-      Loading shortlist...
+      Loading your shortlist...
     </div>
 
     <div
@@ -380,11 +380,12 @@ onMounted(async () => {
 }
 
 .remove-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 !important;
 }
 
 .shortlist-sort {

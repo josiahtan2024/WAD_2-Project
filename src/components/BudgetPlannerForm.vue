@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted } from 'vue'
+
 defineProps({
   universities: { type: Array, default: () => [] },
   exchangePeriods: { type: Array, default: () => [] },
@@ -37,21 +39,24 @@ const emit = defineEmits([
   'update-food-price',
   'update-transport-price',
 ])
+
+onMounted(() => {
+  window.scrollTo({ top: 0, behavior: 'auto' })
+})
 </script>
 
 <template>
   <form class="card border rounded-4 shadow-sm p-4 bg-white" @submit.prevent="emit('submit')">
+    <!-- University -->
     <div class="mb-4">
-      <label for="university" class="form-label fw-semibold small text-navy"> Destination University </label>
-
+      <label for="university" class="form-label fw-semibold small text-navy">Destination University</label>
       <select
         id="university"
         data-testid="budget-university-select"
         v-model="selectedUniversityId"
         class="form-select shadow-none"
       >
-        <option value="">Select a University</option>
-
+        <option value="">Select University</option>
         <option
           v-for="university in universities"
           :key="university.id"
@@ -63,61 +68,59 @@ const emit = defineEmits([
 
       <div v-if="selectedUniversity" class="small text-muted mt-2">
         <i class="bi bi-geo-alt text-primary me-1"></i>
-        <span v-if="selectedUniversity.city"> {{ selectedUniversity.city }}, </span>
+        <span v-if="selectedUniversity.city">{{ selectedUniversity.city }}, </span>
         {{ selectedUniversity.country }}
-        <span v-if="selectedUniversity.region"> · {{ selectedUniversity.region }} </span>
+        <span v-if="selectedUniversity.region">· {{ selectedUniversity.region }}</span>
       </div>
     </div>
 
+    <!-- Exchange Period -->
     <div class="mb-4">
       <label for="exchangePeriod" class="form-label fw-semibold small text-navy">
-        Exchange Period
-        <span class="optional-label ms-1">(Optional)</span>
+        Exchange Period <span class="optional-label ms-1">(Optional)</span>
       </label>
-
       <select
         id="exchangePeriod"
         v-model="selectedPeriodId"
         class="form-select shadow-none"
         :disabled="!selectedUniversityId || exchangePeriods.length === 0"
       >
-        <option value="">Select a Period (Optional)</option>
-
+        <option value="">Select Period</option>
         <option v-for="period in exchangePeriods" :key="period.id" :value="String(period.id)">
           {{ period.period_name }}
-          <template v-if="period.term"> — {{ period.term }} </template>
-          <template v-if="period.academic_year"> ({{ period.academic_year }}) </template>
+          <template v-if="period.term"> — {{ period.term }}</template>
+          <template v-if="period.academic_year"> ({{ period.academic_year }})</template>
         </option>
       </select>
 
       <div v-if="selectedPeriod" class="period-details rounded-3 p-3 mt-3 border bg-light">
         <div class="mb-2 d-flex justify-content-between align-items-center">
-          <span class="small text-muted">Exchange dates</span>
+          <span class="small text-muted">Dates</span>
           <span class="fw-semibold small text-navy">
             {{ formatDate(selectedPeriod.start_date) }} – {{ formatDate(selectedPeriod.end_date) }}
           </span>
         </div>
 
         <div class="d-flex justify-content-between align-items-center">
-          <span class="small text-muted">Calculated duration</span>
+          <span class="small text-muted">Duration</span>
           <span class="fw-semibold small text-navy">
-            {{ durationMonths }} month<span v-if="Number(durationMonths) !== 1">s</span>
+            {{ durationMonths }} month{{ Number(durationMonths) !== 1 ? 's' : '' }}
           </span>
         </div>
 
         <p class="small text-muted mt-2 mb-0 fs-8 border-top pt-2">
-          Duration updates automatically from the selected dates. You can adjust it below.
+          Duration auto-calculated from dates. You can also adjust it manually below.
         </p>
       </div>
 
       <p v-else-if="selectedUniversityId && exchangePeriods.length === 0" class="form-text small text-muted">
-        No exchange periods are available for this university. You can enter the duration manually.
+        No periods available. Enter duration manually below.
       </p>
     </div>
 
+    <!-- Duration -->
     <div class="mb-4">
-      <label for="duration" class="form-label fw-semibold small text-navy"> Exchange Duration (Months) </label>
-
+      <label for="duration" class="form-label fw-semibold small text-navy">Duration (Months)</label>
       <input
         id="duration"
         data-testid="budget-duration-input"
@@ -129,37 +132,27 @@ const emit = defineEmits([
         step="1"
         required
       />
-
-      <div class="form-text small text-muted">
-        Choose an exchange period to calculate duration, or enter it manually.
-      </div>
     </div>
 
     <hr class="my-4 border-secondary border-opacity-10" />
 
     <div class="mb-4">
       <h3 class="h6 fw-bold text-navy mb-1">Monthly Expenses</h3>
-
-      <p class="small text-muted mb-0">
-        All lifestyle dropdowns are optional. Leave them blank and enter your own amounts if preferred.
-      </p>
+      <p class="small text-muted mb-0">Lifestyle dropdowns are optional. You can also type amounts directly.</p>
     </div>
 
     <!-- Housing -->
     <div class="mb-3">
       <label for="housingType" class="form-label fw-semibold small text-navy">
-        Accommodation Type
-        <span class="optional-label ms-1">(Optional)</span>
+        Accommodation Type <span class="optional-label ms-1">(Optional)</span>
       </label>
-
       <select
         id="housingType"
         v-model="housingType"
         class="form-select shadow-none"
         @change="emit('update-accommodation-price')"
       >
-        <option value="">Select Accommodation (Optional)</option>
-
+        <option value="">Select Accommodation</option>
         <option v-for="option in housingOptions" :key="option.value" :value="option.value">
           {{ option.label }}
         </option>
@@ -167,11 +160,9 @@ const emit = defineEmits([
     </div>
 
     <div class="mb-4">
-      <label for="accommodation" class="form-label small text-secondary"> Monthly Accommodation Cost </label>
-
+      <label for="accommodation" class="form-label small text-secondary">Monthly Accommodation Cost</label>
       <div class="input-group">
         <span class="input-group-text bg-light text-navy fw-semibold small">{{ currencyCode }}</span>
-
         <input
           id="accommodation"
           data-testid="budget-accommodation-input"
@@ -188,18 +179,15 @@ const emit = defineEmits([
     <!-- Food -->
     <div class="mb-3">
       <label for="foodOption" class="form-label fw-semibold small text-navy">
-        Food Preference
-        <span class="optional-label ms-1">(Optional)</span>
+        Food Preference <span class="optional-label ms-1">(Optional)</span>
       </label>
-
       <select
         id="foodOption"
         v-model="foodOption"
         class="form-select shadow-none"
         @change="emit('update-food-price')"
       >
-        <option value="">Select Food Preference (Optional)</option>
-
+        <option value="">Select Food Preference</option>
         <option v-for="option in foodOptions" :key="option.value" :value="option.value">
           {{ option.label }}
         </option>
@@ -207,11 +195,9 @@ const emit = defineEmits([
     </div>
 
     <div class="mb-4">
-      <label for="food" class="form-label small text-secondary"> Monthly Food and Groceries Cost </label>
-
+      <label for="food" class="form-label small text-secondary">Monthly Food & Groceries Cost</label>
       <div class="input-group">
         <span class="input-group-text bg-light text-navy fw-semibold small">{{ currencyCode }}</span>
-
         <input
           id="food"
           data-testid="budget-food-input"
@@ -228,18 +214,15 @@ const emit = defineEmits([
     <!-- Transport -->
     <div class="mb-3">
       <label for="transportOption" class="form-label fw-semibold small text-navy">
-        Transport Method
-        <span class="optional-label ms-1">(Optional)</span>
+        Transport Method <span class="optional-label ms-1">(Optional)</span>
       </label>
-
       <select
         id="transportOption"
         v-model="transportOption"
         class="form-select shadow-none"
         @change="emit('update-transport-price')"
       >
-        <option value="">Select Transport (Optional)</option>
-
+        <option value="">Select Transport</option>
         <option v-for="option in transportOptions" :key="option.value" :value="option.value">
           {{ option.label }}
         </option>
@@ -247,11 +230,9 @@ const emit = defineEmits([
     </div>
 
     <div class="mb-4">
-      <label for="transport" class="form-label small text-secondary"> Monthly Transport Cost </label>
-
+      <label for="transport" class="form-label small text-secondary">Monthly Transport Cost</label>
       <div class="input-group">
         <span class="input-group-text bg-light text-navy fw-semibold small">{{ currencyCode }}</span>
-
         <input
           id="transport"
           data-testid="budget-transport-input"
@@ -267,11 +248,9 @@ const emit = defineEmits([
 
     <!-- Personal & Other -->
     <div class="mb-3">
-      <label for="personalExpenses" class="form-label small text-secondary"> Personal Expenses </label>
-
+      <label for="personalExpenses" class="form-label small text-secondary">Personal Expenses</label>
       <div class="input-group">
         <span class="input-group-text bg-light text-navy fw-semibold small">{{ currencyCode }}</span>
-
         <input
           id="personalExpenses"
           data-testid="budget-personal-input"
@@ -286,11 +265,9 @@ const emit = defineEmits([
     </div>
 
     <div class="mb-4">
-      <label for="otherExpenses" class="form-label small text-secondary"> Other Expenses </label>
-
+      <label for="otherExpenses" class="form-label small text-secondary">Other Expenses</label>
       <div class="input-group">
         <span class="input-group-text bg-light text-navy fw-semibold small">{{ currencyCode }}</span>
-
         <input
           id="otherExpenses"
           data-testid="budget-other-input"
@@ -307,12 +284,12 @@ const emit = defineEmits([
     <!-- Total Box -->
     <div class="form-total rounded-3 p-3 mb-4 border">
       <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
-        <span class="text-secondary small">Monthly total</span>
+        <span class="text-secondary small">Monthly Total</span>
         <strong class="text-navy">{{ formatMoney(monthlyBudget) }}</strong>
       </div>
 
       <div class="d-flex justify-content-between align-items-center gap-3 border-top pt-2">
-        <span class="fw-semibold text-navy">Total for exchange</span>
+        <span class="fw-semibold text-navy">Period Total</span>
         <strong class="fs-5 text-primary text-end">
           {{ formatMoney(totalExchangeBudget) }}
         </strong>
@@ -322,7 +299,7 @@ const emit = defineEmits([
         v-if="totalBudgetSGD !== null && currencyCode !== 'SGD'"
         class="d-flex justify-content-between align-items-center gap-3 mt-2 pt-2 border-top border-light"
       >
-        <span class="small text-muted"> Approximate total in SGD </span>
+        <span class="small text-muted">Approx. SGD Total</span>
         <strong class="small text-navy">
           {{ formatMoney(totalBudgetSGD, 'SGD') }}
         </strong>
@@ -336,12 +313,8 @@ const emit = defineEmits([
       :disabled="saving || !validBudget"
     >
       <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-      {{ saving ? 'Saving Budget...' : editingBudgetId ? 'Update Budget' : 'Create Budget' }}
+      {{ saving ? 'Saving...' : editingBudgetId ? 'Update Budget' : 'Create Budget' }}
     </button>
-
-    <p class="small text-muted text-center mt-3 mb-0 fs-8">
-      Choose a destination university before saving. Period and lifestyle choices can remain blank.
-    </p>
   </form>
 </template>
 
