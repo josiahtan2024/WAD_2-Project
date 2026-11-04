@@ -221,7 +221,9 @@ onMounted(async () => {
 
     <nav v-if="pageCount > 1" class="university-pagination mt-5" aria-label="University list pages" data-testid="universities-pagination">
       <ul class="pagination justify-content-center flex-wrap mb-0">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+        <li class="page-item"
+            :class="{ disabled: currentPage === 1 }"
+            :title="currentPage === 1 ? 'You are already on the first page.' : undefined">
           <button class="page-link rounded-start-pill px-3 shadow-none" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
             <i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i><span>Prev</span>
           </button>
@@ -231,7 +233,9 @@ onMounted(async () => {
             {{ page }}
           </button>
         </li>
-        <li class="page-item" :class="{ disabled: currentPage === pageCount }">
+        <li class="page-item"
+            :class="{ disabled: currentPage === pageCount }"
+            :title="currentPage === pageCount ? 'You are already on the last page.' : undefined">
           <button class="page-link rounded-end-pill px-3 shadow-none" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
             <span>Next</span><i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i>
           </button>
@@ -271,5 +275,11 @@ onMounted(async () => {
 .university-pagination .page-item.disabled .page-link {
   color: #8793a6;
   background-color: var(--app-surface);
+}
+
+.university-pagination .page-item.disabled .page-link {
+  color: #8793a6;
+  background-color: var(--app-surface);
+  pointer-events: none;
 }
 </style>

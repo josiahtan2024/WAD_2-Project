@@ -20,7 +20,7 @@ function clearFilters() {
     <div class="row g-3 align-items-end">
       <div class="col-12 col-lg-5">
         <label for="universitySearch" class="form-label fw-semibold small text-navy">Search Partner Universities</label>
-        <div class="input-group">
+        <div class="input-group university-search">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
           <input id="universitySearch" v-model="query" type="search" class="form-control border-start-0 shadow-none" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
         </div>
@@ -62,5 +62,10 @@ function clearFilters() {
   --bs-btn-hover-color: #fff;
   --bs-btn-hover-bg: var(--app-gray-blue);
   --bs-btn-hover-border-color: var(--app-gray-blue);
+}
+
+.university-search:focus-within .input-group-text,
+.university-search:focus-within .form-control {
+  border-color: #86b7fe;
 }
 </style>
