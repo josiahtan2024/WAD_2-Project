@@ -74,13 +74,10 @@ function focusSelectedUniversity() {
   const marker = markers.get(String(props.selectedId))
   if (!marker) return
 
-  const latLng = marker.getLatLng()
+  map.stop()
 
-  clusterGroup.zoomToShowLayer(marker, () => {
-    map.flyTo(latLng, 15, {
-      animate: true,
-      duration: 1.8,
-    })
+  map.setView(marker.getLatLng(), 15, {
+    animate: false,
   })
 }
 
@@ -154,7 +151,7 @@ map = L.map(el.value, {
     showCoverageOnHover: false,
     zoomToBoundsOnClick: true,
     spiderfyOnMaxZoom: true,
-    animate: true,
+    animate: false,
   })
 
   map.addLayer(clusterGroup)
