@@ -39,7 +39,7 @@ const estimatedMonthlyCost = computed(() => {
   if (!Number.isFinite(rate) || rate <= 0) {
     return exchangeRates.loading
       ? 'Loading...'
-      : 'SGD estimate unavailable'
+      : 'Not available'
   }
 
   const totalSGD = total / rate
