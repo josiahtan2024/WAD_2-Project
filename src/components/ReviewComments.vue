@@ -86,7 +86,6 @@ async function remove(comment) {
           data-testid="comment-delete-btn"
           @click="remove(c)"
         >
-          <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
           Delete
         </button>
         <button
@@ -96,7 +95,6 @@ async function remove(comment) {
           data-testid="comment-remove-btn"
           @click="remove(c)"
         >
-          <i class="bi bi-trash3 me-1" aria-hidden="true"></i>
           Remove
         </button>
       </li>
@@ -116,7 +114,6 @@ async function remove(comment) {
         :disabled="sending"
         data-testid="comment-submit-btn"
       >
-        <i class="bi bi-send me-1" aria-hidden="true"></i>
         Post
       </button>
     </form>

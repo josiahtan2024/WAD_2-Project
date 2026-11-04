@@ -50,8 +50,6 @@ function resetMap() {
   emit('reset')
 }
 
-defineExpose({ resetMap })
-
 function createUniversityIcon(isSelected = false) {
   return L.divIcon({
     className: 'university-marker-wrapper',

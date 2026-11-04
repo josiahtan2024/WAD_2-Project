@@ -44,7 +44,7 @@ function submit() {
     <label class="form-label" for="acad-language">Languages of instruction</label>
     <div class="input-group mb-2">
       <input id="acad-language" v-model="newLanguage" class="form-control" placeholder="English" data-testid="admin-field-language" @keydown.enter.prevent="addLanguage" />
-      <button type="button" class="btn btn-outline-primary" data-testid="admin-add-language" @click="addLanguage"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add</button>
+      <button type="button" class="btn btn-outline-primary" data-testid="admin-add-language" @click="addLanguage">Add</button>
     </div>
     <div class="d-flex flex-wrap gap-2 mb-3" data-testid="admin-language-list">
       <span v-for="l in form.languages" :key="l" class="badge text-bg-light border d-inline-flex align-items-center gap-2 fs-6 fw-normal">

@@ -10,7 +10,6 @@ const cart = useCourseCartStore()
 const router = useRouter()
 
 const mobileMenuOpen = ref(false)
-const isDesktop = ref(window.innerWidth >= 1200)
 
 let menuElement = null
 let offcanvasInstance = null
@@ -38,14 +37,6 @@ function togglePreview() {
   closeMobileMenu()
 }
 
-function handleViewportResize() {
-  const desktopViewport = window.innerWidth >= 1200
-  if (desktopViewport && !isDesktop.value) {
-    offcanvasInstance?.hide()
-  }
-  isDesktop.value = desktopViewport
-}
-
 async function logout() {
   try {
     closeMobileMenu()
@@ -57,7 +48,6 @@ async function logout() {
 }
 
 onMounted(() => {
-  window.addEventListener('resize', handleViewportResize)
   menuElement = document.getElementById('nav-menu')
 
   if (!menuElement) return
@@ -71,7 +61,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleViewportResize)
   if (!menuElement) return
 
   menuElement.removeEventListener('shown.bs.offcanvas', handleMenuShown)
@@ -85,19 +74,9 @@ onBeforeUnmount(() => {
 <template>
   <nav class="navbar border-bottom app-navbar" data-bs-theme="dark" data-testid="nav-bar">
     <div class="container-fluid">
-      <RouterLink class="navbar-brand fw-semibold d-inline-flex align-items-center" to="/" data-testid="nav-brand">
-        <span class="navbar-brand-mark me-2"><i class="bi bi-globe-americas" aria-hidden="true"></i></span>SMUXchange
+      <RouterLink class="navbar-brand fw-semibold" to="/" data-testid="nav-brand">
+        SMUXchange
       </RouterLink>
-
-      <ul class="navbar-nav desktop-nav d-none d-xl-flex flex-row align-items-center gap-1 ms-4 me-auto">
-        <li><RouterLink class="nav-link" to="/universities">Partner Universities</RouterLink></li>
-        <li><RouterLink class="nav-link" to="/compare">Compare</RouterLink></li>
-        <li v-if="auth.user"><RouterLink class="nav-link" to="/shortlist">Shortlist</RouterLink></li>
-        <li><RouterLink class="nav-link" to="/courses">Courses <span v-if="cart.items.length" class="course-count ms-1">{{ cart.items.length }}</span></RouterLink></li>
-        <li v-if="auth.user"><RouterLink class="nav-link" to="/cost-estimator">Budget</RouterLink></li>
-        <li v-if="auth.user"><RouterLink class="nav-link" to="/schedule">Schedule</RouterLink></li>
-        <li><RouterLink class="nav-link" to="/about">About Us</RouterLink></li>
-      </ul>
 
       <div class="d-flex align-items-center gap-2">
         <template v-if="auth.user && auth.isAdmin">
@@ -111,21 +90,8 @@ onBeforeUnmount(() => {
           </span>
         </template>
 
-        <template v-if="auth.user">
-          <button v-if="auth.isAdmin" class="btn btn-outline-light btn-sm d-none d-xl-inline-flex" @click="togglePreview">
-            <i class="bi bi-eye me-1" aria-hidden="true"></i>
-            {{ auth.previewAsStudent ? 'Exit Preview' : 'Preview as Student' }}
-          </button>
-          <button v-if="isDesktop" class="btn btn-light btn-sm d-inline-flex" data-testid="nav-logout-btn" @click="logout"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Log Out</button>
-        </template>
-        <template v-else>
-          <RouterLink class="btn btn-outline-light btn-sm d-none d-xl-inline-flex" to="/login"><i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>Log In</RouterLink>
-          <RouterLink class="btn btn-light btn-sm nav-signup d-none d-xl-inline-flex" to="/signup"><i class="bi bi-person-plus me-1" aria-hidden="true"></i>Sign Up</RouterLink>
-        </template>
-
         <button
           class="navbar-toggler d-flex align-items-center gap-2"
-          :class="{ 'd-xl-none': true }"
           type="button"
           aria-controls="nav-menu"
           :aria-expanded="mobileMenuOpen"
@@ -156,6 +122,17 @@ onBeforeUnmount(() => {
 
         <div class="offcanvas-body d-flex flex-column w-100">
           <ul class="navbar-nav me-auto w-100">
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
+                to="/"
+                data-testid="nav-home"
+                @click="closeMobileMenu"
+              >
+                Home
+              </RouterLink>
+            </li>
+
             <li class="nav-item">
               <RouterLink
                 class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
@@ -266,19 +243,16 @@ onBeforeUnmount(() => {
                 data-testid="nav-preview-toggle"
                 @click="togglePreview"
               >
-                <i class="bi bi-eye me-1" aria-hidden="true"></i>
                 {{ auth.previewAsStudent ? 'Exit Preview' : 'Preview as Student' }}
               </button>
 
               <button
-                v-if="!isDesktop"
                 class="btn btn-light btn-sm flex-fill"
                 data-testid="nav-logout-btn"
                 @click="logout"
               >
-                <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Log Out
+                Log Out
               </button>
-
             </template>
 
             <template v-else>
@@ -288,7 +262,6 @@ onBeforeUnmount(() => {
                 data-testid="nav-login-link"
                 @click="closeMobileMenu"
               >
-                <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
                 Log In
               </RouterLink>
 
@@ -298,7 +271,6 @@ onBeforeUnmount(() => {
                 data-testid="nav-signup-link"
                 @click="closeMobileMenu"
               >
-                <i class="bi bi-person-plus me-1" aria-hidden="true"></i>
                 Sign Up
               </RouterLink>
             </template>
@@ -388,11 +360,11 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.offcanvas-body .navbar-nav .nav-item {
+.navbar-nav .nav-item {
   width: 100%;
 }
 
-.offcanvas-body .navbar-nav .nav-link {
+.navbar-nav .nav-link {
   display: block;
   width: 100%;
   padding: 1rem !important;
@@ -428,51 +400,6 @@ onBeforeUnmount(() => {
 
 .navbar-toggler:focus {
   box-shadow: none;
-}
-
-.desktop-nav .nav-link {
-  padding: 0.5rem 0.65rem;
-  white-space: nowrap;
-}
-
-.app-navbar .nav-link {
-  font-size: 1rem !important;
-}
-
-@media (min-width: 1200px) {
-  .app-navbar > .container-fluid {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-  }
-
-  .app-navbar .navbar-brand,
-  .app-navbar > .container-fluid > .d-flex {
-    flex-shrink: 0;
-  }
-
-  .app-navbar .desktop-nav {
-    flex: 1 1 auto;
-    min-width: 0;
-    justify-content: center;
-    gap: 0 !important;
-    margin-left: 0.75rem !important;
-    margin-right: 0.75rem !important;
-  }
-
-  .app-navbar .desktop-nav .nav-link {
-    padding: 0.5rem 0.45rem !important;
-  }
-}
-
-.navbar-brand-mark {
-  display: inline-grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border-radius: 0.65rem;
-  color: var(--app-navy);
-  background: #fff;
-  vertical-align: middle;
 }
 
 @media (max-width: 767.98px) {

@@ -50,9 +50,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         <footer class="p-3 border-top">
           <div v-if="error" class="alert alert-danger py-2" role="alert" data-testid="admin-drawer-error">{{ error }}</div>
           <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-outline-secondary" :disabled="saving" data-testid="admin-drawer-cancel" @click="emit('close')"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel</button>
+            <button type="button" class="btn btn-outline-secondary" :disabled="saving" data-testid="admin-drawer-cancel" @click="emit('close')">Cancel</button>
             <button type="submit" :form="formId" class="btn btn-primary" :disabled="saving" data-testid="admin-drawer-save">
-              <i class="bi bi-save me-1" aria-hidden="true"></i>
               <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
               {{ saving ? 'Saving...' : submitLabel }}
             </button>

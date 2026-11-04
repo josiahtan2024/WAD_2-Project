@@ -162,7 +162,6 @@ const emit = defineEmits(['use-published-estimates'])
               class="btn btn-outline-primary w-100 mt-4"
               @click="emit('use-published-estimates')"
             >
-              <i class="bi bi-calculator me-1" aria-hidden="true"></i>
               Use Published Estimates
             </button>
 

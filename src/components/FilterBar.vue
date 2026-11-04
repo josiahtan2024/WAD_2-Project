@@ -20,9 +20,9 @@ function clearFilters() {
     <div class="row g-3 align-items-end">
       <div class="col-12 col-lg-5">
         <label for="universitySearch" class="form-label fw-semibold small text-navy">Search Partner Universities</label>
-        <div class="input-group university-search app-search-group">
+        <div class="input-group university-search">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-          <input id="universitySearch" v-model="query" type="search" class="form-control app-search-field border-start-0 shadow-none" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
+          <input id="universitySearch" v-model="query" type="search" class="form-control border-start-0 shadow-none" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
         </div>
       </div>
       <div class="col-12 col-sm-6 col-lg-3">
@@ -44,7 +44,7 @@ function clearFilters() {
     
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
       <span class="small text-secondary">Showing <strong class="text-navy">{{ props.resultCount }}</strong> of {{ props.totalCount }} partner universities</span>
-      <button v-if="query || region || sortBy !== 'name'" class="btn btn-sm btn-outline-secondary rounded-pill px-3 app-filter-reset" type="button" data-testid="clear-filters-btn" @click="clearFilters">
+      <button v-if="query || region || sortBy !== 'name'" class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-testid="clear-filters-btn" @click="clearFilters">
         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
       </button>
     </div>
