@@ -46,9 +46,9 @@ async function setPublished(published) {
     >
       <div class="small">
         <i class="bi bi-eye-slash-fill me-1 text-warning"></i>
-        <strong class="text-navy">Hidden from students.</strong>
-        <span v-if="missing.length" class="text-secondary"> Still missing: {{ missing.join(', ') }}.</span>
-        <span v-else class="text-secondary"> Everything is filled in, so it is ready to publish.</span>
+        <strong class="text-navy"> Hidden from students.</strong>
+        <span v-if="missing.length" class="text-secondary"> Missing: {{ missing.join(', ') }}.</span>
+        <span v-else class="text-secondary"> All details complete - ready to publish.</span>
       </div>
     </div>
 
