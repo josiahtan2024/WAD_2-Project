@@ -188,7 +188,6 @@ function isBlocked(day, time) {
 </template>
 
 <style scoped>
-/* Optional styling can go here */
 table {
   cursor: pointer;
 }

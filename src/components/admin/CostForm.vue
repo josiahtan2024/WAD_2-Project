@@ -6,11 +6,14 @@ const props = defineProps({ cost: { type: Object, default: null } })
 const emit = defineEmits(['submit'])
 
 const exchangeRates = useExchangeRatesStore()
+
+const CURRENCY_LIST = ['USD', 'SGD', 'EUR', 'GBP', 'AUD', 'CAD', 'JPY', 'CNY', 'KRW', 'HKD', 'NZD', 'CHF', 'SEK', 'NOK', 'THB']
+
 const AMOUNTS = [
   { key: 'accommodation', label: 'Accommodation' },
   { key: 'food', label: 'Food' },
   { key: 'transport', label: 'Transport' },
-  { key: 'personal_expenses', label: 'Personal expenses' },
+  { key: 'personal_expenses', label: 'Personal Expenses' },
 ]
 
 const form = reactive({
@@ -19,9 +22,11 @@ const form = reactive({
 })
 const errors = ref({})
 
-const currencies = computed(() => Object.keys(exchangeRates.rates).sort())
+const availableCurrencies = computed(() => {
+  const loadedRates = Object.keys(exchangeRates.rates)
+  return loadedRates.length ? loadedRates.sort() : CURRENCY_LIST
+})
 
-// same sum the rest of the app shows as "estimated monthly cost"
 const monthlySgd = computed(() => {
   const rate = exchangeRates.rates[form.currency_code.trim().toUpperCase()]
   const total = AMOUNTS.reduce((sum, a) => sum + (Number(form[a.key]) || 0), 0)
@@ -32,15 +37,25 @@ const monthlySgd = computed(() => {
 function submit() {
   const found = {}
   const currency = form.currency_code.trim().toUpperCase()
-  if (!/^[A-Z]{3}$/.test(currency)) found.currency_code = 'Use a three letter currency code, for example EUR.'
-  else if (exchangeRates.loaded && !exchangeRates.rates[currency]) found.currency_code = `There is no exchange rate for ${currency}, so students would not see an SGD estimate.`
+  if (!currency) {
+    found.currency_code = 'Select a currency.'
+  } else if (exchangeRates.loaded && !exchangeRates.rates[currency]) {
+    found.currency_code = `No exchange rate for ${currency}.`
+  }
 
   const cost = { currency_code: currency }
   for (const { key, label } of AMOUNTS) {
     const text = String(form[key]).trim()
+    if (text === '') {
+      cost[key] = null
+      continue
+    }
     const number = Number(text)
-    if (text !== '' && (!Number.isFinite(number) || number < 0)) found[key] = `${label} must be zero or more.`
-    cost[key] = text === '' ? null : number
+    if (!Number.isFinite(number) || number < 0) {
+      found[key] = `${label} must be zero or a positive number.`
+    } else {
+      cost[key] = number
+    }
   }
   errors.value = found
   if (Object.keys(found).length === 0) emit('submit', cost)
@@ -50,19 +65,45 @@ onMounted(() => exchangeRates.load())
 </script>
 
 <template>
-  <form id="admin-form" novalidate @submit.prevent="submit">
-    <p class="text-secondary small">Monthly costs in the local currency.</p>
-    <div class="mb-3">
-      <label class="form-label" for="cost-currency">Currency</label>
-      <input id="cost-currency" v-model="form.currency_code" class="form-control text-uppercase" list="cost-currencies" maxlength="3" :class="{ 'is-invalid': errors.currency_code }" data-testid="admin-field-currency" />
-      <datalist id="cost-currencies"><option v-for="c in currencies" :key="c" :value="c" /></datalist>
+  <form id="admin-form" class="d-flex flex-column gap-3" novalidate @submit.prevent="submit">
+    <div>
+      <label class="form-label fw-semibold text-navy small mb-1" for="cost-currency">Currency</label>
+      <select id="cost-currency" v-model="form.currency_code" class="form-select shadow-none" :class="{ 'is-invalid': errors.currency_code }" data-testid="admin-field-currency">
+        <option value="" disabled>Select Currency</option>
+        <option v-for="c in availableCurrencies" :key="c" :value="c">{{ c }}</option>
+      </select>
       <div v-if="errors.currency_code" class="invalid-feedback d-block" data-testid="admin-field-error">{{ errors.currency_code }}</div>
     </div>
-    <div v-for="a in AMOUNTS" :key="a.key" class="mb-3">
-      <label class="form-label" :for="`cost-${a.key}`">{{ a.label }}</label>
-      <input :id="`cost-${a.key}`" v-model="form[a.key]" class="form-control" inputmode="decimal" :class="{ 'is-invalid': errors[a.key] }" :data-testid="`admin-field-${a.key}`" />
+
+    <div v-for="a in AMOUNTS" :key="a.key">
+      <label class="form-label fw-semibold text-navy small mb-1" :for="`cost-${a.key}`">{{ a.label }}</label>
+      <input
+        :id="`cost-${a.key}`"
+        v-model="form[a.key]"
+        type="number"
+        min="0"
+        step="any"
+        class="form-control shadow-none"
+        inputmode="decimal"
+        placeholder="0"
+        :class="{ 'is-invalid': errors[a.key] }"
+        :data-testid="`admin-field-${a.key}`"
+      />
       <div v-if="errors[a.key]" class="invalid-feedback d-block" data-testid="admin-field-error">{{ errors[a.key] }}</div>
     </div>
-    <p v-if="monthlySgd" class="mb-0" data-testid="admin-cost-preview">Students will see about <strong>{{ monthlySgd }}</strong> a month.</p>
+
+    <div v-if="monthlySgd" class="p-3 bg-surface border rounded-3 text-navy small mt-1" data-testid="admin-cost-preview">
+      Estimated Monthly Total: <strong class="text-primary">{{ monthlySgd }}</strong>
+    </div>
   </form>
 </template>
+
+<style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.bg-surface {
+  background-color: var(--app-surface, #f8f9fc);
+}
+</style>
