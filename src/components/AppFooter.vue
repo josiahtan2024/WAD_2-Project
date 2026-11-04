@@ -54,10 +54,6 @@
   text-decoration: none;
 }
 
-.footer-brand:hover {
-  color: #a4a9cf;
-}
-
 .footer-brand-mark {
   display: grid;
   width: 2rem;
