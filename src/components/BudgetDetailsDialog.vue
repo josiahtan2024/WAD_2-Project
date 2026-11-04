@@ -48,7 +48,7 @@ function formatPreference(value) {
   <Transition name="budget-details">
     <div v-if="budget" class="details-backdrop" role="presentation" @click.self="emit('close')">
       <section
-        class="details-card card border-0 shadow-lg rounded-4"
+        class="details-card budget-details-scroll card border-0 shadow-lg rounded-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="budget-details-title"
@@ -159,6 +159,23 @@ function formatPreference(value) {
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
   background-color: #ffffff;
+}
+
+.budget-details-scroll {
+  overscroll-behavior: contain;
+}
+
+.budget-details-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.budget-details-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.budget-details-scroll::-webkit-scrollbar-thumb {
+  background: rgba(20, 27, 77, 0.15);
+  border-radius: 4px;
 }
 
 .summary-box {
