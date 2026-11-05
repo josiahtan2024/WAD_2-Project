@@ -1,9 +1,126 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { supabase } from '@/lib/supabase'
+import AdminDrawer from '@/components/admin/AdminDrawer.vue'
+import ConfirmDialog from '@/components/admin/ConfirmDialog.vue'
 
-const props = defineProps({ mappings: { type: Array, default: () => [] } })
+const props = defineProps({
+  mappings: { type: Array, default: () => [] },
+  admin: { type: Boolean, default: false },
+  universityId: { type: [Number, String], default: null },
+})
+const emit = defineEmits(['changed'])
 const search = ref('')
 const selectedSchool = ref('')
+const areas = ref([])
+const formOpen = ref(false)
+const editingId = ref(null)
+const saving = ref(false)
+const formError = ref('')
+const deleteTarget = ref(null)
+const deleteError = ref('')
+const deleting = ref(false)
+const form = ref(emptyForm())
+
+function emptyForm() {
+  return { module_code: '', module_name: '', description: '', language: 'English', smu_module_id: '', notes: '' }
+}
+
+watch(() => props.admin, async (enabled) => {
+  if (!enabled) return
+  const { data, error } = await supabase.from('smu_modules').select('id, course_area, school').order('course_area')
+  if (error) formError.value = error.message
+  else areas.value = data ?? []
+}, { immediate: true })
+
+function startCreate() {
+  editingId.value = null
+  form.value = emptyForm()
+  formError.value = ''
+  formOpen.value = true
+}
+
+function startEdit(mapping) {
+  editingId.value = mapping.id
+  form.value = {
+    module_code: mapping.university_module?.module_code ?? '',
+    module_name: mapping.university_module?.module_name ?? '',
+    description: mapping.university_module?.description ?? '',
+    language: mapping.university_module?.language ?? '',
+    smu_module_id: mapping.smu_module?.id ?? '',
+    notes: mapping.notes ?? '',
+  }
+  formError.value = ''
+  formOpen.value = true
+}
+
+async function saveCourse() {
+  if (!form.value.module_code.trim() || !form.value.module_name.trim() || !form.value.smu_module_id) {
+    formError.value = 'Course code, course name, and SMU course area are required.'
+    return
+  }
+  saving.value = true
+  formError.value = ''
+  const course = {
+    module_code: form.value.module_code.trim(),
+    module_name: form.value.module_name.trim(),
+    description: form.value.description.trim() || null,
+    language: form.value.language.trim() || null,
+  }
+  try {
+    if (editingId.value) {
+      const existing = props.mappings.find((item) => item.id === editingId.value)
+      const moduleId = existing?.university_module?.id
+      if (!moduleId) throw new Error('Could not find this course record.')
+      const { error: courseError } = await supabase.from('university_modules').update(course).eq('id', moduleId)
+      if (courseError) throw courseError
+      const { error: mappingError } = await supabase.from('credit_mappings').update({
+        smu_module_id: Number(form.value.smu_module_id), notes: form.value.notes.trim() || null,
+      }).eq('id', editingId.value)
+      if (mappingError) throw mappingError
+    } else {
+      const { data: created, error: courseError } = await supabase.from('university_modules')
+        .insert({ ...course, university_id: props.universityId }).select('id').single()
+      if (courseError) throw courseError
+      const { error: mappingError } = await supabase.from('credit_mappings').insert({
+        university_module_id: created.id,
+        smu_module_id: Number(form.value.smu_module_id),
+        notes: form.value.notes.trim() || null,
+      })
+      if (mappingError) {
+        await supabase.from('university_modules').delete().eq('id', created.id)
+        throw mappingError
+      }
+    }
+    formOpen.value = false
+    emit('changed')
+  } catch (error) {
+    formError.value = error.message || 'Unable to save course.'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deleteCourse(mapping) {
+  deleteTarget.value = mapping
+  deleteError.value = ''
+}
+
+async function confirmDeleteCourse() {
+  if (!deleteTarget.value || deleting.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    const { error } = await supabase.from('university_modules').delete().eq('id', deleteTarget.value.university_module.id)
+    if (error) throw error
+    deleteTarget.value = null
+    emit('changed')
+  } catch (error) {
+    deleteError.value = error.message || 'Unable to delete course.'
+  } finally {
+    deleting.value = false
+  }
+}
 
 const groups = computed(() => {
   const grouped = new Map()
@@ -86,6 +203,43 @@ function clearFilters() {
       </div>
     </summary>
     <div class="card-body p-3 p-md-4 pt-0">
+      <div v-if="admin" class="d-flex justify-content-center mb-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-testid="admin-add-course" @click="startCreate">
+          <i class="bi bi-plus-lg me-1"></i>Add course
+        </button>
+      </div>
+      <AdminDrawer
+        :open="admin && formOpen"
+        :title="editingId ? 'Edit Course' : 'Add Course'"
+        :saving="saving"
+        :error="formError"
+        :form-id="'admin-course-form'"
+        :submit-label="editingId ? 'Save Course' : 'Add Course'"
+        @close="formOpen = false"
+      >
+        <form id="admin-course-form" data-testid="admin-course-form" @submit.prevent="saveCourse">
+        <div class="row g-2">
+          <div class="col-12 col-md-3"><label class="form-label small" for="course-code">Course code</label><input id="course-code" v-model="form.module_code" class="form-control" required data-testid="admin-course-code" /></div>
+          <div class="col-12 col-md-5"><label class="form-label small" for="course-name">Course name</label><input id="course-name" v-model="form.module_name" class="form-control" required data-testid="admin-course-name" /></div>
+          <div class="col-12 col-md-4"><label class="form-label small" for="course-area">SMU course area</label><select id="course-area" v-model="form.smu_module_id" class="form-select" required data-testid="admin-course-area"><option value="" disabled>Select area</option><option v-for="area in areas" :key="area.id" :value="area.id">{{ area.course_area }}{{ area.school ? ` · ${area.school}` : '' }}</option></select></div>
+          <div class="col-12 col-md-6"><label class="form-label small" for="course-description">Description</label><textarea id="course-description" v-model="form.description" class="form-control" rows="2" data-testid="admin-course-description"></textarea></div>
+          <div class="col-12 col-md-3"><label class="form-label small" for="course-language">Language</label><input id="course-language" v-model="form.language" class="form-control" data-testid="admin-course-language" /></div>
+          <div class="col-12 col-md-3"><label class="form-label small" for="course-notes">Mapping notes</label><input id="course-notes" v-model="form.notes" class="form-control" data-testid="admin-course-notes" /></div>
+        </div>
+        </form>
+      </AdminDrawer>
+      <ConfirmDialog
+        :open="!!deleteTarget"
+        title="Delete Course?"
+        confirm-label="Delete course"
+        danger
+        :working="deleting"
+        :error="deleteError"
+        @cancel="deleteTarget = null"
+        @confirm="confirmDeleteCourse"
+      >
+        <p class="mb-0 small">Delete <strong class="text-navy">{{ deleteTarget?.university_module?.module_code }} · {{ deleteTarget?.university_module?.module_name }}</strong>? This action cannot be undone.</p>
+      </ConfirmDialog>
       <p v-if="!mappings.length" class="text-muted small mb-0 py-3 text-center" data-testid="mapping-empty">
         No course mappings recorded for this university yet.
       </p>
@@ -200,6 +354,10 @@ function clearFilters() {
                   <div v-if="m.notes" class="small text-secondary mt-1 bg-light p-2 rounded-3 border">
                     <span class="fw-semibold text-navy">Notes:</span> {{ m.notes }}
                   </div>
+                </div>
+                <div v-if="admin" class="d-flex gap-1 ms-auto flex-shrink-0">
+                  <button type="button" class="btn btn-outline-primary btn-sm" :aria-label="`Edit ${m.university_module?.module_code}`" data-testid="admin-edit-course" @click="startEdit(m)"><i class="bi bi-pencil"></i></button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" :aria-label="`Delete ${m.university_module?.module_code}`" data-testid="admin-delete-course" @click="deleteCourse(m)"><i class="bi bi-trash"></i></button>
                 </div>
               </div>
             </div>
