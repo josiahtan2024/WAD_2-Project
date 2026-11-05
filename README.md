@@ -130,14 +130,17 @@ Do not put a Supabase service-role key in frontend environment variables.
 ## Development commands
 
 ```sh
-pnpm dev             # Start the Vite development server
-pnpm build           # Create a production build in dist/
-pnpm preview         # Preview the production build locally
-pnpm lint            # Run ESLint
-pnpm test            # Run Playwright end-to-end tests
+pnpm dev                 # Start the Vite development server
+pnpm build               # Create a production build in dist/
+pnpm preview             # Preview the production build locally
+pnpm lint                # Run ESLint
+pnpm test:functional     # Run the functional test suite (no account or database needed)
+pnpm test                # Run the live Playwright end-to-end tests
 ```
 
-Playwright tests use a real browser and the development Supabase project. Install the browser once with `pnpm exec playwright install chromium`, then create the student and admin test users above. Test credentials can be set in `.env.test`; admin tests skip when admin credentials are absent.
+The functional suite in `tests/functional` builds the app and drives it in a real browser against a built-in fake Supabase, so it runs anywhere with no keys, no account and no network. See [tests/functional/README.md](tests/functional/README.md) for what it covers and how to add to it.
+
+The live tests in `tests/e2e` use a real browser and the development Supabase project. Install the browser once with `pnpm exec playwright install chromium`, then create the student and admin test users above. Test credentials can be set in `.env.test`; admin tests skip when admin credentials are absent.
 
 ## Deployment
 
