@@ -6,6 +6,7 @@ import { useCourseCartStore } from '@/stores/courseCart'
 import { useAuthStore } from '@/stores/auth'
 import { useShortlistStore } from '@/stores/shortlist'
 import Notice from '@/components/AppNotice.vue'
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,27 +136,55 @@ async function addToCart(mapping) {
     cartLimitNotice.value = ''
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
-// Removing a course also deletes its saved schedule timeslots, so ask first when it has any
-async function confirmScheduleLoss(universityModuleId, uniId) {
-  const slots = await cart.scheduledSlotCount(universityModuleId, uniId)
-  if (!slots) return true
-  const what = universityModuleId == null ? 'These courses have' : 'This course has'
-  return window.confirm(`${what} ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing ${universityModuleId == null ? 'them' : 'it'} from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}. Continue?`)
+// Removals that would also delete saved schedule data wait here for the confirmation dialog:
+// { title, description, actionLabel, workingLabel, run }
+const pendingRemoval = ref(null)
+const removing = ref(false)
+
+async function confirmRemoval() {
+  removing.value = true
+  try {
+    await pendingRemoval.value.run()
+  } catch { /* shown via cart.error */ } finally {
+    removing.value = false
+    pendingRemoval.value = null
+  }
 }
+
+// Removing a course also deletes its saved schedule timeslots, so ask first when it has any
 async function removeFromCart(universityModuleId) {
   try {
-    if (!(await confirmScheduleLoss(universityModuleId))) return
-    await cart.remove(universityModuleId)
+    const slots = await cart.scheduledSlotCount(universityModuleId)
+    const run = () => cart.remove(universityModuleId)
+    if (!slots) return await run()
+    const name = cart.items.find((item) => item.universityModuleId === universityModuleId)?.moduleName
+    pendingRemoval.value = {
+      title: 'Remove Course?',
+      description: `${name} has ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing it from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}.`,
+      actionLabel: 'Remove',
+      workingLabel: 'Removing...',
+      run,
+    }
   } catch (error) {
     cart.error ??= error.message // a failed timeslot check is not recorded by the store
   }
 }
+// Clearing the cart also deletes the saved schedules it was used for, so ask first when there are any
 async function clearCart() {
   // while filtered to one university, only clear what is shown
   const uniId = cartFiltered.value ? universityId.value : undefined
   try {
-    if (!(await confirmScheduleLoss(undefined, uniId))) return
-    await cart.clear(uniId)
+    const schedules = await cart.savedScheduleCount(uniId)
+    const run = () => cart.clear(uniId)
+    if (!schedules) return await run()
+    const where = uniId == null ? '' : ` for ${universityName(uniId)}`
+    pendingRemoval.value = {
+      title: 'Clear Cart?',
+      description: `Clearing the cart also deletes your ${schedules === 1 ? 'saved schedule' : `${schedules} saved schedules`}${where}.`,
+      actionLabel: 'Clear',
+      workingLabel: 'Clearing...',
+      run,
+    }
   } catch (error) {
     cart.error ??= error.message
   }
@@ -218,6 +247,21 @@ onMounted(async () => {
       :error-message="cartLimitNotice"
       @dismiss-error="cartLimitNotice = ''"
     />
+    <DeleteConfirmDialog
+      :open="!!pendingRemoval"
+      :title="pendingRemoval?.title ?? ''"
+      :action-label="pendingRemoval?.actionLabel ?? ''"
+      :working-label="pendingRemoval?.workingLabel ?? ''"
+      close-label="Cancel"
+      :working="removing"
+      @cancel="pendingRemoval = null"
+      @confirm="confirmRemoval"
+    >
+      <template #description>
+        {{ pendingRemoval?.description }}
+        <br>This action cannot be undone.
+      </template>
+    </DeleteConfirmDialog>
     <div class="mb-4 pb-3 border-bottom">
       <h1 class="page-title h3 fw-bold text-navy mb-1">Course Search</h1>
       <p class="text-muted small mb-0">

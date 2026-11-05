@@ -77,7 +77,7 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 
 5. Create the local student and admin test users listed in [Local test accounts](#local-test-accounts) under **Authentication > Users**.
 
-6. Run `supabase/admin.sql` in the SQL Editor. It promotes the dummy admin account and applies the staff policies.
+6. Run `supabase/admin.sql` in the SQL Editor. It promotes the admin account and applies the staff policies.
 
 7. Start the development server:
 
@@ -89,12 +89,12 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 
 ### Local test accounts
 
-These are development-only dummy credentials. Create both users in your development Supabase project before signing in; the SQL files do not create Auth users. Never use these credentials in a production project.
+These are development-only credentials. Create both users in your development Supabase project before signing in; the SQL files do not create Auth users. Never use these credentials in a production project.
 
 | Role    | Email                     | Password                    |
 | ------- | ------------------------- | --------------------------- |
-| Student | `dummy@example.com`       | `dummy-password-123`        |
-| Admin   | `dummy-admin@example.com` | `dummy-admin-password-123` |
+| Student | `student@smu.edu.sg`       | `student123` |
+| Admin   | `staff@smu.edu.sg` | `password` |
 
 The student E2E tests use the student credentials by default. To configure both test accounts explicitly, copy `.env.test.example` to `.env.test` and adjust the values if needed:
 
@@ -108,12 +108,12 @@ The admin tests are skipped unless `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set in
 
 There are two kinds of user: students and admins (staff). An admin can do everything a student can, and can also add, edit, hide, and delete universities and remove reviews and comments. A new university starts hidden from students until an admin publishes it, and only a hidden university can be deleted.
 
-The `supabase/admin.sql` setup sets `role` to `admin` in the dummy admin account's `app_metadata`. To promote a different account, replace the email in that file with the account's email, run the update in the Supabase SQL Editor, and have the user log in again:
+The `supabase/admin.sql` setup sets `role` to `admin` in the staff account's `app_metadata`. To promote a different account, replace the email in that file with the account's email, run the update in the Supabase SQL Editor, and have the user log in again:
 
 ```sql
 update auth.users
 set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'
-where email = 'dummy-admin@example.com';
+where email = 'staff@smu.edu.sg';
 ```
 
 Admins see an extra **Staff** badge in the navigation bar, and a **View as student** switch to check what students see.

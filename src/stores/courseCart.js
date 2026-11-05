@@ -41,6 +41,13 @@ async function deletePlannedSlots(scope) {
   if (error) throw error
 }
 
+/** Narrow a timetables query to the user's saved schedules, for one university or (omitted) all of them. */
+function savedSchedules(query, universityId) {
+  query = query.eq('user_id', getUserId())
+  if (universityId != null) query = query.eq('university_id', universityId)
+  return query
+}
+
 /** Turn a cart_modules row into the cart item shape used by the pages. */
 function toItem(row) {
   const um = row.university_module
@@ -126,17 +133,27 @@ export const useCourseCartStore = defineStore('courseCart', {
       if (this.loadedUserId !== userId) await this.load()
     },
     /**
-     * How many saved schedule timeslots would be deleted along with these cart items (pages ask before removing).
-     * @param {number} [universityModuleId] One course, or omit for every course (in `universityId`, if given).
-     * @param {number|string} [universityId]
+     * How many saved schedule timeslots would be deleted along with this cart item (pages ask before removing).
+     * @param {number} universityModuleId
      */
-    async scheduledSlotCount(universityModuleId, universityId) {
-      const item = universityModuleId == null ? null : this.items.find((i) => i.universityModuleId === universityModuleId)
-      if (universityModuleId != null && !item) return 0
-      const scope = item ? { cartModuleIds: [item.cartModuleId] } : { universityId }
+    async scheduledSlotCount(universityModuleId) {
+      const item = this.items.find((i) => i.universityModuleId === universityModuleId)
+      if (!item) return 0
       const { count, error } = await plannedSlots(
         supabase.from('planned_modules').select('id', { count: 'exact', head: true }),
-        scope
+        { cartModuleIds: [item.cartModuleId] }
+      )
+      if (error) throw error
+      return count ?? 0
+    },
+    /**
+     * How many saved schedules (timetables) clearing the cart would delete (pages ask before clearing).
+     * @param {number|string} [universityId] One university, or omit for every university.
+     */
+    async savedScheduleCount(universityId) {
+      const { count, error } = await savedSchedules(
+        supabase.from('timetables').select('id', { count: 'exact', head: true }),
+        universityId
       )
       if (error) throw error
       return count ?? 0
@@ -186,11 +203,17 @@ export const useCourseCartStore = defineStore('courseCart', {
         this.pendingIds = this.pendingIds.filter((id) => id !== universityModuleId)
       }
     },
-    /** @param {number} [universityId] Clear one university's items, or the whole cart when omitted. */
+    /**
+     * Clear one university's items, or the whole cart when omitted. With no courses left there is nothing
+     * to schedule, so that university's saved schedules (every exchange period) are deleted as well.
+     * @param {number} [universityId]
+     */
     async clear(universityId) {
       this.error = null
       try {
         await deletePlannedSlots({ universityId })
+        const { error: scheduleError } = await savedSchedules(supabase.from('timetables').delete(), universityId)
+        if (scheduleError) throw scheduleError
         let query = supabase.from('cart_modules').delete().eq('user_id', getUserId())
         if (universityId != null) query = query.eq('university_id', universityId)
         const { error } = await query

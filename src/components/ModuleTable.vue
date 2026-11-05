@@ -173,6 +173,12 @@ function handleSave() {
   flex-direction: column;
 }
 
+@media (max-width: 767.98px) {
+  .module-table-card {
+    height: 400px;
+  }
+}
+
 .module-list-scroll {
   flex: 1;
   overflow-y: auto;
