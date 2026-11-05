@@ -5,12 +5,12 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 ## Features
 
 - **Explore universities:** Search by keyword, filter by region, sort by name, country, or estimated cost, and open a university profile.
-- **Learn about the project:** Visit the About Us page from the site footer to learn about the exchange-planning problem SMUXchange addresses, the tools it provides, and how to get started.
+- **Learn about the project:** Visit the About Us page to learn about the exchange-planning problem SMUXchange addresses, the tools it provides, and how to get started.
 - **Review university details:** See university information, estimated costs, and student reviews. Signed-in users can submit a review.
 - **Shortlist options:** Save universities to a personal shortlist for later planning.
 - **Compare universities:** Review shortlisted choices side by side.
 - **Check credit mappings:** Review how courses at a partner university map to SMU courses to help plan your exchange modules.
-- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account. Saved schedules remain available even after courses are cleared from the cart.
+- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account. 
 - **Estimate exchange costs:** Set the exchange duration and monthly accommodation, food, transport, personal, and other expenses. The planner can use published estimates as a starting point and show local currency and SGD totals when exchange-rate data is available.
 - **Create an account:** Sign up and log in through Supabase Authentication. Shortlists, schedules, and budget planning require a signed-in account.
 - **Manage universities (staff):** Admins can add, edit, hide, and delete universities and their details, and remove reviews and comments. See [Admin accounts](#admin-accounts).
