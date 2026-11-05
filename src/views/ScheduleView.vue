@@ -50,6 +50,10 @@ const universityOptions = computed(() => {
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 })
+// Grouped like the Course Search dropdown: shortlisted first, then the rest (universities with courses in the cart)
+const isShortlisted = (id) => shortlist.items.some((s) => s.university_id === id)
+const shortlistedOptions = computed(() => universityOptions.value.filter((u) => isShortlisted(u.id)))
+const otherOptions = computed(() => universityOptions.value.filter((u) => !isShortlisted(u.id)))
 
 function handleToggleEdit() {
   editSchedule.value = !editSchedule.value
@@ -66,15 +70,38 @@ function handleSelectModule(modName) {
 }
 
 function addCartModules() {
-  schedule.addModules(
-    cart.forUniversity(universityId.value).map((item) => ({
-      id: item.universityModuleId,
-      cart_module_id: item.cartModuleId,
-      module_name: item.moduleName,
-      module_code: item.moduleCode || item.moduleName,
-    }))
+  const currentCartItems = cart.forUniversity(universityId.value).map((item) => ({
+    id: item.universityModuleId,
+    cart_module_id: item.cartModuleId,
+    module_name: item.moduleName,
+    module_code: item.moduleCode || item.moduleName,
+  }))
+
+  const savedModuleIds = new Set()
+  for (const day in schedule.currentSchedule) {
+    for (const slot of schedule.currentSchedule[day] || []) {
+      const found = schedule.moduleData.find((m) => m.module_name === slot.moduleName)
+      if (found) savedModuleIds.add(found.id)
+    }
+  }
+
+  const activeCartModuleIds = new Set(currentCartItems.map((m) => m.id))
+  schedule.moduleData = schedule.moduleData.filter(
+    (m) => savedModuleIds.has(m.id) || activeCartModuleIds.has(m.id)
   )
+
+  schedule.addModules(currentCartItems)
 }
+
+watch(
+  () => cart.items,
+  () => {
+    if (universityId.value) {
+      addCartModules()
+    }
+  },
+  { deep: true }
+)
 
 function formatDate(date) {
   if (!date) return ''
@@ -286,7 +313,13 @@ onMounted(async () => {
             @change="selectUniversity($event)"
           >
             <option value="">Choose a University</option>
-            <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+            <optgroup label="My Shortlist">
+              <option v-for="u in shortlistedOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+              <option v-if="!shortlistedOptions.length" disabled>No shortlisted universities yet</option>
+            </optgroup>
+            <optgroup v-if="otherOptions.length" label="Other Universities in My Cart">
+              <option v-for="u in otherOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </optgroup>
           </select>
         </div>
 

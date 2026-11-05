@@ -130,6 +130,7 @@ function removeBlockByModuleName(modName) {
       (mod) => mod.moduleName !== modName
     )
   }
+  schedule.isAdded = true
   emit('removeModule')
   activeSlotMenu.value = null
 }
