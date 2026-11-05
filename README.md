@@ -146,3 +146,27 @@ The project can be deployed to Vercel as a Vite app. Configure `VITE_SUPABASE_UR
 ## Data notes
 
 University and cost records are initialized from `supabase/seed.sql`. Treat seeded estimates as planning guidance and verify current costs and exchange requirements with the university before making travel or financial decisions. Exchange rates are retrieved from Frankfurter when available.
+
+## Use of AI/LLM
+
+AI/LLM tools were used only for the lower-order tasks the course allows.
+The application's business logic, backend queries and feature
+implementation were written by the team.
+
+**Parts that rely mainly on AI/LLM**
+- The functional test suite in `tests/functional/`: the spec files, the
+  fake Supabase backend used as mock data (`support/backend.js`, `seed.js`),
+  and its README.
+- The GitHub Actions job and npm script that run the functional suite.
+
+**Where AI/LLM assisted**
+- Explaining errors and suggesting debugging hints, for example failing CI
+  runs and test selectors that broke after UI changes.
+- Generating test cases for unit and e2e testing, sample inputs and mock data.
+- Boilerplate and starter code for the test setup.
+
+**Not done with AI/LLM**
+- Core implementation: the Vue components, Pinia stores, Supabase queries
+  and the main app features.
+- Problem solving on the application itself. The team diagnosed and fixed
+  issues the tests found in the app.
