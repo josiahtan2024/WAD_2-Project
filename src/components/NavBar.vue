@@ -230,8 +230,8 @@ onBeforeUnmount(() => {
               <!-- Admin mode indicator -->
               <span
                 v-if="auth.isAdmin"
-                class="admin-mode-indicator mobile-admin-indicator d-inline-flex d-md-none w-100 mb-2"
-                :class="auth.adminActive ? 'is-admin' : 'is-preview'"
+                class="admin-mode-indicator mobile-admin-indicator d-inline-flex w-100 mb-2"
+                :class="auth.adminActive ? 'is-admin' : 'is-preview-offcanvas'"
                 :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'"
               >
                 <span class="status-dot"></span>
@@ -318,6 +318,12 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
+.admin-mode-indicator.is-preview-offcanvas {
+  background-color: var(--app-navy);
+  border-color: var(--app-gray-blue);
+  color: #fff;
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
@@ -329,7 +335,8 @@ onBeforeUnmount(() => {
   background-color: #4ade80;
 }
 
-.is-preview .status-dot {
+.is-preview .status-dot,
+.is-preview-offcanvas .status-dot {
   background-color: #fff;
 }
 
