@@ -95,8 +95,8 @@ test.describe('schedule: choosing what to plan', () => {
     backend.shortlist(student, [5])
     backend.fillCart(student, 2, ['Game Theory'])
     await openSchedule(page)
-    const options = await universitySelect(page).locator('option').allInnerTexts()
-    expect(options).toEqual(['Choose a University', 'Boston University', 'Kyoto University'])
+    await expect(universitySelect(page).locator('optgroup[label="My Shortlist"]')).toContainText('Kyoto University')
+    await expect(universitySelect(page).locator('optgroup[label="Other Universities in My Cart"]')).toContainText('Boston University')
   })
 
   test('does not offer a university that has been hidden', async ({ page, student, backend }) => {
