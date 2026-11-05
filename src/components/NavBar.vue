@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCourseCartStore } from '@/stores/courseCart'
 import { Offcanvas } from 'bootstrap'
@@ -8,6 +8,15 @@ import { Offcanvas } from 'bootstrap'
 const auth = useAuthStore()
 const cart = useCourseCartStore()
 const router = useRouter()
+const route = useRoute()
+
+const isUniversitiesActive = computed(() => {
+  return route.name === 'universities' || route.name === 'university' || route.path.startsWith('/universities')
+})
+
+const isScheduleActive = computed(() => {
+  return route.name === 'schedule' || route.path.startsWith('/schedule')
+})
 
 const mobileMenuOpen = ref(false)
 
@@ -85,7 +94,7 @@ onBeforeUnmount(() => {
 
         <ul class="navbar-nav flex-row me-auto mb-0 gap-1">
           <li class="nav-item w-auto">
-            <RouterLink class="nav-link fs-6 fw-semibold" to="/universities" data-testid="nav-universities">Partner Universities</RouterLink>
+            <RouterLink class="nav-link fs-6 fw-semibold" to="/universities" data-testid="nav-universities" :class="{ 'router-link-active': isUniversitiesActive }">Partner Universities</RouterLink>
           </li>
           <li class="nav-item w-auto">
             <RouterLink class="nav-link fs-6 fw-semibold" to="/compare" data-testid="nav-compare">Compare</RouterLink>
@@ -106,7 +115,7 @@ onBeforeUnmount(() => {
               <RouterLink class="nav-link fs-6 fw-semibold" to="/cost-estimator" data-testid="nav-cost-estimator">Budget</RouterLink>
             </li>
             <li class="nav-item w-auto">
-              <RouterLink class="nav-link fs-6 fw-semibold" to="/schedule" data-testid="nav-schedule">Schedule</RouterLink>
+              <RouterLink class="nav-link fs-6 fw-semibold" to="/schedule" data-testid="nav-schedule" :class="{ 'router-link-active': isScheduleActive }">Schedule</RouterLink>
             </li>
           </template>
           <li class="nav-item w-auto">
