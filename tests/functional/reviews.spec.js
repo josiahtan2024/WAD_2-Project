@@ -452,6 +452,7 @@ test.describe('reviews: comments', () => {
     await current(page).getByTestId('comment-submit-btn').click()
     await expect(current(page).getByTestId('comment-item')).toHaveCount(2)
     await current(page).getByTestId('comment-delete-btn').click()
+    await page.getByTestId('delete-confirm-action').click()
     await expect(current(page).getByTestId('comment-item')).toHaveCount(1)
     await expect(page.getByTestId('notice-success-message')).toHaveText('Your comment was deleted successfully.')
     expect(backend.rows('review_comments')).toHaveLength(1)
@@ -486,6 +487,7 @@ test.describe('reviews: moderation by staff', () => {
   test('an admin can remove a comment', async ({ page, backend }) => {
     await page.getByTestId('review-next-btn').click()
     await current(page).getByTestId('comment-remove-btn').click()
+    await page.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('notice-success-message')).toHaveText('The comment was removed successfully.')
     expect(backend.rows('review_comments')).toHaveLength(0)
   })
