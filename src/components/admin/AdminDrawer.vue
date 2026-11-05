@@ -43,7 +43,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Transition name="drawer">
-    <div v-if="open" class="drawer-backdrop" role="presentation" @click.self="!saving && emit('close')">
+    <div v-if="open" class="drawer-backdrop" role="presentation">
       <aside
         ref="panel"
         class="drawer-panel"
