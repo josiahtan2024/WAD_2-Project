@@ -18,12 +18,13 @@ async function expectNoHorizontalOverflow(page) {
 async function openFirstPopulatedRegion(page) {
   await page.getByTestId('home-university-list').waitFor()
 
-  const regionIndex = await page.locator('.region-header-btn').evaluateAll((buttons) =>
-    buttons.findIndex((button) => Number(button.querySelector('.region-count-badge')?.textContent) > 0)
+  const regionButtons = page.getByTestId('home-region-toggle')
+  const regionIndex = await regionButtons.evaluateAll((buttons) =>
+    buttons.findIndex((button) => Number(button.querySelector('[data-testid="home-region-count"]')?.textContent) > 0)
   )
   expect(regionIndex).toBeGreaterThanOrEqual(0)
 
-  await page.locator('.region-header-btn').nth(regionIndex).click()
+  await regionButtons.nth(regionIndex).click()
 }
 
 test('menu opens, navigates, and closes after choosing a page', async ({ page }) => {
@@ -34,7 +35,7 @@ test('menu opens, navigates, and closes after choosing a page', async ({ page })
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  await page.locator('[data-testid="nav-courses"]:visible').click()
+  await page.getByTestId('nav-courses').last().click()
 
   await expect(page).toHaveURL(/\/courses$/)
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -46,7 +47,7 @@ test('home map controls work at phone width and the footer remains reachable', a
   await page.goto('/')
   await expect(page.getByTestId('home-page')).toBeVisible()
   await expect(page.getByTestId('map-panel')).toBeVisible()
-  await expect(page.locator('.map-reset-button')).toBeVisible()
+  await expect(page.getByTestId('map-reset-button')).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
   const footer = page.getByTestId('app-footer')
@@ -54,20 +55,20 @@ test('home map controls work at phone width and the footer remains reachable', a
   await expect(footer).toBeVisible()
 
   await openFirstPopulatedRegion(page)
-  const allRegions = page.getByRole('button', { name: 'All Regions' })
+  const allRegions = page.getByTestId('map-all-regions-toggle')
   await expect(allRegions).toBeVisible()
   await allRegions.click()
-  await expect(page.getByRole('button', { name: 'All Regions' })).toHaveCount(0)
+  await expect(allRegions).toHaveText('Regions')
 
   await openFirstPopulatedRegion(page)
-  await page.locator('.map-reset-button').click()
-  await expect(page.getByRole('button', { name: 'All Regions' })).toBeVisible()
+  await page.getByTestId('map-reset-button').click()
+  await expect(allRegions).toHaveText('Regions')
 })
 
 test('map details link opens in the current tab', async ({ page, context }) => {
   await page.goto('/')
   await openFirstPopulatedRegion(page)
-  await page.locator('.university-list-item').first().click()
+  await page.getByTestId('map-university-item').first().click()
   await page.getByTestId('info-details-link').click()
 
   await expect(page).toHaveURL(/\/universities\/\d+$/)

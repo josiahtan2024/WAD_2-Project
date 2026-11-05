@@ -220,6 +220,7 @@ watch(
     <button
       type="button"
       class="map-reset-button"
+      data-testid="map-reset-button"
       @click="resetMap"
       aria-label="Reset map to world view"
       title="Reset Map"

@@ -10,8 +10,8 @@ test('log in and log out', async ({ page }) => {
   test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
   await login(page)
   await page.getByTestId('nav-toggle').click()
-  await page.locator('[data-testid="nav-logout-btn"]:visible').click()
-  await expect(page.locator('[data-testid="nav-login-link"]:visible')).toBeVisible()
+  await page.getByTestId('nav-logout-btn').last().click()
+  await expect(page.getByTestId('nav-login-link').last()).toBeVisible()
 })
 
 test('wrong password shows an error', async ({ page }) => {

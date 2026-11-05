@@ -73,18 +73,18 @@ test.describe('admins', () => {
   test('see the staff controls and can switch to the student view', async ({ page }) => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
-    await expect(page.locator('[data-testid="nav-staff-badge"]:visible').first()).toBeVisible()
+    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     await expect(page.getByTestId('admin-edit-cost')).toBeVisible()
 
     await page.getByTestId('nav-toggle').click()
-    await page.locator('[data-testid="nav-preview-toggle"]:visible').click()
+    await page.getByTestId('nav-preview-toggle').last().click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.locator('[data-testid="nav-preview-badge"]:visible').first()).toBeVisible()
+    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
 
     await page.getByTestId('nav-toggle').click()
-    await page.locator('[data-testid="nav-preview-toggle"]:visible').click()
+    await page.getByTestId('nav-preview-toggle').last().click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })
 
