@@ -37,49 +37,50 @@ async function setPublished(published) {
 </script>
 
 <template>
-  <div class="mb-3" data-testid="admin-bar">
+  <div class="mb-4" data-testid="admin-bar">
     <div
       v-if="hidden"
-      class="alert alert-warning d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2"
+      class="alert alert-warning border-0 rounded-4 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 p-3 mb-3"
       role="status"
       data-testid="admin-hidden-banner"
     >
-      <div>
-        <strong>Hidden from students.</strong>
-        <span v-if="missing.length"> Still missing: {{ missing.join(', ') }}.</span>
-        <span v-else> Everything is filled in, so it is ready to publish.</span>
+      <div class="small">
+        <i class="bi bi-eye-slash-fill me-1 text-warning"></i>
+        <strong class="text-navy"> Hidden from students.</strong>
+        <span v-if="missing.length" class="text-secondary"> Missing: {{ missing.join(', ') }}.</span>
+        <span v-else class="text-secondary"> All details complete - ready to publish.</span>
       </div>
     </div>
 
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
       <button
         type="button"
-        class="btn btn-outline-primary btn-sm"
+        class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1"
         data-testid="admin-edit-details"
         @click="emit('edit', 'details')"
       >
-        <i class="bi bi-pencil" aria-hidden="true"></i> Edit Details
+        <i class="bi bi-pencil me-1" aria-hidden="true"></i> Edit Details
       </button>
       <button
         type="button"
-        class="btn btn-sm"
+        class="btn btn-sm rounded-pill px-3 py-1"
         :class="hidden ? 'admin-publish-btn' : 'btn-outline-secondary'"
         :disabled="admin.saving"
         :data-testid="hidden ? 'admin-publish' : 'admin-hide'"
         @click="setPublished(hidden)"
       >
-        <i :class="hidden ? 'bi bi-eye' : 'bi bi-eye-slash'" aria-hidden="true"></i>
+        <i :class="hidden ? 'bi bi-eye me-1' : 'bi bi-eye-slash me-1'" aria-hidden="true"></i>
         {{ hidden ? 'Publish' : 'Hide From Students' }}
       </button>
       <button
         type="button"
-        class="btn btn-outline-danger btn-sm"
+        class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1"
         :disabled="!hidden"
         :title="hidden ? '' : 'Hide this university before deleting it'"
         data-testid="admin-delete"
         @click="emit('edit', 'delete')"
       >
-        <i class="bi bi-trash" aria-hidden="true"></i> Delete
+        <i class="bi bi-trash me-1" aria-hidden="true"></i> Delete
       </button>
     </div>
     <div
@@ -94,6 +95,10 @@ async function setPublished(published) {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
 .admin-publish-btn {
   color: #d39e00;
   border-color: #d39e00;

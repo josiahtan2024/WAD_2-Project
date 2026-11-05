@@ -6,6 +6,7 @@ import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
+import Notice from '@/components/AppNotice.vue'
 
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -490,7 +491,7 @@ watch(
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
-                        class="compare-select form-select fw-semibold text-truncate compare-university-select shadow-none" data-testid="compare-university-select">
+                        class="compare-select form-select fw-semibold text-truncate text-navy compare-university-select shadow-none" data-testid="compare-university-select">
                             <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
@@ -840,12 +841,14 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            <span class="text-nowrap me-1">
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
-                            </span>
-                            <span class="text-nowrap">
-                                <span class="me-1">-</span>
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-inline-flex align-items-baseline flex-wrap">
+                                <span class="text-nowrap me-1">
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
+                                </span>
+                                <span class="text-nowrap">
+                                    <span class="mx-1">-</span>
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                                </span>
                             </span>
                         </div>
                     </template>
@@ -938,6 +941,7 @@ watch(
     max-height: 200px;
     object-fit: contain;
     margin: 0 auto;
+    border-radius: 8px;
 }
 .uni-map {
     width: 100%;

@@ -224,10 +224,10 @@ onMounted(async () => {
       :error-message="cartLimitNotice"
       @dismiss-error="cartLimitNotice = ''"
     />
-    <div class="mb-4 pb-3 border-bottom text-center">
+    <div class="mb-4 pb-3 border-bottom">
       <h1 class="page-title h3 fw-bold text-navy mb-1">Course Search</h1>
       <p class="text-muted small mb-0">
-        Pick an SMU course area to see the partner university courses mapped to it, <br class="d-none d-md-block">then add the ones you want to your cart for scheduling.
+        Pick an SMU course area to view partner university courses mapped to it, then add your selections to your cart for schedule planning.
       </p>
     </div>
 
@@ -281,7 +281,10 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="pageLoading" class="text-muted" data-testid="course-search-loading">Loading course areas...</div>
+    <div v-if="pageLoading" class="text-muted text-center py-5" data-testid="course-search-loading">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading course information...
+    </div>
 
     <div v-else class="row g-4">
       <!-- Course areas -->
@@ -365,7 +368,7 @@ onMounted(async () => {
                   <li
                     v-for="m in group.rows"
                     :key="m.id"
-                    class="list-group-item d-flex justify-content-between align-items-center bg-white border rounded-3"
+                    class="list-group-item d-flex justify-content-between align-items-center bg-white border rounded-3 gap-1"
                     data-testid="course-module-item"
                   >
                     <div class="min-w-0">

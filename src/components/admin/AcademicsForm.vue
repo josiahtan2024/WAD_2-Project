@@ -31,31 +31,78 @@ function isWebAddress(text) {
 }
 
 function submit() {
-  addLanguage() // a language that was typed but not added yet should not be lost
+  addLanguage()
   const url = form.modules_url.trim()
-  errors.value = url && !isWebAddress(url) ? { modules_url: 'Enter a full web address, for example https://www.example.edu/courses.' } : {}
+  errors.value = url && !isWebAddress(url) ? { modules_url: 'Enter a valid URL (e.g. https://www.example.edu/courses).' } : {}
   if (Object.keys(errors.value).length) return
   emit('submit', { languages: form.languages, modules_url: url || null })
 }
 </script>
 
 <template>
-  <form id="admin-form" novalidate @submit.prevent="submit">
-    <label class="form-label" for="acad-language">Languages of instruction</label>
-    <div class="input-group mb-2">
-      <input id="acad-language" v-model="newLanguage" class="form-control" placeholder="English" data-testid="admin-field-language" @keydown.enter.prevent="addLanguage" />
-      <button type="button" class="btn btn-outline-primary" data-testid="admin-add-language" @click="addLanguage">Add</button>
-    </div>
-    <div class="d-flex flex-wrap gap-2 mb-3" data-testid="admin-language-list">
-      <span v-for="l in form.languages" :key="l" class="badge text-bg-light border d-inline-flex align-items-center gap-2 fs-6 fw-normal">
-        {{ l }}
-        <button type="button" class="btn-close btn-sm" :aria-label="`Remove ${l}`" data-testid="admin-remove-language" @click="removeLanguage(l)"></button>
-      </span>
-      <span v-if="!form.languages.length" class="text-secondary small">No languages yet.</span>
+  <form id="admin-form" class="d-flex flex-column gap-3" novalidate @submit.prevent="submit">
+    <div>
+      <label class="form-label fw-semibold text-navy small mb-1" for="acad-language">Language of Instruction</label>
+      <div class="input-group mb-2">
+        <input
+          id="acad-language"
+          v-model="newLanguage"
+          class="form-control shadow-none"
+          placeholder="e.g. English, Japanese"
+          data-testid="admin-field-language"
+          @keydown.enter.prevent="addLanguage"
+        />
+        <button type="button" class="btn btn-outline-primary px-3" data-testid="admin-add-language" @click="addLanguage">
+          Add
+        </button>
+      </div>
+      <div class="d-flex flex-wrap gap-1.5" data-testid="admin-language-list">
+        <span
+          v-for="l in form.languages"
+          :key="l"
+          class="badge bg-white text-navy border fw-medium rounded-pill d-inline-flex align-items-center gap-1.5 px-3 py-1.5 fs-7"
+        >
+          {{ l }}
+          <button
+            type="button"
+            class="btn-close btn-close-sm ms-1"
+            :aria-label="`Remove ${l}`"
+            data-testid="admin-remove-language"
+            @click="removeLanguage(l)"
+          ></button>
+        </span>
+        <span v-if="!form.languages.length" class="text-muted small italic">No languages added yet.</span>
+      </div>
     </div>
 
-    <label class="form-label" for="acad-modules-url">Course catalogue link</label>
-    <input id="acad-modules-url" v-model="form.modules_url" class="form-control" type="url" placeholder="https://" :class="{ 'is-invalid': errors.modules_url }" data-testid="admin-field-modules-url" />
-    <div v-if="errors.modules_url" class="invalid-feedback d-block" data-testid="admin-field-error">{{ errors.modules_url }}</div>
+    <div>
+      <label class="form-label fw-semibold text-navy small mb-1" for="acad-modules-url">Course Catalogue Link</label>
+      <input
+        id="acad-modules-url"
+        v-model="form.modules_url"
+        class="form-control shadow-none"
+        type="url"
+        placeholder="https://"
+        :class="{ 'is-invalid': errors.modules_url }"
+        data-testid="admin-field-modules-url"
+      />
+      <div v-if="errors.modules_url" class="invalid-feedback d-block" data-testid="admin-field-error">
+        {{ errors.modules_url }}
+      </div>
+    </div>
   </form>
 </template>
+
+<style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.fs-7 {
+  font-size: 0.8125rem;
+}
+
+.gap-1\.5 {
+  gap: 0.375rem;
+}
+</style>

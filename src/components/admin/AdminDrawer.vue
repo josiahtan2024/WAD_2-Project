@@ -23,36 +23,74 @@ watch(
   async (open) => {
     if (open) {
       opener = document.activeElement
+      document.body.style.overflow = 'hidden'
       document.addEventListener('keydown', onKeydown)
       await nextTick()
       panel.value?.focus()
     } else {
+      document.body.style.overflow = ''
       document.removeEventListener('keydown', onKeydown)
       opener?.focus?.()
     }
   },
 )
 
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
   <Transition name="drawer">
     <div v-if="open" class="drawer-backdrop" role="presentation" @click.self="!saving && emit('close')">
-      <aside ref="panel" class="drawer-panel" role="dialog" aria-modal="true" :aria-label="title" tabindex="-1" data-testid="admin-drawer">
-        <header class="d-flex align-items-center justify-content-between p-3 border-bottom">
-          <h2 class="h5 mb-0">{{ title }}</h2>
-          <button type="button" class="btn-close" aria-label="Close" :disabled="saving" data-testid="admin-drawer-close" @click="emit('close')"></button>
+      <aside
+        ref="panel"
+        class="drawer-panel"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="title"
+        tabindex="-1"
+        data-testid="admin-drawer"
+      >
+        <header class="d-flex align-items-center justify-content-between p-3.5 px-4 border-bottom bg-surface">
+          <h2 class="h6 fw-bold text-navy mb-0">{{ title }}</h2>
+          <button
+            type="button"
+            class="btn-close shadow-none"
+            aria-label="Close drawer"
+            :disabled="saving"
+            data-testid="admin-drawer-close"
+            @click="emit('close')"
+          ></button>
         </header>
-        <div class="drawer-body p-3">
+
+        <div class="drawer-body p-4">
           <slot />
         </div>
-        <footer class="p-3 border-top">
-          <div v-if="error" class="alert alert-danger py-2" role="alert" data-testid="admin-drawer-error">{{ error }}</div>
+
+        <footer class="p-3.5 px-4 border-top bg-surface">
+          <div v-if="error" class="alert alert-danger py-2 small rounded-3 mb-3" role="alert" data-testid="admin-drawer-error">
+            {{ error }}
+          </div>
           <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-outline-secondary" :disabled="saving" data-testid="admin-drawer-cancel" @click="emit('close')">Cancel</button>
-            <button type="submit" :form="formId" class="btn btn-primary" :disabled="saving" data-testid="admin-drawer-save">
-              <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5"
+              :disabled="saving"
+              data-testid="admin-drawer-cancel"
+              @click="emit('close')"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :form="formId"
+              class="btn btn-primary btn-sm rounded-pill px-4 py-1.5"
+              :disabled="saving"
+              data-testid="admin-drawer-save"
+            >
+              <span v-if="saving" class="spinner-border spinner-border-sm me-1.5" aria-hidden="true"></span>
               {{ saving ? 'Saving...' : submitLabel }}
             </button>
           </div>
@@ -63,6 +101,22 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.bg-surface {
+  background-color: var(--app-surface, #f8f9fc);
+}
+
+.p-3\.5 {
+  padding: 0.875rem 1rem;
+}
+
+.me-1\.5 {
+  margin-right: 0.375rem;
+}
+
 .drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -70,6 +124,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   display: flex;
   justify-content: flex-end;
   background: rgba(25, 30, 40, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 .drawer-panel {
@@ -85,14 +140,23 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 .drawer-body {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .drawer-enter-active,
-.drawer-leave-active { transition: opacity 180ms ease; }
+.drawer-leave-active {
+  transition: opacity 180ms ease;
+}
 .drawer-enter-active .drawer-panel,
-.drawer-leave-active .drawer-panel { transition: transform 180ms ease; }
+.drawer-leave-active .drawer-panel {
+  transition: transform 180ms ease;
+}
 .drawer-enter-from,
-.drawer-leave-to { opacity: 0; }
+.drawer-leave-to {
+  opacity: 0;
+}
 .drawer-enter-from .drawer-panel,
-.drawer-leave-to .drawer-panel { transform: translateX(100%); }
+.drawer-leave-to .drawer-panel {
+  transform: translateX(100%);
+}
 </style>

@@ -20,21 +20,21 @@ function clearFilters() {
     <div class="row g-3 align-items-end">
       <div class="col-12 col-lg-5">
         <label for="universitySearch" class="form-label fw-semibold small text-navy">Search Partner Universities</label>
-        <div class="input-group university-search">
+        <div class="input-group">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-          <input id="universitySearch" v-model="query" type="search" class="form-control border-start-0 shadow-none" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
+          <input id="universitySearch" v-model="query" type="search" class="form-control border-start-0 shadow-none text-truncate" placeholder="Search by Name, Country or City" aria-label="Search Partner Universities" data-testid="filter-search-input" />
         </div>
       </div>
       <div class="col-12 col-sm-6 col-lg-3">
         <label for="universityRegion" class="form-label fw-semibold small text-navy">Filter by Region</label>
-        <select id="universityRegion" v-model="region" class="form-select shadow-none" aria-label="Filter by Region" data-testid="filter-region-select">
+        <select id="universityRegion" v-model="region" class="form-select shadow-none text-truncate" aria-label="Filter by Region" data-testid="filter-region-select">
           <option :value="null">All Regions</option>
           <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
         </select>
       </div>
       <div class="col-12 col-sm-6 col-lg-4">
         <label for="universitySort" class="form-label fw-semibold small text-navy">Sort By</label>
-        <select id="universitySort" v-model="sortBy" class="form-select shadow-none" aria-label="Sort By" data-testid="filter-sort-select">
+        <select id="universitySort" v-model="sortBy" class="form-select shadow-none text-truncate" aria-label="Sort By" data-testid="filter-sort-select">
           <option value="name">University Name (A - Z)</option>
           <option value="country">Country (A - Z)</option>
           <option value="cost">Monthly Cost (Low to High)</option>
@@ -62,10 +62,5 @@ function clearFilters() {
   --bs-btn-hover-color: #fff;
   --bs-btn-hover-bg: var(--app-gray-blue);
   --bs-btn-hover-border-color: var(--app-gray-blue);
-}
-
-.university-search:focus-within .input-group-text,
-.university-search:focus-within .form-control {
-  border-color: #86b7fe;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   budgets: { type: Array, default: () => [] },
@@ -16,6 +16,38 @@ const sortBy = defineModel('sortBy', { type: String, default: 'recent' })
 const currentPage = ref(1)
 const pageSize = 6
 const pageCount = computed(() => Math.ceil(props.filteredBudgets.length / pageSize))
+
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isMobile = computed(() => windowWidth.value < 992)
+const displayedPages = computed(() => {
+  const total = pageCount.value
+  const current = currentPage.value
+  const maxVisible = isMobile.value ? 3 : 5 
+  
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  const range = []
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  
+  return range
+})
+
 const paginatedBudgets = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return props.filteredBudgets.slice(start, start + pageSize)
@@ -46,66 +78,69 @@ function resetFilters() {
 </script>
 
 <template>
-  <section class="card border-0 shadow-sm rounded-4 mb-4">
+  <section class="card border rounded-4 shadow-sm mb-4 bg-white overflow-hidden">
     <div class="card-body p-3 p-md-4">
       <div
-        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4"
+        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom"
       >
         <div>
-          <h2 class="h4 fw-bold mb-1" data-testid="budget-heading">My Budgets</h2>
-          <p class="text-secondary mb-0">View and manage your saved exchange budgets.</p>
+          <h2 class="h4 fw-bold text-navy mb-1" data-testid="budget-heading">My Budgets</h2>
+          <p class="text-muted small mb-0">View and manage your saved exchange budgets.</p>
         </div>
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary btn-sm rounded-pill px-3 py-2"
           data-testid="budget-create-button"
           @click="emit('create')"
         >
-          ＋ Create New Budget
+          <i class="bi bi-plus-lg me-1"></i> New Budget
         </button>
       </div>
 
-      <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary mb-3" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-secondary mb-0">Loading your budgets...</p>
+      <div v-if="loading" class="text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+        Loading your budgets...
       </div>
 
       <div
         v-else-if="props.budgets.length === 0"
-        class="empty-state text-center py-5 px-3 rounded-4"
+        class="empty-state text-center py-5 px-3 rounded-4 border border-dashed my-3"
       >
-        <h3 class="h5 fw-bold" data-testid="budget-empty-state">No Budgets Yet</h3>
-        <p class="text-secondary mb-3">
-          Create your first exchange budget to start planning your expenses.
+        <i class="bi bi-wallet2 fs-2 text-muted mb-2 d-block"></i>
+        <h3 class="h5 fw-semibold text-navy mb-1" data-testid="budget-empty-state">No Budgets Yet</h3>
+        <p class="text-muted small mb-3">
+          Create your first budget to start planning your expenses.
         </p>
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary rounded-pill px-4"
           data-testid="budget-create-button"
           @click="emit('create')"
         >
-          Create Your First Budget
+          Create First Budget
         </button>
       </div>
 
       <div v-else>
-        <div class="budget-filters rounded-4 p-3 p-md-4 mb-4">
+        <!-- Filter Bar -->
+        <div class="filter-panel mb-4 p-4 border rounded-4" data-testid="budget-filter-bar">
           <div class="row g-3 align-items-end">
             <div class="col-12 col-lg-5">
-              <label for="budgetSearch" class="form-label fw-semibold">Search Budgets</label>
-              <input
-                id="budgetSearch"
-                v-model="searchQuery"
-                type="search"
-                class="form-control"
-                placeholder="Search University, Country, Region or Period"
-              />
+              <label for="budgetSearch" class="form-label fw-semibold small text-navy">Search Budgets</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input
+                  id="budgetSearch"
+                  v-model="searchQuery"
+                  type="search"
+                  class="form-control border-start-0 shadow-none text-truncate"
+                  placeholder="Search by University, Country, Region or Period"
+                />
+              </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
-              <label for="budgetRegion" class="form-label fw-semibold">Filter by Region</label>
-              <select id="budgetRegion" v-model="regionFilter" class="form-select">
+              <label for="budgetRegion" class="form-label fw-semibold small text-navy">Filter by Region</label>
+              <select id="budgetRegion" v-model="regionFilter" class="form-select shadow-none text-truncate">
                 <option value="">All Regions</option>
                 <option v-for="region in props.regions" :key="region" :value="region">
                   {{ region }}
@@ -113,18 +148,18 @@ function resetFilters() {
               </select>
             </div>
             <div class="col-12 col-sm-6 col-lg-4">
-              <label for="budgetSort" class="form-label fw-semibold">Sort By</label>
-              <select id="budgetSort" v-model="sortBy" class="form-select">
+              <label for="budgetSort" class="form-label fw-semibold small text-navy">Sort By</label>
+              <select id="budgetSort" v-model="sortBy" class="form-select shadow-none text-truncate">
                 <option value="recent">Recently Added</option>
-                <option value="name">University Name (A–Z)</option>
-                <option value="country">Country (A–Z)</option>
+                <option value="name">University Name (A - Z)</option>
+                <option value="country">Country (A - Z)</option>
                 <option value="cost">Total Cost (Low to High)</option>
               </select>
             </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
             <span class="small text-secondary"
-              >Showing {{ props.filteredBudgets.length }} of {{ props.budgets.length }} budget<span
+              >Showing <strong class="text-navy">{{ props.filteredBudgets.length }}</strong> of {{ props.budgets.length }} budget<span
                 v-if="props.budgets.length !== 1"
                 >s</span
               ></span
@@ -132,67 +167,60 @@ function resetFilters() {
             <button
               v-if="searchQuery || regionFilter || sortBy !== 'recent'"
               type="button"
-              class="btn btn-sm btn-outline-secondary"
+              class="btn btn-sm btn-outline-secondary rounded-pill px-3"
               @click="resetFilters"
             >
-              Reset Search and Filters
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
             </button>
           </div>
         </div>
 
         <div
           v-if="props.filteredBudgets.length === 0"
-          class="empty-state text-center py-5 px-3 rounded-4"
+          class="empty-state text-center py-5 px-3 rounded-4 border border-dashed my-3"
         >
-          <h3 class="h5 fw-bold">No Matching Budgets</h3>
-          <p class="text-secondary mb-3">Try another search term or choose a different region.</p>
-          <button type="button" class="btn btn-outline-primary" @click="resetFilters">
-            Clear Filters
-          </button>
+          <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No budgets match your search.
         </div>
 
         <div v-else class="table-responsive">
           <table class="table align-middle budget-table mb-0" data-testid="budget-table">
             <thead>
               <tr>
-                <th>University</th>
-                <th>Exchange period</th>
+                <th class="ps-3">University</th>
+                <th>Exchange Period</th>
                 <th>Duration</th>
-                <th>Total budget</th>
-                <th class="text-end">Actions</th>
+                <th>Total Budget</th>
+                <th class="text-end pe-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="budget in paginatedBudgets" :key="budget.id" data-testid="budget-row">
-                <td data-label="University">
+                <td data-label="University" class="ps-3">
                   <div>
-                    <div class="fw-semibold">{{ budget.university_name }}</div>
-                    <div class="small text-secondary">{{ budget.university_country }}</div>
+                    <div class="fw-semibold text-navy">{{ budget.university_name }}</div>
+                    <div class="small text-muted"><i class="bi bi-geo-alt me-1 text-primary"></i>{{ budget.university_country }}</div>
                   </div>
                 </td>
-                <td data-label="Exchange period">{{ budget.period_name || 'Not specified' }}</td>
-                <td data-label="Duration">
-                  {{ budget.duration_months }} month<span
-                    v-if="Number(budget.duration_months) !== 1"
-                    >s</span
-                  >
+                <td data-label="Exchange Period" class="small text-secondary">{{ budget.period_name || 'Not specified' }}</td>
+                <td data-label="Duration" class="small text-secondary">
+                  {{ budget.duration_months }} month{{ Number(budget.duration_months) !== 1 ? 's' : '' }}
                 </td>
-                <td data-label="Total budget" class="fw-semibold text-nowrap">
+                <td data-label="Total Budget" class="fw-bold text-navy text-nowrap">
                   {{ props.formatMoney(budget.total_budget, budget.currency_code || 'SGD') }}
                 </td>
-                <td data-label="Actions">
-                  <div class="d-flex justify-content-end gap-2 budget-actions">
+                <td data-label="Actions" class="pe-3">
+                  <div class="d-flex justify-content-end align-items-center gap-2 budget-actions">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-secondary"
+                      class="btn btn-sm btn-primary rounded-pill px-3 py-2"
                       data-testid="budget-read-button"
                       @click="emit('read', budget)"
                     >
-                      Read
+                      Details
                     </button>
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-primary"
+                      class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2"
                       data-testid="budget-edit-button"
                       @click="emit('edit', budget)"
                     >
@@ -200,12 +228,14 @@ function resetFilters() {
                     </button>
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-danger"
-                      data-testid="budget-delete-button"
+                      class="btn btn-sm btn-outline-danger rounded-circle p-2 lh-1 remove-btn"
+                      data-testid="budget-delete-btn"
                       :disabled="props.deletingBudgetId === budget.id"
                       @click="emit('delete', budget)"
+                      title="Delete"
+                      aria-label="Delete"
                     >
-                      {{ props.deletingBudgetId === budget.id ? 'Deleting…' : 'Delete' }}
+                      <i class="bi bi-trash"></i>
                     </button>
                   </div>
                 </td>
@@ -223,23 +253,23 @@ function resetFilters() {
           <ul class="pagination justify-content-center flex-wrap mb-0">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
               <button
-                class="page-link"
+                class="page-link rounded-start-pill px-3 shadow-none"
                 type="button"
                 :disabled="currentPage === 1"
                 aria-label="Previous page"
                 @click="goToPage(currentPage - 1)"
               >
-                Previous
+                <i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i>Prev
               </button>
             </li>
             <li
-              v-for="page in pageCount"
+              v-for="page in displayedPages"
               :key="page"
               class="page-item"
               :class="{ active: currentPage === page }"
             >
               <button
-                class="page-link"
+                class="page-link px-3 shadow-none"
                 type="button"
                 :aria-current="currentPage === page ? 'page' : undefined"
                 :aria-label="`Page ${page}`"
@@ -250,76 +280,89 @@ function resetFilters() {
             </li>
             <li class="page-item" :class="{ disabled: currentPage === pageCount }">
               <button
-                class="page-link"
+                class="page-link rounded-end-pill px-3 shadow-none"
                 type="button"
                 :disabled="currentPage === pageCount"
                 aria-label="Next page"
                 @click="goToPage(currentPage + 1)"
               >
-                Next
+                Next<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i>
               </button>
             </li>
           </ul>
         </nav>
       </div>
-
-      <!-- <p v-if="props.budgets.length" class="small text-secondary mt-3 mb-0">{{ props.budgets.length }} saved budget<span v-if="props.budgets.length !== 1">s</span> in total</p> -->
     </div>
   </section>
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
+.filter-panel {
+  padding: 1rem;
+  background: var(--app-surface, #f8f9fc);
+  border: 1px solid var(--app-border, #e8eaf0);
+  border-radius: var(--app-radius, 0.75rem);
+}
+
+.filter-panel .btn-outline-secondary {
+  --bs-btn-color: var(--app-gray-blue);
+  --bs-btn-border-color: #d5d8e5;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-gray-blue);
+  --bs-btn-hover-border-color: var(--app-gray-blue);
+}
+
 .budget-table thead th {
-  color: #6c757d;
-  font-size: 0.78rem;
+  color: var(--app-navy);
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
-  border-bottom-color: #e8eaf0;
+  background-color: var(--app-surface, #f8f9fc);
+  border-bottom: 1px solid var(--app-border, #e8eaf0);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
 .budget-table td {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-}
-.empty-state {
-  background: #f7f8fc;
-  border: 1px dashed #d9deea;
-}
-.budget-filters {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--app-border, #e8eaf0);
 }
 
 .budget-pagination .page-link {
-  color: #0b2348;
-  border-color: #d7deea;
+  color: var(--app-blue);
+  border-color: var(--app-border);
   background-color: #fff;
 }
 
 .budget-pagination .page-link:hover:not(:disabled) {
-  color: #0b2348;
-  border-color: #cbdcff;
-  background-color: #f1f5fc;
+  color: var(--app-blue);
+  border-color: var(--app-border);
+  background-color: var(--app-surface);
 }
 
 .budget-pagination .page-item.active .page-link {
   color: #fff;
-  border-color: #0b2348;
-  background-color: #0b2348;
-}
-
-.budget-pagination .page-link:focus-visible {
-  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+  border-color: var(--app-blue);
+  background-color: var(--app-blue);
 }
 
 .budget-pagination .page-item.disabled .page-link {
   color: #8793a6;
-  background-color: #f8faff;
+  background-color: var(--app-surface);
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .budget-table,
   .budget-table tbody,
   .budget-table tr,
@@ -333,11 +376,10 @@ function resetFilters() {
   }
   .budget-table tbody tr {
     margin-bottom: 1rem;
-    padding: 0.65rem 0.9rem;
-    border: 1px solid #e3e7ef;
-    border-radius: 0.9rem;
+    padding: 0.75rem;
+    border: 1px solid var(--app-border, #e8eaf0);
+    border-radius: 0.75rem;
     background: #fff;
-    box-shadow: 0 2px 8px rgba(25, 30, 40, 0.04);
   }
 
   .budget-table tbody tr:last-child {
@@ -348,17 +390,16 @@ function resetFilters() {
     grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
     align-items: start;
     gap: 0.75rem;
-    padding: 0.75rem 0 !important;
+    padding: 0.5rem 0 !important;
     border: 0;
-    border-bottom: 1px solid #edf0f5;
+    border-bottom: 1px solid var(--app-border, #e8eaf0);
     white-space: normal !important;
-    overflow-wrap: anywhere;
   }
 
   .budget-table td::before {
     content: attr(data-label);
-    color: #6c757d;
-    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.02em;
   }
@@ -368,17 +409,25 @@ function resetFilters() {
   }
   .budget-table td[data-label='Actions'] {
     display: block;
-    padding-top: 0.9rem !important;
+    padding-top: 0.75rem !important;
   }
   .budget-table td[data-label='Actions']::before {
-    display: block;
-    margin-bottom: 0.65rem;
+    display: none;
   }
   .budget-actions {
     justify-content: flex-start !important;
   }
-  .budget-actions .btn {
+  .budget-actions .btn:not(.remove-btn) {
     flex: 1 1 0;
   }
+}
+
+.remove-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
 }
 </style>

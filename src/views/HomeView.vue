@@ -170,7 +170,8 @@ onMounted(async () => {
                 @keydown.enter.prevent="resetRegions"
                 @keydown.space.prevent="resetRegions"
                 style="cursor: pointer;">
-                Regions
+                <i class="bi bi-chevron-left" :class="{ 'd-none': !hasAnyRegionExpanded }"></i> 
+                {{ hasAnyRegionExpanded ? 'All Regions' : 'Regions' }}
               </span>
             </h2>
             <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">

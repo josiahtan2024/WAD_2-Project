@@ -74,11 +74,26 @@ function focusSelectedUniversity() {
   const marker = markers.get(String(props.selectedId))
   if (!marker) return
 
+  const latLng = marker.getLatLng()
   map.stop()
 
-  map.setView(marker.getLatLng(), 15, {
-    animate: false,
-  })
+  const parentCluster = clusterGroup.getVisibleParent(marker)
+
+  if (parentCluster !== marker) {
+    clusterGroup.zoomToShowLayer(marker, () => {
+      setTimeout(() => {
+        map.panTo(latLng, {
+          animate: true,
+          duration: 0.8,
+        })
+      }, 50)
+    })
+  } else {
+    map.flyTo(latLng, 15, {
+      animate: true,
+      duration: 1.2,
+    })
+  }
 }
 
 function draw() {
@@ -131,7 +146,7 @@ function handleResize() {
 onMounted(() => {
   const { center, zoom } = getResponsiveDefaults()
 
-map = L.map(el.value, {
+  map = L.map(el.value, {
     minZoom: window.innerWidth < 992 ? 1 : 2,
     worldCopyJump: true,
     dragging: !L.Browser.mobile,
@@ -151,7 +166,7 @@ map = L.map(el.value, {
     showCoverageOnHover: false,
     zoomToBoundsOnClick: true,
     spiderfyOnMaxZoom: true,
-    animate: false,
+    animate: true,
   })
 
   map.addLayer(clusterGroup)
