@@ -7,10 +7,7 @@
             class="footer-brand d-inline-flex align-items-center gap-2 mb-2"
             :to="{ name: 'home' }"
           >
-            <span class="footer-brand-mark"
-              ><i class="bi bi-globe-americas" aria-hidden="true"></i
-            ></span>
-            <span>SMUXchange</span>
+            <span><i class="bi bi-globe-americas me-1" aria-hidden="true"></i>SMUXchange</span>
           </RouterLink>
           <p class="footer-description mb-0">
             Explore your exchange options and bring your university, course,

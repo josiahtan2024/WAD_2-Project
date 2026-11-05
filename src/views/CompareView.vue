@@ -483,7 +483,12 @@ watch(
             </div>
         </section>
 
-        <section class="container">
+        <div v-if="uniIsLoading" class="text-muted text-center py-5">
+        <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+        Loading partner universities...
+        </div>
+
+        <section v-else class="container">
 
                 <!-- Uni Selector -->
                 <CompareRow :unis-to-compare="unisToCompare" special-row-class="sticky-uni-selector"

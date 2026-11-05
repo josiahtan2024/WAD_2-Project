@@ -169,8 +169,8 @@ onMounted(async () => {
               <span @click="resetRegions" role="button" tabindex="0"
                 @keydown.enter.prevent="resetRegions"
                 @keydown.space.prevent="resetRegions"
-                style="cursor: pointer;">
-                <i class="bi bi-chevron-left" :class="{ 'd-none': !hasAnyRegionExpanded }"></i> 
+                :style="{ cursor: hasAnyRegionExpanded ? 'pointer' : 'default' }">
+                <i class="bi bi-chevron-left" :class="{ 'd-none': !hasAnyRegionExpanded, 'disabled': !hasAnyRegionExpanded }"></i> 
                 {{ hasAnyRegionExpanded ? 'All Regions' : 'Regions' }}
               </span>
             </h2>

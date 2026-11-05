@@ -241,9 +241,10 @@ watch(
       @dismiss-error="uni.error ? (uni.error = null) : (shortlistError = '')"
       @dismiss-success="reviewSuccessMessage = ''"
     />
-    <div v-if="uni.loading" class="text-muted small" data-testid="university-loading">
-      <span class="spinner-border spinner-border-sm me-1 text-primary"></span>Loading...
-    </div>
+    <div v-if="uni.loading" class="text-muted text-center py-5" data-testid="university-loading">
+    <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+    Loading partner university...
+    </div>    
     <p v-else-if="!uni.error && !university" class="text-muted small" data-testid="university-not-found">
       University not found. <RouterLink to="/universities" class="link-primary">Back to list</RouterLink>
     </p>
