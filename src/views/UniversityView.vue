@@ -543,7 +543,13 @@ watch(
           <p v-else-if="uni.mappingsLoading" class="text-muted small" data-testid="mapping-loading">
             <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Loading course mappings...
           </p>
-          <CreditMappingTable v-else :mappings="uni.mappings" />
+          <CreditMappingTable
+            v-else
+            :mappings="uni.mappings"
+            :admin="auth.adminActive"
+            :university-id="university.id"
+            @changed="loadUniversityMappings(university.id)"
+          />
         </div>
         <div class="col-12">
           <div v-if="reviews.error" class="alert alert-warning rounded-4 border-0 small" data-testid="reviews-error">
