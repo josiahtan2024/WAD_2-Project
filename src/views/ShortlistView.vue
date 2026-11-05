@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useAuthStore } from '@/stores/auth'
@@ -36,7 +36,7 @@ const auth = useAuthStore()
 
 const sortBy = ref('added')
 const currentPage = ref(1)
-const pageSize = 6
+const pageSize = 5
 
 const saved = computed(() => {
   const universities = shortlist.items
@@ -76,6 +76,38 @@ const saved = computed(() => {
 })
 
 const pageCount = computed(() => Math.ceil(saved.value.length / pageSize))
+
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isMobile = computed(() => windowWidth.value < 768)
+const displayedPages = computed(() => {
+  const total = pageCount.value
+  const current = currentPage.value
+  const maxVisible = isMobile.value ? 3 : 5 
+  
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  const range = []
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  
+  return range
+})
+
 const paginatedSaved = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return saved.value.slice(start, start + pageSize)
@@ -109,6 +141,19 @@ async function remove(u) {
   }
 }
 
+const gridTopRef = ref(null)
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage > oldPage) {
+    nextTick(() => {
+      if (gridTopRef.value) {
+        const yOffset = -90
+        const y = gridTopRef.value.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    })
+  }
+})
+
 onMounted(async () => {
   pageLoading.value = true
   pageError.value = ''
@@ -134,182 +179,191 @@ onMounted(async () => {
       @dismiss-error="errorMessage = ''; shortlist.error = null; pageError = ''"
       @dismiss-success="successMessage = ''"
     />
-    <div class="d-flex flex-column gap-3 mb-3">
-    <h1 class="page-title h3 fw-bold text-center mb-0">Your Shortlist</h1>
 
-    <div class="d-flex justify-content-end align-items-center gap-2">
-      <label for="shortlist-sort" class="visually-hidden">
-        Sort Shortlist
-      </label>
-
-      <select
-        id="shortlist-sort"
-        v-model="sortBy"
-        class="form-select form-select-sm shortlist-sort"
-      >
-        <option value="name">University Name (A–Z)</option>
-        <option value="country">Country (A–Z)</option>
-        <option value="added">Recently Added</option>
-      </select>
-
-    </div>
-  </div>
-<div
-  v-if="pageLoading || shortlist.loading"
-  class="text-muted"
-  data-testid="shortlist-loading"
->
-  Loading shortlist...
-</div>
-
-<p
-  v-else-if="!saved.length && !pageError"
-  class="text-muted text-center"
-  data-testid="shortlist-empty"
->
-  Nothing shortlisted yet.
-  <br />
-  <RouterLink to="/universities">Browse Partner Universities</RouterLink>.
-</p>
-<ul
-  v-else-if="saved.length"
-  class="list-group"
-  data-testid="shortlist-list"
->
-  <li
-    v-for="u in paginatedSaved"
-    :key="u.id"
-    class="list-group-item shortlist-row"
-    data-testid="shortlist-item"
-  >
-    <div class="shortlist-main">
-      <div class="shortlist-logo-box">
-        <img
-          v-if="u.logo_url"
-          :src="getLogoUrl(u.logo_url)"
-          :alt="`${u.name} logo`"
-          class="shortlist-logo"
-          loading="lazy"
-        />
-        <i
-          v-else
-          class="bi bi-mortarboard fs-2 text-muted"
-          aria-hidden="true"
-        ></i>
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 pb-3 mb-4 border-bottom">
+      <div>
+        <h1 class="page-title h3 fw-bold mb-1 text-navy">My Shortlist</h1>
+        <p class="text-muted small mb-0">Manage your saved partner universities.</p>
       </div>
 
-      <div class="shortlist-info">
-        <div class="shortlist-name">{{ u.name }}</div>
-        <div class="shortlist-location text-muted">
-          {{ u.city }}, {{ u.country }}
+      <div class="d-flex align-items-center gap-2">
+        <label for="shortlist-sort" class="visually-hidden">
+          Sort Shortlist
+        </label>
+        <select
+          id="shortlist-sort"
+          v-model="sortBy"
+          class="form-select form-select-sm shortlist-sort shadow-none"
+        >
+          <option value="added">Recently Added</option>
+          <option value="name">University Name (A - Z)</option>
+          <option value="country">Country (A - Z)</option>
+        </select>
+      </div>
+    </div>
+
+    <div ref="gridTopRef">
+    <div
+      v-if="pageLoading || shortlist.loading"
+      class="text-muted text-center py-5"
+      data-testid="shortlist-loading"
+    >
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading your shortlist...
+    </div>
+
+    <div
+      v-else-if="!saved.length && !pageError"
+      class="text-center py-5 px-3 bg-light rounded-4 border border-dashed my-4"
+      data-testid="shortlist-empty"
+    >
+      <div class="mb-3">
+        <i class="bi bi-bookmark-heart fs-1 text-muted"></i>
+      </div>
+      <h3 class="h5 fw-semibold text-navy mb-2">Nothing shortlisted yet</h3>
+      <p class="text-muted small mb-3">Explore our global network of partner universities and save your favorites here.</p>
+      <RouterLink to="/universities" class="btn btn-primary px-4 rounded-pill">Browse Partner Universities</RouterLink>
+    </div>
+
+    <div
+      v-else-if="saved.length"
+      class="d-flex flex-column gap-3"
+      data-testid="shortlist-list"
+    >
+      <div
+        v-for="u in paginatedSaved"
+        :key="u.id"
+        class="list-group-item d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 p-md-4 bg-white border rounded-4 shortlist-row-item"
+        data-testid="shortlist-item"
+      >
+        <div class="d-flex align-items-center gap-3 mb-3 mb-md-0 flex-grow-1 min-width-0">
+          <div class="shortlist-logo-box flex-shrink-0">
+            <img
+              v-if="u.logo_url"
+              :src="getLogoUrl(u.logo_url)"
+              :alt="`${u.name} logo`"
+              class="shortlist-logo"
+              loading="lazy"
+            />
+            <i
+              v-else
+              class="bi bi-mortarboard fs-4 text-muted"
+              aria-hidden="true"
+            ></i>
+          </div>
+          <div class="flex-grow-1 min-width-0">
+            <h3 class="shortlist-name text-navy mb-1">{{ u.name }}</h3>
+            <p class="text-muted small mb-0 text-truncate">
+              <i class="bi bi-geo-alt text-primary me-1"></i>{{ u.city }}, {{ u.country }}
+            </p>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 ms-md-auto flex-wrap flex-shrink-0">
+          <RouterLink
+            :to="`/schedule/${u.id}`"
+            class="btn btn-sm btn-primary rounded-pill px-3 py-2"
+            data-testid="shortlist-schedule-link"
+          >
+            <i class="bi bi-calendar-check me-1 d-none d-sm-inline-block"></i> Plan Schedule
+          </RouterLink>
+
+          <div class="d-flex align-items-center gap-2">
+          <RouterLink
+            :to="`/universities/${u.id}`"
+            class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2"
+          >
+            Details
+          </RouterLink>
+
+          <button
+            class="btn btn-sm btn-outline-danger rounded-circle p-2 lh-1 remove-btn"
+            data-testid="shortlist-remove-btn"
+            @click="remove(u)"
+            title="Remove from shortlist"
+            aria-label="Remove from shortlist"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+          </div>
         </div>
       </div>
     </div>
-    <div class="shortlist-actions">
-      <RouterLink
-        :to="`/schedule/${u.id}`"
-        class="btn btn-outline-primary"
-        data-testid="shortlist-schedule-link"
-      >
-        Plan Schedule
-      </RouterLink>
-
-      <div class="shortlist-secondary-actions">
-        <RouterLink
-          :to="`/universities/${u.id}`"
-          class="btn btn-outline-secondary"
-        >
-          Details
-        </RouterLink>
-
-        <button
-          class="btn btn-outline-danger"
-          data-testid="shortlist-remove-btn"
-          @click="remove(u)"
-        >
-          Remove
-        </button>
-      </div>
     </div>
-  </li>
-</ul>
 
-<nav
-  v-if="pageCount > 1 && !pageLoading && !shortlist.loading"
-  class="shortlist-pagination mt-4"
-  aria-label="Shortlist pages"
-  data-testid="shortlist-pagination"
->
-  <ul class="pagination justify-content-center flex-wrap mb-0">
-    <li class="page-item" :class="{ disabled: currentPage === 1 }">
-      <button
-        class="page-link"
-        type="button"
-        :disabled="currentPage === 1"
-        aria-label="Previous page"
-        @click="goToPage(currentPage - 1)"
-      >Previous</button>
-    </li>
-    <li
-      v-for="page in pageCount"
-      :key="page"
-      class="page-item"
-      :class="{ active: currentPage === page }"
+    <nav
+      v-if="pageCount > 1 && !pageLoading && !shortlist.loading"
+      class="shortlist-pagination mt-5"
+      aria-label="Shortlist pages"
+      data-testid="shortlist-pagination"
     >
-      <button
-        class="page-link"
-        type="button"
-        :aria-current="currentPage === page ? 'page' : undefined"
-        :aria-label="`Page ${page}`"
-        @click="goToPage(page)"
-      >{{ page }}</button>
-    </li>
-    <li class="page-item" :class="{ disabled: currentPage === pageCount }">
-      <button
-        class="page-link"
-        type="button"
-        :disabled="currentPage === pageCount"
-        aria-label="Next page"
-        @click="goToPage(currentPage + 1)"
-      >Next</button>
-    </li>
-  </ul>
-</nav>
-
-
+      <ul class="pagination justify-content-center flex-wrap mb-0">
+        <li class="page-item"
+           :class="{ disabled: currentPage === 1 }"
+           :title="currentPage === 1 ? 'You are already on the first page.' : undefined">
+          <button
+            class="page-link rounded-start-pill px-3 shadow-none"
+            type="button"
+            :disabled="currentPage === 1"
+            aria-label="Previous page"
+            @click="goToPage(currentPage - 1)"
+          ><i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i><span>Prev</span></button>
+        </li>
+        <li
+          v-for="page in displayedPages"
+          :key="page"
+          class="page-item"
+          :class="{ active: currentPage === page }"
+        >
+          <button
+            class="page-link px-3 shadow-none"
+            type="button"
+            :aria-current="currentPage === page ? 'page' : undefined"
+            :aria-label="`Page ${page}`"
+            @click="goToPage(page)"
+          >{{ page }}</button>
+        </li>
+        <li class="page-item" 
+            :class="{ disabled: currentPage === pageCount }"
+            :title="currentPage === pageCount ? 'You are already on the last page.' : undefined">
+          <button
+            class="page-link rounded-end-pill px-3 shadow-none"
+            type="button"
+            :disabled="currentPage === pageCount"
+            aria-label="Next page"
+            @click="goToPage(currentPage + 1)"
+          ><span>Next</span><i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></button>
+        </li>
+      </ul>
+    </nav>
   </section>
 </template>
 
 <style scoped>
-.shortlist-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  min-height: 140px;
-  padding: 1.5rem;
+.text-navy {
+  color: var(--app-navy);
 }
 
-.shortlist-main {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex: 1 1 300px;
-  min-width: 0;
+.shortlist-row-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.shortlist-row-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(44, 51, 102, 0.2) !important;
 }
 
 .shortlist-logo-box {
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 88px;
-  height: 88px;
-  flex-shrink: 0;
-  padding: 6px;
-  background: white;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
 }
 
 .shortlist-logo {
@@ -318,112 +372,51 @@ onMounted(async () => {
   object-fit: contain;
 }
 
-.shortlist-info {
-  min-width: 0;
-}
-
 .shortlist-name {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
-.shortlist-location {
-  margin-top: 0.4rem;
-  font-size: 1rem;
-}
-
-.shortlist-actions {
+.remove-btn {
+  width: 36px;
+  height: 36px;
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-}
-
-.shortlist-secondary-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  flex: 0 0 auto;
-  gap: 0.5rem;
-}
-
-.shortlist-actions .btn {
-  white-space: nowrap;
-}
-
-@media (max-width: 991.98px) {
-  .shortlist-main,
-  .shortlist-actions {
-    flex-basis: 100%;
-  }
-
-  .shortlist-actions {
-    flex-wrap: wrap;
-  }
-
-  .shortlist-actions > .btn,
-  .shortlist-secondary-actions {
-    flex: 1 0 100%;
-  }
-
-  .shortlist-secondary-actions {
-    width: 100%;
-  }
-
-  .shortlist-secondary-actions > .btn {
-    flex: 1 1 0;
-  }
-}
-
-@media (max-width: 575.98px) {
-  .shortlist-row {
-    padding: 1rem;
-  }
-
-  .shortlist-main {
-    flex-basis: 100%;
-    gap: 0.875rem;
-  }
-
-  .shortlist-logo-box {
-    width: 64px;
-    height: 64px;
-  }
-
-  .shortlist-name {
-    font-size: 1.1rem;
-  }
-
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
 }
 
 .shortlist-sort {
-  width: 180px;
+  width: 200px;
+}
+
+.border-dashed {
+  border-style: dashed !important;
 }
 
 .shortlist-pagination .page-link {
-  color: #0b2348;
-  border-color: #d7deea;
+  color: var(--app-blue);
+  border-color: var(--app-border);
   background-color: #fff;
 }
 
 .shortlist-pagination .page-link:hover:not(:disabled) {
-  color: #0b2348;
-  border-color: #cbdcff;
-  background-color: #f1f5fc;
+  color: var(--app-blue);
+  border-color: var(--app-border);
+  background-color: var(--app-surface);
 }
 
 .shortlist-pagination .page-item.active .page-link {
   color: #fff;
-  border-color: #0b2348;
-  background-color: #0b2348;
-}
-
-.shortlist-pagination .page-link:focus-visible {
-  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+  border-color: var(--app-blue);
+  background-color: var(--app-blue);
 }
 
 .shortlist-pagination .page-item.disabled .page-link {
   color: #8793a6;
-  background-color: #f8faff;
+  background-color: var(--app-surface);
+  pointer-events: none;
 }
 </style>

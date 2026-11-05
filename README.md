@@ -10,7 +10,7 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 - **Shortlist options:** Save universities to a personal shortlist for later planning.
 - **Compare universities:** Review shortlisted choices side by side.
 - **Check credit mappings:** Review how courses at a partner university map to SMU courses to help plan your exchange modules.
-- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account.
+- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account. Saved schedules remain available even after courses are cleared from the cart.
 - **Estimate exchange costs:** Set the exchange duration and monthly accommodation, food, transport, personal, and other expenses. The planner can use published estimates as a starting point and show local currency and SGD totals when exchange-rate data is available.
 - **Create an account:** Sign up and log in through Supabase Authentication. Shortlists, schedules, and budget planning require a signed-in account.
 - **Manage universities (staff):** Admins can add, edit, hide, and delete universities and their details, and remove reviews and comments. See [Admin accounts](#admin-accounts).
@@ -43,7 +43,7 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 ### Requirements
 
 - Node.js 18 or later
-- npm
+- pnpm
 - A Supabase project
 
 ### Setup
@@ -51,10 +51,10 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 1. Install the dependencies:
 
    ```sh
-   npm install
+   pnpm install
    ```
 
-2. Copy `.env.example` to `.env` and set the Supabase project URL and public anon key from **Supabase Project Settings → API**.
+2. Copy `.env.example` to `.env` and set the Supabase URL and public anon key from **Project Settings > API**.
 
    On Windows PowerShell:
 
@@ -68,56 +68,79 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
    supabase/schema.sql
    supabase/seed.sql
    supabase/policies.sql
-   supabase/admin.sql
+   supabase/preserve-saved-schedules.sql
    ```
 
-4. For local development, disable email confirmation in Supabase Authentication settings if you want new accounts to be usable immediately after signup.
+   Run `supabase/preserve-saved-schedules.sql` on an existing database as well. It updates saved schedules so they no longer depend on cart entries.
 
-5. Start the development server:
+4. In Supabase Authentication settings for this development project, disable email confirmation or mark the test users' email addresses as confirmed.
+
+5. Create the local student and admin test users listed in [Local test accounts](#local-test-accounts) under **Authentication > Users**.
+
+6. Run `supabase/admin.sql` in the SQL Editor. It promotes the dummy admin account and applies the staff policies.
+
+7. Start the development server:
 
    ```sh
-   npm run dev
+   pnpm dev
    ```
 
-6. Open the local URL printed by Vite (usually `http://localhost:5173`).
+8. Open the local URL printed by Vite (usually `http://localhost:5173`).
+
+### Local test accounts
+
+These are development-only dummy credentials. Create both users in your development Supabase project before signing in; the SQL files do not create Auth users. Never use these credentials in a production project.
+
+| Role    | Email                     | Password                    |
+| ------- | ------------------------- | --------------------------- |
+| Student | `dummy@example.com`       | `dummy-password-123`        |
+| Admin   | `dummy-admin@example.com` | `dummy-admin-password-123` |
+
+The student E2E tests use the student credentials by default. To configure both test accounts explicitly, copy `.env.test.example` to `.env.test` and adjust the values if needed:
+
+```powershell
+Copy-Item .env.test.example .env.test
+```
+
+The admin tests are skipped unless `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set in `.env.test`.
 
 ### Admin accounts
 
-There are two kinds of user: students (anyone who signs up) and admins (staff). An admin can do everything a student can, and can also add, edit, hide, and delete universities and remove reviews and comments. A new university starts hidden from students until an admin publishes it, and only a hidden university can be deleted.
+There are two kinds of user: students and admins (staff). An admin can do everything a student can, and can also add, edit, hide, and delete universities and remove reviews and comments. A new university starts hidden from students until an admin publishes it, and only a hidden university can be deleted.
 
-A user becomes an admin when `role` is set to `admin` in their `app_metadata`. Users cannot change `app_metadata` themselves, so this is done in the Supabase SQL Editor, and the person has to log in again afterwards:
+The `supabase/admin.sql` setup sets `role` to `admin` in the dummy admin account's `app_metadata`. To promote a different account, replace the email in that file with the account's email, run the update in the Supabase SQL Editor, and have the user log in again:
 
 ```sql
 update auth.users
 set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'
-where email = 'staff@smu.edu.sg';
+where email = 'dummy-admin@example.com';
 ```
 
 Admins see an extra **Staff** badge in the navigation bar, and a **View as student** switch to check what students see.
 
 ### Environment variables
 
-| Variable | Description |
-| --- | --- |
-| `VITE_SUPABASE_URL` | URL of your Supabase project |
-| `VITE_SUPABASE_ANON_KEY` | Supabase public anon key |
+| Variable                 | Description                  |
+| ------------------------ | ---------------------------- |
+| `VITE_SUPABASE_URL`      | URL of your Supabase project |
+| `VITE_SUPABASE_ANON_KEY` | Supabase public anon key     |
 
 Do not put a Supabase service-role key in frontend environment variables.
 
 ## Development commands
 
 ```sh
-npm run dev       # Start the Vite development server
-npm run build     # Create a production build in dist/
-npm run preview   # Preview the production build locally
-npm run lint      # Run ESLint
-npm run test:functional  # Run the functional test suite (no account or database needed)
-npm test                # Run the live Playwright end-to-end tests
+pnpm dev                 # Start the Vite development server
+pnpm build               # Create a production build in dist/
+pnpm preview             # Preview the production build locally
+pnpm lint                # Run ESLint
+pnpm test:functional     # Run the functional test suite (no account or database needed)
+pnpm test                # Run the live Playwright end-to-end tests
 ```
 
 The functional suite in `tests/functional` builds the app and drives it in a real browser against a built-in fake Supabase, so it runs anywhere with no keys, no account and no network. See [tests/functional/README.md](tests/functional/README.md) for what it covers and how to add to it.
 
-The live tests in `tests/e2e` use a real browser and a configured Supabase account. Install the browser once with `npx playwright install chromium`, then provide `TEST_EMAIL` and `TEST_PASSWORD` for the test account before running `npm test`. The tests also expect the local environment and database to be set up. The admin tests in `tests/e2e/admin.spec.js` need an admin account, given as `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and skip themselves without one.
+The live tests in `tests/e2e` use a real browser and the development Supabase project. Install the browser once with `pnpm exec playwright install chromium`, then create the student and admin test users above. Test credentials can be set in `.env.test`; admin tests skip when admin credentials are absent.
 
 ## Deployment
 

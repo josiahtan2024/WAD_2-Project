@@ -4,10 +4,22 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
+import Notice from '@/components/AppNotice.vue'
+
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import iconUrl from 'leaflet/dist/images/marker-icon.png'
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+    iconUrl,
+    iconRetinaUrl,
+    shadowUrl,
+})
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -479,7 +491,7 @@ watch(
                     <template #default="{ idx }">
                         <select :value="uniSlots[idx]" :ref="el => selectRefs[idx] = el"
                         @change="selectUniversity(idx, $event.target.value === '' ? null : Number($event.target.value))"
-                        class="compare-select form-select fw-semibold text-truncate compare-university-select" data-testid="compare-university-select">
+                        class="compare-select form-select fw-semibold text-truncate text-navy compare-university-select shadow-none" data-testid="compare-university-select">
                             <option value="">Choose a University</option>
                             <optgroup label="My Shortlist" v-if="shortlistedUnis.length > 0">
                                 <option v-for="uni in shortlistedUnis" :key="uni.id" :value="uni.id"
@@ -761,7 +773,9 @@ watch(
                     <template #default="{ uni }">
                         <div class="mt-3 pt-3 border-top">
                             <a :href="uni.academic.modulesURL" class="link-primary text-decoration-none custom-hover-link" 
-                                target="_blank" rel="noopener noreferrer">View Course Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></a>
+                                target="_blank" rel="noopener noreferrer">View Course
+                                <span class="d-inline-block">Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></span>
+                            </a>
                         </div>
                     </template>
                 </CompareRow>
@@ -827,12 +841,14 @@ watch(
                     <template #default="{ uni, idx }">
                         <div v-if="uni && uni.exchange?.periods?.length > 0" 
                             class="text-break">
-                            <span class="text-nowrap me-1">
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
-                            </span>
-                            <span class="text-nowrap">
-                                <span class="me-1">-</span>
-                                {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                            <span class="d-inline-flex align-items-baseline flex-wrap">
+                                <span class="text-nowrap me-1">
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].startDate) }}
+                                </span>
+                                <span class="text-nowrap">
+                                    <span class="mx-1">-</span>
+                                    {{ formatExchangeDate(uni.exchange.periods[uniProgrammes[idx]].endDate) }}
+                                </span>
                             </span>
                         </div>
                     </template>
@@ -902,7 +918,7 @@ watch(
     font-size: 2rem;
 }
 .compare-select:hover {
-    outline: 1px solid #173b78;
+    outline: 1px solid var(--app-gray-blue);
 }
 .sticky-uni-selector {
     position: sticky;
@@ -925,6 +941,7 @@ watch(
     max-height: 200px;
     object-fit: contain;
     margin: 0 auto;
+    border-radius: 8px;
 }
 .uni-map {
     width: 100%;

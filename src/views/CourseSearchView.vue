@@ -135,16 +135,38 @@ async function addToCart(mapping) {
     cartLimitNotice.value = ''
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
+// Removing a course also deletes its saved schedule timeslots, so ask first when it has any
+async function confirmScheduleLoss(universityModuleId, uniId) {
+  const slots = await cart.scheduledSlotCount(universityModuleId, uniId)
+  if (!slots) return true
+  const what = universityModuleId == null ? 'These courses have' : 'This course has'
+  return window.confirm(`${what} ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing ${universityModuleId == null ? 'them' : 'it'} from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}. Continue?`)
+}
 async function removeFromCart(universityModuleId) {
-  try { await cart.remove(universityModuleId) } catch { /* shown via cart.error */ }
+  try {
+    if (!(await confirmScheduleLoss(universityModuleId))) return
+    await cart.remove(universityModuleId)
+  } catch (error) {
+    cart.error ??= error.message // a failed timeslot check is not recorded by the store
+  }
 }
 async function clearCart() {
   // while filtered to one university, only clear what is shown
-  try { await cart.clear(cartFiltered.value ? universityId.value : undefined) } catch { /* shown via cart.error */ }
+  const uniId = cartFiltered.value ? universityId.value : undefined
+  try {
+    if (!(await confirmScheduleLoss(undefined, uniId))) return
+    await cart.clear(uniId)
+  } catch (error) {
+    cart.error ??= error.message
+  }
 }
 
 function selectArea(area) {
-  selectedAreaId.value = area.id
+  if (selectedAreaId.value === area.id) {
+    selectedAreaId.value = null
+  } else {
+    selectedAreaId.value = area.id
+  }
   moduleQuery.value = ''
 }
 
@@ -196,19 +218,18 @@ onMounted(async () => {
       :error-message="cartLimitNotice"
       @dismiss-error="cartLimitNotice = ''"
     />
-    <div class="mb-3 text-center">
-      <h1 class="page-title h3 fw-bold mb-1">Course Search</h1>
-      <p class="text-muted mb-0">
-        Pick an SMU Course Area to See the Partner University Courses Mapped to It,<br class="d-none d-md-block" /> Then Add the Ones You Want to Your Cart for Scheduling.
+    <div class="mb-4 pb-3 border-bottom">
+      <h1 class="page-title h3 fw-bold text-navy mb-1">Course Search</h1>
+      <p class="text-muted small mb-0">
+        Pick an SMU course area to view partner university courses mapped to it, then add your selections to your cart for schedule planning.
       </p>
     </div>
 
-    <!-- Filters -->
-    <div class="filter-panel mb-4">
+    <div class="filter-panel mb-4 p-4 border rounded-4" data-testid="filter-bar">
       <div class="row g-3 align-items-end">
-        <div class="col-12 col-md-4">
-          <label for="course-university" class="form-label fw-semibold">Partner University</label>
-          <select id="course-university" v-model="universityId" class="form-select" data-testid="course-university-select">
+        <div class="col-12 col-lg-4">
+          <label for="course-university" class="form-label fw-semibold small text-navy">Partner University</label>
+          <select id="course-university" v-model="universityId" class="form-select shadow-none text-truncate" data-testid="course-university-select">
             <option value="">All Partner Universities</option>
             <optgroup v-if="shortlistedUniversities.length" label="My Shortlist">
               <option v-for="u in shortlistedUniversities" :key="u.id" :value="u.id">{{ u.name }}</option>
@@ -218,50 +239,55 @@ onMounted(async () => {
             </optgroup>
           </select>
         </div>
-        <div class="col-12 col-md-4">
-          <label for="course-area-search" class="form-label fw-semibold">SMU Course Area</label>
-          <input
-            id="course-area-search"
-            v-model="areaQuery"
-            type="search"
-            class="form-control"
-            placeholder="e.g. XECO900 or Finance"
-            data-testid="course-area-search"
-          />
+        <div class="col-12 col-sm-6 col-lg-5">
+          <label for="course-area-search" class="form-label fw-semibold small text-navy">SMU Course Area</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input
+              id="course-area-search"
+              v-model="areaQuery"
+              type="search"
+              class="form-control border-start-0 shadow-none text-truncate"
+              placeholder="e.g. XECO900 or Finance"
+              data-testid="course-area-search"
+            />
+          </div>
         </div>
-        <div class="col-12 col-md-4">
-          <label for="course-school" class="form-label fw-semibold">SMU School</label>
-          <select id="course-school" v-model="school" class="form-select" data-testid="course-school-select">
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label for="course-school" class="form-label fw-semibold small text-navy">SMU School</label>
+          <select id="course-school" v-model="school" class="form-select shadow-none text-truncate" data-testid="course-school-select">
             <option value="">All Schools</option>
             <option v-for="s in schools" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
         <div class="col-12">
           <div class="form-check form-switch mb-0">
-            <input id="course-only-mapped" v-model="onlyMapped" class="form-check-input" type="checkbox" role="switch" />
-            <label for="course-only-mapped" class="form-check-label small">Only Show Course Areas with Mapped Courses</label>
+            <input id="course-only-mapped" v-model="onlyMapped" class="form-check-input shadow-none" type="checkbox" role="switch" />
+            <label for="course-only-mapped" class="form-check-label small text-secondary">Only Show Course Areas with Mapped Courses</label>
           </div>
         </div>
       </div>
-      <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
-        <span class="small text-muted" data-testid="course-area-count">{{ filteredAreas.length }} of {{ uni.modules.length }} course areas</span>
-        <button v-if="hasActiveFilters" type="button" class="btn btn-sm btn-outline-secondary" data-testid="course-clear-filters" @click="clearFilters">Reset Search and Filters</button>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+        <span class="small text-secondary" data-testid="course-area-count">Showing <strong class="text-navy">{{ filteredAreas.length }}</strong> of {{ uni.modules.length }} course areas</span>
+        <button v-if="hasActiveFilters" type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-testid="course-clear-filters" @click="clearFilters">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
+        </button>
       </div>
     </div>
 
     <div v-if="pageLoading" class="text-muted" data-testid="course-search-loading">Loading course areas...</div>
 
-    <div v-else class="row g-3">
-      <!-- 1. Course areas -->
+    <div v-else class="row g-4">
+      <!-- Course areas -->
       <div class="col-12 col-lg-4">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Course Areas</span>
+        <div class="card search-card rounded-4 overflow-hidden">
+          <div class="card-header d-flex justify-content-between align-items-center flex-shrink-0">
+            <span class="fw-semibold text-navy">Course Areas</span>
           </div>
-          <p v-if="!filteredAreas.length" class="text-muted p-3 mb-0" data-testid="course-area-empty">
+          <p v-if="!filteredAreas.length" class="text-muted text-center p-4 mb-0 small" data-testid="course-area-empty">
             No course areas match these filters.
           </p>
-          <div v-else class="list-group list-group-flush area-list" data-testid="course-area-list">
+          <div v-else class="list-group list-group-flush area-list course-search-scroll flex-grow-1" data-testid="course-area-list">
             <button
               v-for="area in filteredAreas"
               :key="area.id"
@@ -274,13 +300,13 @@ onMounted(async () => {
             >
               <div class="d-flex justify-content-between align-items-start gap-2">
                 <div class="min-w-0">
-                  <div class="fw-semibold">{{ area.course_area }}</div>
-                  <div class="small">{{ area.description }}</div>
-                  <div class="small area-school">{{ area.school }}</div>
+                  <div class="fw-semibold mb-1 area-title">{{ area.course_area }}</div>
+                  <div class="small mb-1 area-desc">{{ area.description }}</div>
+                  <div class="badge bg-light text-secondary border fw-normal area-school">{{ area.school }}</div>
                 </div>
                 <span
-                  class="badge rounded-pill flex-shrink-0"
-                  :class="countByArea[area.id] ? 'text-bg-primary' : 'text-bg-secondary'"
+                  class="badge rounded-pill flex-shrink-0 area-count-badge"
+                  :class="countByArea[area.id] ? (area.id === selectedAreaId ? 'bg-white text-dark' : 'text-bg-primary') : 'text-bg-secondary'"
                   :title="`${countByArea[area.id] ?? 0} mapped courses`"
                 >{{ countByArea[area.id] ?? 0 }}</span>
               </div>
@@ -289,73 +315,79 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- 2. Mapped foreign courses -->
+      <!-- Mapped foreign courses -->
       <div class="col-12 col-lg-5">
-        <div class="card h-100">
-          <div v-if="!selectedArea" class="card-body text-muted" data-testid="course-area-placeholder">
-            <i class="bi bi-arrow-left-circle me-1" aria-hidden="true"></i>
+        <div class="card search-card rounded-4 overflow-hidden">
+          <div v-if="!selectedArea" class="card-body text-muted text-center py-5 d-flex flex-column align-items-center justify-content-center"
+            data-testid="course-area-placeholder">
+            <i class="bi bi-arrow-up-circle fs-4 mb-1 d-lg-none" aria-hidden="true"></i>
+
+            <i class="bi bi-arrow-left-circle me-1 d-none d-lg-inline" aria-hidden="true"></i>
             Choose a course area to see the courses mapped to it.
           </div>
           <template v-else>
-            <div class="card-header">
-              <div class="fw-semibold">{{ selectedArea.course_area }} · {{ selectedArea.description }}</div>
+            <div class="card-header flex-shrink-0">
+              <div class="fw-semibold mb-0 text-navy">{{ selectedArea.course_area }} · {{ selectedArea.description }}</div>
               <div class="small text-muted">{{ selectedArea.school }}</div>
             </div>
-            <div class="card-body pb-0 flex-grow-0">
-              <input
-                v-model="moduleQuery"
-                type="search"
-                class="form-control form-control-sm"
-            placeholder="Search Courses by Name"
-            aria-label="Search Mapped Courses by Name"
-                data-testid="course-module-search"
-              />
+            <div class="card-body pb-2 bg-light border-bottom flex-grow-0 flex-shrink-0">
+              <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text bg-light border-end-0 text-muted">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input
+                  v-model="moduleQuery"
+                  type="search"
+                  class="form-control shadow-none"
+                  placeholder="Search Courses by Name"
+                  aria-label="Search Mapped Courses by Name"
+                  data-testid="course-module-search"
+                />
+              </div>
               <p class="small text-muted mt-2 mb-0">
-                {{ areaModuleCount }} course{{ areaModuleCount === 1 ? '' : 's' }}
-                {{ universityId === '' ? 'across all partner universities' : `at ${universityName(universityId)}` }}
-              </p>
-              <p v-if="!auth.user" class="small mt-2 mb-0" data-testid="course-login-hint">
-                <RouterLink :to="loginLink">Log In</RouterLink> to add courses to your cart.
+                <strong class="text-navy">{{ areaModuleCount }}</strong> course{{ areaModuleCount === 1 ? '' : 's' }}
+                {{ universityId === '' ? 'across all partners' : `at ${universityName(universityId)}` }}
               </p>
             </div>
-            <p v-if="!areaModuleGroups.length" class="text-muted p-3 mb-0" data-testid="course-module-empty">
+            <p v-if="!areaModuleGroups.length" class="text-muted small text-center p-4 mb-0" data-testid="course-module-empty">
               No mapped courses for this area{{ universityId === '' ? '' : ' at this university' }}.
             </p>
-            <div v-else class="module-list p-3" data-testid="course-module-list">
+            <div v-else class="module-list course-search-scroll p-3 flex-grow-1" data-testid="course-module-list">
               <div v-for="group in areaModuleGroups" :key="group.universityId" class="mb-3">
-                <h3 class="h6 text-uppercase small text-muted mb-2">{{ group.name }}</h3>
-                <ul class="list-group">
+                <h3 class="h6 text-uppercase small text-navy fw-bold mb-2 pb-1 border-bottom">{{ group.name }}</h3>
+                <ul class="list-group group-flush gap-2">
                   <li
                     v-for="m in group.rows"
                     :key="m.id"
-                    class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                    class="list-group-item d-flex justify-content-between align-items-center bg-white border rounded-3"
                     data-testid="course-module-item"
                   >
                     <div class="min-w-0">
-                      <div>{{ m.university_module.module_name }}</div>
-                      <div v-if="m.university_module.language" class="small text-muted">{{ m.university_module.language }}</div>
-                      <div v-if="m.notes" class="small text-muted">{{ m.notes }}</div>
+                      <div class="fw-semibold text-navy">{{ m.university_module.module_name }}</div>
+                      <div v-if="m.university_module.language" class="small text-muted">
+                        <i class="bi bi-translate me-1"></i>{{ m.university_module.language }}
+                      </div>
                     </div>
                     <template v-if="auth.user">
                     <button
                       v-if="cart.has(m.university_module.id)"
                       type="button"
-                      class="btn btn-sm btn-success flex-shrink-0"
+                      class="btn btn-sm btn-success rounded-pill px-3 flex-shrink-0"
                       data-testid="course-remove-btn"
                       :disabled="cart.isPending(m.university_module.id)"
                       @click="removeFromCart(m.university_module.id)"
                     >
-                      <i class="bi bi-check-lg" aria-hidden="true"></i> Added
+                      <i class="bi bi-check-lg me-1" aria-hidden="true"></i> Added
                     </button>
                     <button
                       v-else
                       type="button"
-                      class="btn btn-sm btn-outline-primary flex-shrink-0"
+                      class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-shrink-0"
                       data-testid="course-add-btn"
                       :disabled="cart.isPending(m.university_module.id)"
                       @click="addToCart(m)"
                     >
-                      <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
+                      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add
                     </button>
                     </template>
                   </li>
@@ -366,36 +398,36 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- 3. Cart -->
+      <!-- Cart -->
       <div class="col-12 col-lg-3">
-        <div class="card cart-card" data-testid="course-cart">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold"><i class="bi bi-cart3 me-1" aria-hidden="true"></i> My Cart</span>
-            <span class="badge text-bg-primary" data-testid="course-cart-count">{{ cart.items.length }}</span>
+        <div class="card cart-card search-card rounded-4 overflow-hidden" data-testid="course-cart">
+          <div class="card-header d-flex justify-content-between align-items-center flex-shrink-0">
+            <span class="fw-semibold text-navy"><i class="bi bi-cart3 me-1 text-primary" aria-hidden="true"></i> My Cart</span>
+            <span class="badge text-bg-primary rounded-pill" data-testid="course-cart-count">{{ cart.items.length }}</span>
           </div>
-          <div v-if="auth.user && cart.error" class="alert alert-warning small m-2 mb-0 py-2" data-testid="course-cart-error">{{ cart.error }}</div>
-          <p v-if="!auth.user" class="text-muted small p-3 mb-0" data-testid="course-cart-login">
-            <RouterLink :to="loginLink">Log In</RouterLink> to save courses to your cart and plan your schedule.
+          <div v-if="auth.user && cart.error" class="alert alert-warning small m-3 mb-0 py-2 flex-shrink-0" data-testid="course-cart-error">{{ cart.error }}</div>
+          <p v-if="!auth.user" class="text-muted small p-4 mb-0 text-center" data-testid="course-cart-login">
+            <RouterLink :to="loginLink">Log in</RouterLink> to save courses to your cart and plan your schedule.
           </p>
-          <p v-else-if="!cart.items.length" class="text-muted small p-3 mb-0" data-testid="course-cart-empty">
+          <p v-else-if="!cart.items.length" class="text-muted small p-4 mb-0 text-center" data-testid="course-cart-empty">
             Your cart is empty. Add courses to plan your schedule.
           </p>
-          <div v-else class="card-body">
-            <p v-if="!cartGroups.length" class="text-muted small mb-2" data-testid="course-cart-empty-university">
+          <div v-else class="card-body cart-body course-search-scroll flex-grow-1">
+            <p v-if="!cartGroups.length" class="text-muted small mb-2 text-center" data-testid="course-cart-empty-university">
               No courses in your cart for {{ universityName(universityId) }} yet.
             </p>
-            <div v-for="group in cartGroups" :key="group.universityId" class="mb-3" data-testid="course-cart-group">
-              <div class="fw-semibold small mb-1">{{ group.name }}</div>
+            <div v-for="group in cartGroups" :key="group.universityId" class="mb-3 pb-3 border-bottom" data-testid="course-cart-group">
+              <div class="fw-semibold small text-navy mb-1">{{ group.name }}</div>
               <ul class="list-unstyled mb-2">
                 <li
                   v-for="item in group.items"
                   :key="item.universityModuleId"
-                  class="d-flex justify-content-between align-items-start gap-2 py-1 border-bottom"
+                  class="d-flex justify-content-between align-items-start gap-2 py-1"
                   data-testid="course-cart-item"
                 >
                   <div class="min-w-0 small">
                     <div>{{ item.moduleName }}</div>
-                    <div class="text-muted">{{ item.courseArea }} · {{ item.smuDescription }}</div>
+                    <div class="text-muted fs-8">{{ item.courseArea }} · {{ item.smuDescription }}</div>
                   </div>
                   <button
                     type="button"
@@ -411,29 +443,31 @@ onMounted(async () => {
               </ul>
               <RouterLink
                 :to="`/schedule/${group.universityId}`"
-                class="btn btn-sm btn-primary w-100"
+                class="btn btn-sm btn-primary w-100 rounded-pill py-2"
                 data-testid="course-cart-schedule-link"
               >
                 Plan Schedule ({{ group.items.length }})
               </RouterLink>
             </div>
+            <div class="text-center">
             <p v-if="hiddenCartCount" class="small text-muted mb-2" data-testid="course-cart-hidden">
               +{{ hiddenCartCount }} course{{ hiddenCartCount === 1 ? '' : 's' }} for other universities ·
               <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-all" @click="showAllCart = true">Show all</button>
             </p>
             <p v-else-if="canHideOtherCarts" class="small text-muted mb-2" data-testid="course-cart-showing-all">
               Showing all universities ·
-              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-less" @click="showAllCart = false">Show Less</button>
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-testid="course-cart-show-less" @click="showAllCart = false">Show less</button>
             </p>
             <button
               v-if="cartGroups.length"
               type="button"
-              class="btn btn-sm btn-outline-secondary w-100"
+              class="btn btn-sm btn-outline-secondary w-100 rounded-pill py-2 mt-2"
               data-testid="course-cart-clear-btn"
               @click="clearCart()"
             >
               {{ cartFiltered ? `Clear ${universityName(universityId)}` : 'Clear Cart' }}
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -442,10 +476,50 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
 .area-list,
-.module-list {
-  max-height: 65vh;
+.module-list,
+.cart-body {
+  max-height: 45vh;
   overflow-y: auto;
+}
+
+@media (min-width: 992px) {
+  .search-card {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .area-list,
+  .module-list,
+  .cart-body {
+    max-height: none;
+  }
+}
+
+.card-header {
+  background-color: var(--app-surface, #fff) !important;
+}
+
+.course-search-scroll {
+  overscroll-behavior: contain;
+}
+
+.course-search-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.course-search-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.course-search-scroll::-webkit-scrollbar-thumb {
+  background: rgba(20, 27, 77, 0.15);
+  border-radius: 4px;
 }
 
 .area-item:not(.active) .area-school {
@@ -455,13 +529,23 @@ onMounted(async () => {
 .area-item.active,
 .area-item.active:hover,
 .area-item.active:focus {
-  background-color: #0b2348;
-  border-color: #0b2348;
+  background-color: var(--app-navy);
+  border-color: var(--app-navy);
   color: #fff;
 }
 
+.area-item.active .area-title {
+  color: #fff !important;
+}
+
+.area-item.active .area-desc {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 .area-item.active .area-school {
-  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 .min-w-0 {
@@ -469,10 +553,15 @@ onMounted(async () => {
   overflow-wrap: anywhere;
 }
 
-@media (min-width: 992px) {
-  .cart-card {
-    position: sticky;
-    top: 1rem;
-  }
+.fs-8 {
+  font-size: 0.75rem;
+}
+
+.filter-panel .btn-outline-secondary {
+  --bs-btn-color: var(--app-gray-blue);
+  --bs-btn-border-color: #d5d8e5;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-gray-blue);
+  --bs-btn-hover-border-color: var(--app-gray-blue);
 }
 </style>

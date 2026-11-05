@@ -31,8 +31,7 @@ const expandedRegions = ref({
   'Asia': false,
   'Europe': false,
   'Middle-East': false,
-  'Oceania': false,
-  'Other': false
+  'Oceania': false
 })
 
 const visibleUniversities = computed(() =>
@@ -50,12 +49,11 @@ const universitiesByRegion = computed(() => {
     const rawRegion = u.region ? u.region.trim() : ''
     const matchedRegion = TARGET_REGIONS.find(
       r => r.toLowerCase() === rawRegion.toLowerCase()
-    ) || 'Other'
+    )
 
-    if (!grouped[matchedRegion]) {
-      grouped[matchedRegion] = []
+    if (matchedRegion && grouped[matchedRegion]) {
+      grouped[matchedRegion].push(u)
     }
-    grouped[matchedRegion].push(u)
   })
 
   Object.keys(grouped).forEach(region => {
@@ -95,7 +93,7 @@ function autoExpandRegionForSelected(selectedUni) {
   const rawRegion = selectedUni.region ? selectedUni.region.trim() : ''
   const matchedRegion = TARGET_REGIONS.find(
     r => r.toLowerCase() === rawRegion.toLowerCase()
-  ) || 'Other'
+  )
 
   Object.keys(expandedRegions.value).forEach(key => {
     expandedRegions.value[key] = false
@@ -156,21 +154,24 @@ onMounted(async () => {
       :error-message="uni.error || ''"
       @dismiss-error="uni.error = null"/>
 
-    <div class="row g-0 h-100">
-      <div class="col-12 col-lg-3 d-flex flex-column h-100 sidebar-column">
-
-        <div class="h-40 overflow-hidden d-flex flex-column border-bottom border-end-lg info-panel-wrapper">
+    <div class="row g-0 h-100 flex-column-reverse flex-lg-row">
+      <!-- Sidebar -->
+      <div class="col-12 col-lg-3 d-flex flex-column sidebar-column">
+        <!-- Info Panel -->
+        <div class="info-panel-wrapper overflow-hidden border-bottom border-end-lg">
           <InfoPanel :university="selected" class="h-100 w-100" />
         </div>
         
-        <div class="h-60 d-flex flex-column border-end-lg p-3 home-university-panel">
+        <!-- Regions Panel -->
+        <div class="d-flex flex-column border-end-lg p-3 home-university-panel flex-grow-1 overflow-hidden">
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
             <h2 class="region-panel-title mb-0">
               <span @click="resetRegions" role="button" tabindex="0"
                 @keydown.enter.prevent="resetRegions"
                 @keydown.space.prevent="resetRegions"
                 style="cursor: pointer;">
-                Regions
+                <i class="bi bi-chevron-left" :class="{ 'd-none': !hasAnyRegionExpanded }"></i> 
+                {{ hasAnyRegionExpanded ? 'All Regions' : 'Regions' }}
               </span>
             </h2>
             <span v-if="visibleUniversities.length" class="badge rounded-pill total-count-pill">
@@ -243,7 +244,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="col-12 col-lg-9 h-100 map-column">
+      <!-- Map Column -->
+      <div class="col-12 col-lg-9 map-column">
         <MapPanel
           class="h-100 w-100"
           :universities="visibleUniversities"
@@ -258,16 +260,48 @@ onMounted(async () => {
 
 <style scoped>
 .remaining-height-container {
-  height: calc(100vh - var(--app-navbar-height, 58px));
   min-height: 550px;
 }
 
-.h-40 {
-  height: 40% !important;
+@media (min-width: 992px) {
+  .remaining-height-container {
+    height: calc(100vh - var(--app-navbar-height, 58px));
+  }
+  .sidebar-column {
+    height: 100%;
+  }
+  .info-panel-wrapper {
+    height: 275px !important;
+    min-height: 275px !important;
+    max-height: 275px !important;
+    flex-shrink: 0;
+  }
+  .home-university-panel {
+    height: auto !important;
+  }
+  .map-column {
+    height: 100%;
+  }
+  .border-end-lg {
+    border-right: 1px solid var(--app-border) !important;
+  }
 }
 
-.h-60 {
-  height: 60% !important;
+@media (max-width: 991.98px) {
+  .remaining-height-container {
+    height: auto;
+  }
+  .map-column {
+    height: 45vh;
+    min-height: 320px;
+  }
+  .info-panel-wrapper {
+    min-height: 180px;
+  }
+  .home-university-panel {
+    height: 370px !important;
+    max-height: 370px !important;
+  }
 }
 
 .sidebar-column {
@@ -276,12 +310,6 @@ onMounted(async () => {
 
 .info-panel-wrapper {
   background: #ffffff;
-}
-
-@media (min-width: 992px) {
-  .border-end-lg {
-    border-right: 1px solid var(--app-border) !important;
-  }
 }
 
 .text-navy {
@@ -381,6 +409,17 @@ onMounted(async () => {
 .region-uni-container {
   border-top: 1px solid var(--app-border);
   background-color: #ffffff;
+  max-height: 238px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.region-uni-container::-webkit-scrollbar {
+  width: 4px;
+}
+.region-uni-container::-webkit-scrollbar-thumb {
+  background: rgba(20, 27, 77, 0.15);
+  border-radius: 4px;
 }
 
 .fs-7 {

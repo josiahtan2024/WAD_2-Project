@@ -1,5 +1,5 @@
 -- Run in the Supabase SQL Editor.
--- schema.sql >> seed.sql >> polices.sql >> admin.sql
+-- schema.sql >> seed.sql >> policies.sql >> admin.sql
 -- Enable Row Level Security (RLS) on all tables
 ALTER TABLE universities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE university_languages ENABLE ROW LEVEL SECURITY;

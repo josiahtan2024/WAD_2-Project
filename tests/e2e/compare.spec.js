@@ -29,8 +29,16 @@ test.describe('compare', () => {
     await page.goto('/compare')
 
     const slots = page.getByTestId('compare-university-select')
-    const firstValue = await slots.nth(0).locator('option').filter({ hasText: firstName }).getAttribute('value')
-    const secondValue = await slots.nth(1).locator('option').filter({ hasText: secondName }).getAttribute('value')
+    const firstValue = await slots
+      .nth(0)
+      .locator('option')
+      .filter({ hasText: firstName })
+      .getAttribute('value')
+    const secondValue = await slots
+      .nth(1)
+      .locator('option')
+      .filter({ hasText: secondName })
+      .getAttribute('value')
     await slots.nth(0).selectOption(firstValue)
     await slots.nth(1).selectOption(secondValue)
     await expect(slots.nth(0)).toHaveValue(firstValue)

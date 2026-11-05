@@ -72,15 +72,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <nav
-    class="navbar border-bottom app-navbar"
-    data-bs-theme="dark"
-    data-testid="nav-bar">
+  <nav class="navbar border-bottom app-navbar" data-bs-theme="dark" data-testid="nav-bar">
     <div class="container-fluid">
-      <RouterLink
-        class="navbar-brand fw-semibold"
-        to="/"
-        data-testid="nav-brand">
+      <RouterLink class="navbar-brand fw-semibold" to="/" data-testid="nav-brand">
         SMUXchange
       </RouterLink>
 
@@ -89,7 +83,8 @@ onBeforeUnmount(() => {
           <span
             class="admin-mode-indicator d-none d-md-inline-flex"
             :class="auth.adminActive ? 'is-admin' : 'is-preview'"
-            :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'">
+            :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'"
+          >
             <span class="status-dot"></span>
             {{ auth.adminActive ? 'Admin' : 'Student Preview' }}
           </span>
@@ -102,25 +97,27 @@ onBeforeUnmount(() => {
           :aria-expanded="mobileMenuOpen"
           aria-label="Toggle navigation"
           @click="toggleMobileMenu"
-          data-testid="nav-toggle">
+          data-testid="nav-toggle"
+        >
           <span class="navbar-toggler-text fw-medium d-none d-sm-inline text-white">Menu</span>
           <span class="navbar-toggler-icon"></span>
         </button>
       </div>
 
-      <div 
-        id="nav-menu" 
-        class="offcanvas offcanvas-end app-offcanvas" 
-        tabindex="-1" 
-        aria-labelledby="nav-menu-label">
+      <div
+        id="nav-menu"
+        class="offcanvas offcanvas-end app-offcanvas"
+        tabindex="-1"
+        aria-labelledby="nav-menu-label"
+      >
         <div class="offcanvas-header custom-offcanvas-header">
-          <button 
-            type="button" 
-            class="btn-close ms-auto" 
-            data-bs-dismiss="offcanvas" 
+          <button
+            type="button"
+            class="btn-close ms-auto"
+            data-bs-dismiss="offcanvas"
             aria-label="Close"
-            @click="closeMobileMenu">
-          </button>
+            @click="closeMobileMenu"
+          ></button>
         </div>
 
         <div class="offcanvas-body d-flex flex-column w-100">
@@ -130,7 +127,8 @@ onBeforeUnmount(() => {
                 class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                 to="/"
                 data-testid="nav-home"
-                @click="closeMobileMenu">
+                @click="closeMobileMenu"
+              >
                 Home
               </RouterLink>
             </li>
@@ -140,7 +138,8 @@ onBeforeUnmount(() => {
                 class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                 to="/universities"
                 data-testid="nav-universities"
-                @click="closeMobileMenu">
+                @click="closeMobileMenu"
+              >
                 Partner Universities
               </RouterLink>
             </li>
@@ -150,7 +149,8 @@ onBeforeUnmount(() => {
                 class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                 to="/compare"
                 data-testid="nav-compare"
-                @click="closeMobileMenu">
+                @click="closeMobileMenu"
+              >
                 Compare
               </RouterLink>
             </li>
@@ -161,36 +161,40 @@ onBeforeUnmount(() => {
                   class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                   to="/shortlist"
                   data-testid="nav-shortlist"
-                  @click="closeMobileMenu">
+                  @click="closeMobileMenu"
+                >
                   Shortlist
                 </RouterLink>
               </li>
             </template>
 
-              <li class="nav-item">
-                <RouterLink
-                  class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
-                  to="/courses"
-                  data-testid="nav-courses"
-                  @click="closeMobileMenu">
-                  Courses
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
+                to="/courses"
+                data-testid="nav-courses"
+                @click="closeMobileMenu"
+              >
+                Courses
 
-                  <span
-                    v-if="cart.items.length"
-                    class="course-count ms-2"
-                    data-testid="nav-cart-count"
-                    :aria-label="`${cart.items.length} courses in cart`">
-                    {{ cart.items.length }}
-                  </span>
-                </RouterLink>
-              </li>
+                <span
+                  v-if="cart.items.length"
+                  class="course-count ms-2"
+                  data-testid="nav-cart-count"
+                  :aria-label="`${cart.items.length} courses in cart`"
+                >
+                  {{ cart.items.length }}
+                </span>
+              </RouterLink>
+            </li>
             <template v-if="auth.user">
               <li class="nav-item">
                 <RouterLink
                   class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                   to="/cost-estimator"
                   data-testid="nav-cost-estimator"
-                  @click="closeMobileMenu">
+                  @click="closeMobileMenu"
+                >
                   Budget
                 </RouterLink>
               </li>
@@ -200,21 +204,23 @@ onBeforeUnmount(() => {
                   class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
                   to="/schedule"
                   data-testid="nav-schedule"
-                  @click="closeMobileMenu">
+                  @click="closeMobileMenu"
+                >
                   Schedule
                 </RouterLink>
               </li>
             </template>
 
-              <li class="nav-item">
-                <RouterLink
-                  class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
-                  to="/about"
-                  data-testid="nav-about"
-                  @click="closeMobileMenu">
-                  About Us
-                </RouterLink>
-              </li>
+            <li class="nav-item">
+              <RouterLink
+                class="nav-link fs-6 fw-semibold w-100 d-block border-bottom"
+                to="/about"
+                data-testid="nav-about"
+                @click="closeMobileMenu"
+              >
+                About Us
+              </RouterLink>
+            </li>
           </ul>
 
           <div class="d-flex gap-2 align-items-center flex-wrap pt-3 mt-auto">
@@ -224,23 +230,27 @@ onBeforeUnmount(() => {
                 v-if="auth.isAdmin"
                 class="admin-mode-indicator mobile-admin-indicator d-inline-flex d-md-none w-100 mb-2"
                 :class="auth.adminActive ? 'is-admin' : 'is-preview'"
-                :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'">
+                :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'"
+              >
                 <span class="status-dot"></span>
                 {{ auth.adminActive ? 'Admin Mode' : 'Student Preview' }}
               </span>
 
               <!-- Admin preview toggle -->
-              <button v-if="auth.isAdmin"
+              <button
+                v-if="auth.isAdmin"
                 class="btn btn-outline-light btn-sm flex-fill"
                 data-testid="nav-preview-toggle"
-                @click="togglePreview">
+                @click="togglePreview"
+              >
                 {{ auth.previewAsStudent ? 'Exit Preview' : 'Preview as Student' }}
               </button>
 
               <button
                 class="btn btn-light btn-sm flex-fill"
                 data-testid="nav-logout-btn"
-                @click="logout">
+                @click="logout"
+              >
                 Log Out
               </button>
             </template>
@@ -250,7 +260,8 @@ onBeforeUnmount(() => {
                 class="btn btn-outline-light btn-sm flex-fill"
                 to="/login"
                 data-testid="nav-login-link"
-                @click="closeMobileMenu">
+                @click="closeMobileMenu"
+              >
                 Log In
               </RouterLink>
 
@@ -258,7 +269,8 @@ onBeforeUnmount(() => {
                 class="btn btn-light btn-sm flex-fill nav-signup"
                 to="/signup"
                 data-testid="nav-signup-link"
-                @click="closeMobileMenu">
+                @click="closeMobileMenu"
+              >
                 Sign Up
               </RouterLink>
             </template>
@@ -287,8 +299,9 @@ onBeforeUnmount(() => {
   letter-spacing: 0.025em;
   line-height: 1.2;
 
-  transition: background-color 0.2s ease,
-              border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .admin-mode-indicator.is-admin {

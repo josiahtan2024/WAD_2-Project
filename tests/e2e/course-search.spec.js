@@ -41,7 +41,9 @@ test.describe('course search', () => {
     await firstArea.click()
 
     await expect(page.getByTestId('course-module-search')).toBeVisible()
-    await expect(page.getByTestId('course-module-list').or(page.getByTestId('course-module-empty'))).toBeVisible()
+    await expect(
+      page.getByTestId('course-module-list').or(page.getByTestId('course-module-empty'))
+    ).toBeVisible()
   })
 })
 

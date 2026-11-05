@@ -20,12 +20,24 @@ function pick(n) {
       :key="n"
       type="button"
       role="radio"
-      class="btn btn-link p-0 fs-4 lh-1 text-decoration-none"
-      :class="n <= modelValue ? 'text-warning' : 'text-secondary'"
+      class="btn btn-link p-0 fs-5 lh-1 text-decoration-none shadow-none star-btn"
+      :class="n <= modelValue ? 'text-warning' : 'text-secondary text-opacity-30'"
       :aria-checked="n === modelValue"
       :aria-label="`${n} out of 5`"
       :data-testid="`${testid}-${n}`"
       @click="pick(n)"
-    >&#9733;</button>
+    >
+      &#9733;
+    </button>
   </div>
 </template>
+
+<style scoped>
+.star-btn {
+  transition: transform 0.1s ease;
+}
+
+.star-btn:hover {
+  transform: scale(1.15);
+}
+</style>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUniversitiesStore } from '@/stores/universities'
 import { useShortlistStore } from '@/stores/shortlist'
@@ -17,12 +17,12 @@ const shortlist = useShortlistStore()
 const auth = useAuthStore()
 const router = useRouter()
 const adminSection = ref(null)
+const gridTopRef = ref(null)
 const showHidden = ref(true)
 const availableUniversities = computed(() => uni.items.filter((university) =>
   university.published !== false || (auth.adminActive && showHidden.value)
 ))
 
-// Until the student-owned filter helpers exist, show the unfiltered list instead of crashing.
 function getMonthlyCostSGD(university) {
   const cost = university.university_costs
   const total = calculateMonthlyCost(cost)
@@ -58,33 +58,85 @@ const results = computed(() => {
   })
 
   return filtered.sort((a, b) => {
-  if (uni.sortBy === 'country') {
-    const countryOrder = (a.country ?? '').localeCompare(
-      b.country ?? ''
-    )
+    if (auth.adminActive && showHidden.value) {
+      const aHidden = a.published === false
+      const bHidden = b.published === false
+      if (aHidden !== bHidden) {
+        return aHidden ? -1 : 1
+      }
+    }
 
-    if (countryOrder !== 0) return countryOrder
-  }
+    if (uni.sortBy === 'country') {
+      const countryOrder = (a.country ?? '').localeCompare(
+        b.country ?? ''
+      )
 
-  if (uni.sortBy === 'cost') {
-    const costA = getMonthlyCostSGD(a)
-    const costB = getMonthlyCostSGD(b)
+      if (countryOrder !== 0) return countryOrder
+    }
 
-    if (costA < costB) return -1
-    if (costA > costB) return 1
-  }
+    if (uni.sortBy === 'cost') {
+      const costA = getMonthlyCostSGD(a)
+      const costB = getMonthlyCostSGD(b)
 
-  return a.name.localeCompare(b.name)
+      if (costA < costB) return -1
+      if (costA > costB) return 1
+    }
+
+    return a.name.localeCompare(b.name)
+  })
 })
 
-})
 const regions = computed(() => Array.from(new Set(availableUniversities.value.map((u) => u.region))).sort())
 const currentPage = ref(1)
 const pageSize = 6
 const pageCount = computed(() => Math.ceil(results.value.length / pageSize))
+
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isMobile = computed(() => windowWidth.value < 768)
+const displayedPages = computed(() => {
+  const total = pageCount.value
+  const current = currentPage.value
+  const maxVisible = isMobile.value ? 3 : 5 
+  
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = start + maxVisible - 1
+  
+  if (end > total) {
+    end = total
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  const range = []
+  for (let i = start; i <= end; i++) {
+    range.push(i)
+  }
+  
+  return range
+})
+
 const pageResults = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return results.value.slice(start, start + pageSize)
+})
+
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage > oldPage) {
+    nextTick(() => {
+      if (gridTopRef.value) {
+        const yOffset = -75
+        const y = gridTopRef.value.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }
+    })
+  }
 })
 
 watch(() => [uni.query, uni.filters.region, uni.sortBy], () => {
@@ -95,7 +147,6 @@ watch(pageCount, (count) => {
   if (count > 0 && currentPage.value > count) currentPage.value = count
 })
 
-// a new university starts hidden, so go and fill it in
 function openCreated(created) {
   router.push(`/universities/${created.id}`)
 }
@@ -139,26 +190,39 @@ onMounted(async () => {
       <button v-if="exchangeRates.error && !shortlist.error && !uni.error" class="btn btn-link btn-sm px-0" type="button" @click="exchangeRates.load()">Retry</button>
     </template>
   </Notice>
+
   <section class="container py-4 mb-5" data-testid="universities-page">
-    <h1 class="page-title h3 fw-bold text-center mb-3">Partner Universities</h1>
-    <template v-if="auth.adminActive">
-      <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" data-testid="admin-list-tools">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+      <div>
+        <h1 class="page-title h3 fw-bold text-navy mb-1">Explore Partner Universities</h1>
+        <p class="text-muted small mb-0">SMU Global Experience - Discover your next exchange destination.</p>
+      </div>
+
+      <div v-if="auth.adminActive" class="d-flex align-items-center gap-3 flex-wrap flex-shrink-0" data-testid="admin-list-tools">
         <div class="form-check mb-0">
-          <input id="show-hidden" v-model="showHidden" class="form-check-input" type="checkbox" data-testid="admin-show-hidden" />
-          <label class="form-check-label" for="show-hidden">Show Hidden Universities</label>
+          <input id="show-hidden" v-model="showHidden" class="form-check-input shadow-none" type="checkbox" data-testid="admin-show-hidden" />
+          <label class="form-check-label small fw-semibold text-secondary" for="show-hidden">Show Hidden</label>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" data-testid="admin-add-university" @click="adminSection = 'create'">
-          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add University
+        <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 py-2" data-testid="admin-add-university" @click="adminSection = 'create'">
+          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add University
         </button>
       </div>
+    </div>
+
+    <template v-if="auth.adminActive">
       <AdminEditor v-model:section="adminSection" @created="openCreated" />
     </template>
-    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
 
-    <div v-if="uni.loading" class="text-muted" data-testid="universities-loading">Loading partner universities...</div>
-    <p v-else-if="!uni.error && !results.length" class="text-muted" data-testid="universities-empty">No partner universities match your search.</p>
+    <FilterBar v-model:query="uni.query" v-model:region="uni.filters.region" v-model:sort-by="uni.sortBy" :regions="regions" :result-count="results.length" :total-count="availableUniversities.length" />
+    <div ref="gridTopRef">
+    <div v-if="uni.loading" class="text-muted text-center py-5" data-testid="universities-loading">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading partner universities...
+    </div>
+    <div v-else-if="!uni.error && !results.length" class="text-muted text-center py-5 px-3 bg-light rounded-4 border border-dashed my-3" data-testid="universities-empty">
+      <i class="bi bi-search fs-2 mb-2 d-block text-secondary"></i>No partner universities match your search.</div>
     <div v-else-if="!uni.error" class="row g-3" data-testid="universities-grid">
-      <div v-for="u in pageResults" :key="u.id" class="col-12 col-sm-6 col-lg-4">
+      <div v-for="u in pageResults" :key="u.id" class="col-12 col-md-6 col-lg-4">
         <UniversityCard 
         :university="u" 
         :shortlisted="isShortlisted(u.id)" 
@@ -166,22 +230,27 @@ onMounted(async () => {
         @toggle-shortlist="toggle" />
       </div>
     </div>
+    </div>
 
-    <nav v-if="pageCount > 1" class="university-pagination mt-4" aria-label="University list pages" data-testid="universities-pagination">
+    <nav v-if="pageCount > 1" class="university-pagination mt-5" aria-label="University list pages" data-testid="universities-pagination">
       <ul class="pagination justify-content-center flex-wrap mb-0">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
-            Previous
+        <li class="page-item"
+            :class="{ disabled: currentPage === 1 }"
+            :title="currentPage === 1 ? 'You are already on the first page.' : undefined">
+          <button class="page-link rounded-start-pill px-3 shadow-none" type="button" :disabled="currentPage === 1" aria-label="Previous page" @click="currentPage--">
+            <i class="bi bi-chevron-left me-1" style="font-size: 12px;"></i><span>Prev</span>
           </button>
         </li>
-        <li v-for="page in pageCount" :key="page" class="page-item" :class="{ active: currentPage === page }">
-          <button class="page-link" type="button" :aria-current="currentPage === page ? 'page' : undefined" :aria-label="`Page ${page}`" @click="currentPage = page">
+        <li v-for="page in displayedPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
+          <button class="page-link px-3 shadow-none" type="button" :aria-current="currentPage === page ? 'page' : undefined" :aria-label="`Page ${page}`" @click="currentPage = page">
             {{ page }}
           </button>
         </li>
-        <li class="page-item" :class="{ disabled: currentPage === pageCount }">
-          <button class="page-link" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
-            Next
+        <li class="page-item"
+            :class="{ disabled: currentPage === pageCount }"
+            :title="currentPage === pageCount ? 'You are already on the last page.' : undefined">
+          <button class="page-link rounded-end-pill px-3 shadow-none" type="button" :disabled="currentPage === pageCount" aria-label="Next page" @click="currentPage++">
+            <span>Next</span><i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i>
           </button>
         </li>
       </ul>
@@ -190,30 +259,35 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.text-navy {
+  color: var(--app-navy);
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
 .university-pagination .page-link {
-  color: #0b2348;
-  border-color: #d7deea;
+  color: var(--app-blue);
+  border-color: var(--app-border);
   background-color: #fff;
 }
 
 .university-pagination .page-link:hover:not(:disabled) {
-  color: #0b2348;
-  border-color: #cbdcff;
-  background-color: #f1f5fc;
+  color: var(--app-blue);
+  border-color: var(--app-border);
+  background-color: var(--app-surface);
 }
 
 .university-pagination .page-item.active .page-link {
   color: #fff;
-  border-color: #0b2348;
-  background-color: #0b2348;
-}
-
-.university-pagination .page-link:focus-visible {
-  box-shadow: 0 0 0 0.2rem rgba(31, 78, 156, 0.2);
+  border-color: var(--app-blue);
+  background-color: var(--app-blue);
 }
 
 .university-pagination .page-item.disabled .page-link {
   color: #8793a6;
-  background-color: #f8faff;
+  background-color: var(--app-surface);
+  pointer-events: none;
 }
 </style>

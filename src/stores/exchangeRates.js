@@ -17,14 +17,10 @@ export const useExchangeRatesStore = defineStore('exchangeRates', {
       this.error = null
 
       try {
-        const { data } = await axios.get(
-          'https://api.frankfurter.dev/v2/rates?base=sgd'
-        )
+        const { data } = await axios.get('https://api.frankfurter.dev/v2/rates?base=sgd')
 
         this.rates = {
-          ...Object.fromEntries(
-            data.map(item => [item.quote, item.rate])
-          ),
+          ...Object.fromEntries(data.map((item) => [item.quote, item.rate])),
           SGD: 1,
         }
 

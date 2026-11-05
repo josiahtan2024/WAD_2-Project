@@ -113,7 +113,7 @@ const estimatedMonthlyCost = computed(() => {
           rel="noopener noreferrer"
           class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2 fs-8 fw-semibold"
           data-testid="info-details-link">
-          <span>View University Details</span>
+          <span>View Details</span>
           <i class="bi bi-arrow-right"></i>
         </RouterLink>
       </div>
@@ -141,7 +141,7 @@ const estimatedMonthlyCost = computed(() => {
 }
 
 .max-w-xs {
-  max-width: 180px;
+  max-width: 220px;
 }
 
 .text-navy {
@@ -159,7 +159,6 @@ const estimatedMonthlyCost = computed(() => {
   border-radius: 8px;
   overflow: hidden;
   background-color: #ffffff;
-  padding: 4px;
 }
 
 .info-logo {
