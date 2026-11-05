@@ -1,8 +1,9 @@
 <script setup>
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReviewsStore } from '@/stores/reviews'
 import Notice from '@/components/AppNotice.vue'
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const props = defineProps({ review: { type: Object, required: true } })
 
@@ -49,11 +50,22 @@ async function send() {
   }
 }
 
-async function remove(comment) {
+// an admin can remove any comment, and says so, so nobody mistakes it for their own
+const pendingRemoval = ref(null)
+const removingComment = ref(false)
+const removalIsMine = computed(() => pendingRemoval.value?.user_id === auth.user?.id)
+
+function remove(comment) {
+  pendingRemoval.value = comment
+}
+
+async function confirmRemoval() {
+  if (!pendingRemoval.value || removingComment.value) return
   error.value = ''
-  const deletingOwnComment = comment.user_id === auth.user?.id
+  removingComment.value = true
+  const deletingOwnComment = removalIsMine.value
   try {
-    await reviews.removeComment(props.review.id, comment.id)
+    await reviews.removeComment(props.review.id, pendingRemoval.value.id)
     showSuccess(
       deletingOwnComment
         ? 'Your comment was deleted successfully.'
@@ -61,6 +73,9 @@ async function remove(comment) {
     )
   } catch (e) {
     error.value = e.message
+  } finally {
+    pendingRemoval.value = null
+    removingComment.value = false
   }
 }
 </script>
@@ -68,6 +83,21 @@ async function remove(comment) {
 <template>
   <Teleport to="body">
     <Notice :success-message="successMessage" @dismiss-success="dismissSuccess" />
+    <DeleteConfirmDialog
+      :open="!!pendingRemoval"
+      :title="removalIsMine ? 'Delete Comment?' : 'Remove Student Comment?'"
+      action-label="Delete"
+      working-label="Deleting..."
+      :working="removingComment"
+      @cancel="pendingRemoval = null"
+      @confirm="confirmRemoval"
+    >
+      <template #description>
+        <span v-if="removalIsMine">Are you sure you want to delete your comment?</span>
+        <span v-else>This comment will be removed and the student will not be notified.</span>
+        <br>This action cannot be undone.
+      </template>
+    </DeleteConfirmDialog>
   </Teleport>
   <div class="mt-3 pt-3 border-top" data-testid="review-comments">
     <h3 class="h6 fw-bold text-navy mb-2 fs-8 text-uppercase tracking-wider">
