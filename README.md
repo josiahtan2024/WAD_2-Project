@@ -142,6 +142,7 @@ Playwright tests use a real browser and the development Supabase project. Instal
 ## Deployment
 
 The project can be deployed to Vercel as a Vite app. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project environment. The included `vercel.json` rewrites application routes to `index.html` to support direct navigation and page refreshes.
+Deployment Link: wad-2-project-ten.vercel.app
 
 ## Data notes
 
