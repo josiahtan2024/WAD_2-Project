@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { idle, signIn } from './support/ui.js'
+import { idle, signIn, nav } from './support/ui.js'
 
 // University College London (id 7) has two seeded reviews: Bea's (3 stars, newest) and Alex's (5 stars).
 const UCL = 7
@@ -494,7 +494,7 @@ test.describe('reviews: moderation by staff', () => {
 
   test('previewing as a student takes the moderation buttons away', async ({ page }) => {
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-preview-toggle').click()
+    await nav(page, 'nav-preview-toggle').click()
     await expect(page.getByTestId('review-remove-btn')).toHaveCount(0)
     await expect(page.getByTestId('comment-remove-btn')).toHaveCount(0)
   })

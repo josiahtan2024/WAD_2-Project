@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { idle, signIn, texts } from './support/ui.js'
+import { idle, signIn, texts, nav } from './support/ui.js'
 
 const areas = (page) => page.getByTestId('course-area-item')
 const modules = (page) => page.getByTestId('course-module-item')
@@ -154,7 +154,7 @@ test.describe('course search: logged out', () => {
 
   test('the navbar shows no cart count', async ({ page }) => {
     await openCourses(page)
-    await expect(page.getByTestId('nav-cart-count')).toHaveCount(0)
+    await expect(nav(page, 'nav-cart-count')).toHaveCount(0)
   })
 })
 
@@ -190,7 +190,7 @@ test.describe('course search: the cart', () => {
     await modules(page).nth(1).getByTestId('course-add-btn').click()
     await expect(cartCount(page)).toHaveText('2')
     await page.getByTestId('nav-toggle').click()
-    await expect(page.getByTestId('nav-cart-count')).toHaveText('2')
+    await expect(nav(page, 'nav-cart-count')).toHaveText('2')
   })
 
   test('removes a course from the list or from the cart', async ({ page, student, backend }) => {

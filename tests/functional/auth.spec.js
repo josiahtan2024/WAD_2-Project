@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { loginWithForm, openMenu, openUniversities } from './support/ui.js'
+import { loginWithForm, openMenu, openUniversities, nav } from './support/ui.js'
 import { MOCK } from './support/backend.js'
 
 const storedSession = (page) => page.evaluate((key) => localStorage.getItem(key), MOCK.storageKey)
@@ -9,9 +9,9 @@ test.describe('logging in', () => {
     await loginWithForm(page, student.email, student.password)
     await expect(page.getByTestId('home-page')).toBeVisible()
     await openMenu(page)
-    await expect(page.getByTestId('nav-logout-btn')).toBeVisible()
-    await expect(page.getByTestId('nav-login-link')).toHaveCount(0)
-    await expect(page.getByTestId('nav-signup-link')).toHaveCount(0)
+    await expect(nav(page, 'nav-logout-btn')).toBeVisible()
+    await expect(nav(page, 'nav-login-link')).toHaveCount(0)
+    await expect(nav(page, 'nav-signup-link')).toHaveCount(0)
   })
 
   test('the session is kept in the browser, so a reload keeps you logged in', async ({ page, student }) => {
@@ -27,7 +27,7 @@ test.describe('logging in', () => {
     await loginWithForm(page, `  ${student.email.toUpperCase()}  `, student.password)
     await expect(page.getByTestId('home-page')).toBeVisible()
     await openMenu(page)
-    await expect(page.getByTestId('nav-logout-btn')).toBeVisible()
+    await expect(nav(page, 'nav-logout-btn')).toBeVisible()
   })
 
   test('a wrong password is refused with a clear message and nothing is stored', async ({ page, student }) => {
@@ -117,8 +117,8 @@ test.describe('protected pages', () => {
     await page.goto('/')
     await openMenu(page)
     for (const id of ['nav-shortlist', 'nav-cost-estimator', 'nav-schedule']) await expect(page.getByTestId(id)).toHaveCount(0)
-    await expect(page.getByTestId('nav-login-link')).toBeVisible()
-    await expect(page.getByTestId('nav-signup-link')).toBeVisible()
+    await expect(nav(page, 'nav-login-link')).toBeVisible()
+    await expect(nav(page, 'nav-signup-link')).toBeVisible()
   })
 })
 
@@ -127,7 +127,7 @@ test.describe('logging out', () => {
     await loginWithForm(page, student.email, student.password)
     await expect(page.getByTestId('home-page')).toBeVisible()
     await openMenu(page)
-    await page.getByTestId('nav-logout-btn').click()
+    await nav(page, 'nav-logout-btn').click()
     await expect(page.getByTestId('login-page')).toBeVisible()
     expect(await storedSession(page)).toBeNull()
     expect(backend.calls('/auth/v1/logout')).toHaveLength(1)
@@ -139,11 +139,11 @@ test.describe('logging out', () => {
     await loginWithForm(page, student.email, student.password)
     await expect(page.getByTestId('home-page')).toBeVisible()
     await openMenu(page)
-    await page.getByTestId('nav-logout-btn').click()
+    await nav(page, 'nav-logout-btn').click()
     await expect(page.getByTestId('login-page')).toBeVisible()
     await page.reload()
     await openMenu(page)
-    await expect(page.getByTestId('nav-login-link')).toBeVisible()
+    await expect(nav(page, 'nav-login-link')).toBeVisible()
   })
 
   test('logging out one tab does not leave data of the previous person on screen', async ({ page, student, backend }) => {
@@ -153,7 +153,7 @@ test.describe('logging out', () => {
     await page.getByTestId('university-card').first().getByTestId('shortlist-add-btn').click()
     await expect(page.getByTestId('university-card').first().getByTestId('shortlist-remove-btn')).toBeVisible()
     await openMenu(page)
-    await page.getByTestId('nav-logout-btn').click()
+    await nav(page, 'nav-logout-btn').click()
     await loginWithForm(page, other.email, other.password)
     await openUniversities(page)
     await expect(page.getByTestId('university-card').first().getByTestId('shortlist-add-btn')).toBeVisible()
@@ -169,7 +169,7 @@ test.describe('signing up', () => {
     await expect(page.getByTestId('home-page')).toBeVisible()
     expect(backend.userByEmail('new.student@test.dev')).toBeTruthy()
     await openMenu(page)
-    await expect(page.getByTestId('nav-logout-btn')).toBeVisible()
+    await expect(nav(page, 'nav-logout-btn')).toBeVisible()
     await page.goto('/shortlist')
     await expect(page.getByTestId('shortlist-page')).toBeVisible()
   })
@@ -223,7 +223,7 @@ test.describe('signing up', () => {
       await expect(page.getByTestId('home-page')).toBeVisible()
       expect(backend.userByEmail('unconfirmed@test.dev').confirmed).toBe(false)
       await openMenu(page)
-      await expect(page.getByTestId('nav-login-link')).toBeVisible()
+      await expect(nav(page, 'nav-login-link')).toBeVisible()
 
       await loginWithForm(page, 'unconfirmed@test.dev', 'a-good-password')
       await expect(page.getByTestId('login-error')).toHaveText('Email not confirmed')

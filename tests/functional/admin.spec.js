@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { idle, signIn, texts, openMenu } from './support/ui.js'
+import { idle, signIn, texts, openMenu, nav } from './support/ui.js'
 
 const ATLANTIS = 15 // seeded, hidden, nothing filled in
 const BOSTON = 2
@@ -61,8 +61,8 @@ test.describe('admin: students see none of it', () => {
   test('no staff badge or preview switch in the menu', async ({ page }) => {
     await page.goto('/')
     await openMenu(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
+    await expect(nav(page, 'nav-staff-badge')).toHaveCount(0)
+    await expect(nav(page, 'nav-preview-toggle')).toHaveCount(0)
   })
 
   test('opening an edit link does nothing', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('admin: students see none of it', () => {
     expect(outcome).toBeLessThan(500)
     await page.reload()
     await openMenu(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
+    await expect(nav(page, 'nav-staff-badge')).toHaveCount(0)
   })
 })
 
@@ -118,7 +118,7 @@ test.describe('admin: the staff view', () => {
 
   test('shows the staff badge and the controls', async ({ page }) => {
     await openUniversity(page, BOSTON)
-    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
+    await expect(nav(page, 'nav-staff-badge').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     for (const part of ['cost', 'location', 'academics', 'exchange']) await expect(page.getByTestId(`admin-edit-${part}`)).toBeVisible()
   })
@@ -126,13 +126,13 @@ test.describe('admin: the staff view', () => {
   test('previewing as a student hides the controls, and switching back restores them', async ({ page }) => {
     await openUniversity(page, BOSTON)
     await openMenu(page)
-    await page.getByTestId('nav-preview-toggle').click()
+    await nav(page, 'nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
+    await expect(nav(page, 'nav-preview-badge').first()).toBeVisible()
     await openMenu(page)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveText('Exit Preview')
-    await page.getByTestId('nav-preview-toggle').click()
+    await expect(nav(page, 'nav-preview-toggle')).toHaveText('Exit Preview')
+    await nav(page, 'nav-preview-toggle').click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })
 
@@ -141,7 +141,7 @@ test.describe('admin: the staff view', () => {
     await page.getByTestId('filter-search-input').fill('Atlantis')
     await expect(page.getByTestId('university-card-name').filter({ hasText: 'Atlantis Institute' })).toHaveCount(1)
     await openMenu(page)
-    await page.getByTestId('nav-preview-toggle').click()
+    await nav(page, 'nav-preview-toggle').click()
     await expect(page.getByTestId('university-card-name').filter({ hasText: 'Atlantis Institute' })).toHaveCount(0)
   })
 

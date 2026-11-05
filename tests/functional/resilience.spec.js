@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { openUniversities, signIn } from './support/ui.js'
+import { openUniversities, signIn, nav } from './support/ui.js'
 
 test.describe('resilience: slow servers', () => {
   test('the university list shows it is loading, then the universities', async ({ page, backend }) => {
@@ -30,7 +30,7 @@ test.describe('resilience: slow servers', () => {
     backend.slow('/rest/v1/universities', 600)
     await page.goto('/universities')
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-about').click()
+    await nav(page, 'nav-about').click()
     await expect(page).toHaveURL(/\/about$/)
     await page.waitForTimeout(900)
     await expect(page).toHaveURL(/\/about$/)
@@ -124,7 +124,7 @@ test.describe('resilience: sessions', () => {
     await expect(page.getByTestId('shortlist-empty')).toBeVisible()
     backend.revokeSessions()
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-universities').click()
+    await nav(page, 'nav-universities').click()
     await expect(page.getByTestId('universities-page')).toBeVisible()
   })
 
@@ -142,7 +142,7 @@ test.describe('resilience: sessions', () => {
     await signIn(page, student, backend)
     await page.goto('/shortlist')
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-logout-btn').click()
+    await nav(page, 'nav-logout-btn').click()
     await expect(page).toHaveURL(/\/login/)
     await page.goto('/shortlist')
     await expect(page).toHaveURL(/\/login/)

@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { idle, signIn, texts } from './support/ui.js'
+import { idle, signIn, texts, nav } from './support/ui.js'
 import { RATES, distanceFromSmu, universityNamed } from './support/seed.js'
 
 const SLOTS_KEY = 'SMUXchange_compare_slots'
@@ -111,7 +111,7 @@ test.describe('compare: remembering the selection', () => {
     await openCompare(page)
     await pick(page, 0, 'Boston University')
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-about').click()
+    await nav(page, 'nav-about').click()
     await expect(page).toHaveURL(/\/about$/)
     await page.goBack()
     await expect(page).toHaveURL(/\/compare$/)
@@ -143,8 +143,9 @@ test.describe('compare: remembering the selection', () => {
   test('drops a stored university that does not exist (or is hidden)', async ({ page }) => {
     await page.addInitScript(([key, value]) => sessionStorage.setItem(key, value), [SLOTS_KEY, '[15,2,999]'])
     await openCompare(page)
-    await expect(slot(page, 0)).toHaveValue('')
-    await expect(slot(page, 1)).toHaveValue('2')
+    // what is left is packed to the left
+    await expect(slot(page, 0)).toHaveValue('2')
+    await expect(slot(page, 1)).toHaveValue('')
     await expect(slot(page, 2)).toHaveValue('')
   })
 })
@@ -289,7 +290,7 @@ test.describe('compare: admins and hidden universities', () => {
     await openCompare(page)
     await pick(page, 0, 'Atlantis Institute')
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-preview-toggle').click()
+    await nav(page, 'nav-preview-toggle').click()
     await page.reload()
     await expect(selects(page)).toHaveCount(3)
     await expect(slot(page, 0)).toHaveValue('')

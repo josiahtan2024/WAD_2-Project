@@ -69,8 +69,11 @@ export async function openMenu(page) {
 /** Opens the menu and follows one of its links, e.g. goTo(page, 'nav-shortlist'). */
 export async function goTo(page, testId) {
   await openMenu(page)
-  await page.getByTestId(testId).click()
+  await nav(page, testId).click()
 }
 
 /** True when the page scrolls sideways, which on a phone means something overflows. */
 export const scrollsSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+
+/** A link or button in the top bar or the menu. The page has both (one is hidden at any width), so pick the one showing. */
+export const nav = (page, testId) => page.locator(`[data-testid="${testId}"]:visible`)

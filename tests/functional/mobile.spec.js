@@ -1,6 +1,6 @@
 // Runs in the "mobile" project (a Pixel 7 sized, touch browser).
 import { test, expect } from './support/fixtures.js'
-import { idle, scrollsSideways, signIn } from './support/ui.js'
+import { idle, scrollsSideways, signIn, nav } from './support/ui.js'
 
 const PUBLIC_PAGES = ['/', '/about', '/login', '/signup', '/universities', '/universities/2', '/compare', '/courses']
 const STUDENT_PAGES = ['/shortlist', '/cost-estimator', '/schedule']
@@ -69,7 +69,7 @@ test.describe('mobile: the menu', () => {
   test('tapping a link goes there and closes the menu', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-compare').click()
+    await nav(page, 'nav-compare').click()
     await expect(page).toHaveURL(/\/compare$/)
     await expect(page.locator('#nav-menu')).not.toHaveClass(/show/)
   })
@@ -79,7 +79,7 @@ test.describe('mobile: the menu', () => {
     await signIn(page, admin, backend)
     await page.goto('/')
     await page.getByTestId('nav-toggle').click()
-    await expect(page.getByTestId('nav-cart-count')).toHaveText('2')
+    await expect(nav(page, 'nav-cart-count')).toHaveText('2')
     await expect(page.locator('.mobile-admin-indicator')).toBeVisible()
   })
 })

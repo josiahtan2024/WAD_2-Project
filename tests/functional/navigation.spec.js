@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { goTo, openMenu, signIn } from './support/ui.js'
+import { goTo, openMenu, signIn, nav } from './support/ui.js'
 
 const LINKS = {
   visitor: ['nav-home', 'nav-universities', 'nav-compare', 'nav-courses', 'nav-about', 'nav-login-link', 'nav-signup-link'],
@@ -12,8 +12,8 @@ test.describe('what the menu offers', () => {
     await page.goto('/')
     await openMenu(page)
     for (const id of EVERY_LINK) {
-      if (LINKS.visitor.includes(id)) await expect(page.getByTestId(id)).toBeVisible()
-      else await expect(page.getByTestId(id)).toHaveCount(0)
+      if (LINKS.visitor.includes(id)) await expect(nav(page, id)).toBeVisible()
+      else await expect(nav(page, id)).toHaveCount(0)
     }
   })
 
@@ -22,8 +22,8 @@ test.describe('what the menu offers', () => {
     await page.goto('/')
     await openMenu(page)
     for (const id of EVERY_LINK) {
-      if (LINKS.student.includes(id)) await expect(page.getByTestId(id)).toBeVisible()
-      else await expect(page.getByTestId(id)).toHaveCount(0)
+      if (LINKS.student.includes(id)) await expect(nav(page, id)).toBeVisible()
+      else await expect(nav(page, id)).toHaveCount(0)
     }
   })
 
@@ -31,17 +31,17 @@ test.describe('what the menu offers', () => {
     await signIn(page, admin, backend)
     await page.goto('/')
     await openMenu(page)
-    await expect(page.getByTestId('nav-preview-toggle')).toBeVisible()
-    await expect(page.getByTestId('nav-staff-badge').filter({ visible: true })).toBeVisible()
-    for (const id of LINKS.student) await expect(page.getByTestId(id)).toBeVisible()
+    await expect(nav(page, 'nav-preview-toggle')).toBeVisible()
+    await expect(nav(page, 'nav-staff-badge').first()).toBeVisible()
+    for (const id of LINKS.student) await expect(nav(page, id)).toBeVisible()
   })
 
   test('a student never sees admin controls in the menu', async ({ page, student, backend }) => {
     await signIn(page, student, backend)
     await page.goto('/')
     await openMenu(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-toggle')).toHaveCount(0)
+    await expect(nav(page, 'nav-staff-badge')).toHaveCount(0)
+    await expect(nav(page, 'nav-preview-toggle')).toHaveCount(0)
   })
 })
 
@@ -50,11 +50,11 @@ test.describe('using the menu', () => {
     await page.goto('/')
     const toggle = page.getByTestId('nav-toggle')
     await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.getByTestId('nav-universities')).toBeHidden()
+    await expect(nav(page, 'nav-universities')).toBeHidden()
     await openMenu(page)
     await page.locator('#nav-menu').getByRole('button', { name: 'Close' }).click()
     await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.getByTestId('nav-universities')).toBeHidden()
+    await expect(nav(page, 'nav-universities')).toBeHidden()
   })
 
   test('Escape closes it', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures.js'
-import { signIn, openMenu } from './support/ui.js'
+import { signIn, openMenu, nav } from './support/ui.js'
 
 const API = { key: 'sb-mock-auth-token', url: 'https://mock.supabase.co', anon: 'mock-anon-key' }
 
@@ -154,7 +154,7 @@ test.describe('permissions: the staff role', () => {
     await page.goto('/universities')
     await expect(page.getByTestId('admin-add-university')).toHaveCount(0)
     await openMenu(page)
-    await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
+    await expect(nav(page, 'nav-staff-badge')).toHaveCount(0)
     const { body } = await callApi(page, { method: 'PATCH', path: '/rest/v1/universities?id=eq.2', body: { name: 'Mine now' } })
     expect(body).toEqual([])
   })
