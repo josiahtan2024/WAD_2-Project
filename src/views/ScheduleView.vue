@@ -66,15 +66,38 @@ function handleSelectModule(modName) {
 }
 
 function addCartModules() {
-  schedule.addModules(
-    cart.forUniversity(universityId.value).map((item) => ({
-      id: item.universityModuleId,
-      cart_module_id: item.cartModuleId,
-      module_name: item.moduleName,
-      module_code: item.moduleCode || item.moduleName,
-    }))
+  const currentCartItems = cart.forUniversity(universityId.value).map((item) => ({
+    id: item.universityModuleId,
+    cart_module_id: item.cartModuleId,
+    module_name: item.moduleName,
+    module_code: item.moduleCode || item.moduleName,
+  }))
+
+  const savedModuleIds = new Set()
+  for (const day in schedule.currentSchedule) {
+    for (const slot of schedule.currentSchedule[day] || []) {
+      const found = schedule.moduleData.find((m) => m.module_name === slot.moduleName)
+      if (found) savedModuleIds.add(found.id)
+    }
+  }
+
+  const activeCartModuleIds = new Set(currentCartItems.map((m) => m.id))
+  schedule.moduleData = schedule.moduleData.filter(
+    (m) => savedModuleIds.has(m.id) || activeCartModuleIds.has(m.id)
   )
+
+  schedule.addModules(currentCartItems)
 }
+
+watch(
+  () => cart.items,
+  () => {
+    if (universityId.value) {
+      addCartModules()
+    }
+  },
+  { deep: true }
+)
 
 function formatDate(date) {
   if (!date) return ''
