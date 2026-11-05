@@ -205,29 +205,54 @@ function clearFilters() {
     <div class="card-body p-3 p-md-4 pt-0">
       <div v-if="admin" class="d-flex justify-content-center mb-3">
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-testid="admin-add-course" @click="startCreate">
-          <i class="bi bi-plus-lg me-1"></i>Add course
+          <i class="bi bi-plus-lg me-1"></i>Add Course
         </button>
       </div>
+
       <AdminDrawer
         :open="admin && formOpen"
-        :title="editingId ? 'Edit Course' : 'Add Course'"
+        :title="editingId ? 'Edit Course Mapping' : 'Add Course Mapping'"
         :saving="saving"
         :error="formError"
         :form-id="'admin-course-form'"
-        :submit-label="editingId ? 'Save Course' : 'Add Course'"
+        :submit-label="'Save'"
         @close="formOpen = false"
       >
         <form id="admin-course-form" data-testid="admin-course-form" @submit.prevent="saveCourse">
-        <div class="row g-2">
-          <div class="col-12 col-md-3"><label class="form-label small" for="course-code">Course code</label><input id="course-code" v-model="form.module_code" class="form-control" required data-testid="admin-course-code" /></div>
-          <div class="col-12 col-md-5"><label class="form-label small" for="course-name">Course name</label><input id="course-name" v-model="form.module_name" class="form-control" required data-testid="admin-course-name" /></div>
-          <div class="col-12 col-md-4"><label class="form-label small" for="course-area">SMU course area</label><select id="course-area" v-model="form.smu_module_id" class="form-select" required data-testid="admin-course-area"><option value="" disabled>Select area</option><option v-for="area in areas" :key="area.id" :value="area.id">{{ area.course_area }}{{ area.school ? ` · ${area.school}` : '' }}</option></select></div>
-          <div class="col-12 col-md-6"><label class="form-label small" for="course-description">Description</label><textarea id="course-description" v-model="form.description" class="form-control" rows="2" data-testid="admin-course-description"></textarea></div>
-          <div class="col-12 col-md-3"><label class="form-label small" for="course-language">Language</label><input id="course-language" v-model="form.language" class="form-control" data-testid="admin-course-language" /></div>
-          <div class="col-12 col-md-3"><label class="form-label small" for="course-notes">Mapping notes</label><input id="course-notes" v-model="form.notes" class="form-control" data-testid="admin-course-notes" /></div>
-        </div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-navy" for="course-code">Course Code <span class="text-danger">*</span></label>
+              <input id="course-code" v-model="form.module_code" class="form-control shadow-none" placeholder="e.g. COMP3001" required data-testid="admin-course-code" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-navy" for="course-name">Course Name <span class="text-danger">*</span></label>
+              <input id="course-name" v-model="form.module_name" class="form-control shadow-none" placeholder="e.g. Database Systems" required data-testid="admin-course-name" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-navy" for="course-area">SMU Course Area <span class="text-danger">*</span></label>
+              <select id="course-area" v-model="form.smu_module_id" class="form-select shadow-none" required data-testid="admin-course-area">
+                <option value="" disabled>Select SMU Area</option>
+                <option v-for="area in areas" :key="area.id" :value="area.id">
+                  {{ area.course_area }}{{ area.school ? ` · ${area.school}` : '' }}
+                </option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-navy" for="course-description">Description</label>
+              <textarea id="course-description" v-model="form.description" class="form-control shadow-none" rows="3" placeholder="Brief course syllabus or description..." data-testid="admin-course-description"></textarea>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-navy" for="course-language">Language of Instruction</label>
+              <input id="course-language" v-model="form.language" class="form-control shadow-none" placeholder="e.g. English" data-testid="admin-course-language" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-navy" for="course-notes">Mapping Notes</label>
+              <input id="course-notes" v-model="form.notes" class="form-control shadow-none" data-testid="admin-course-notes" />
+            </div>
+          </div>
         </form>
       </AdminDrawer>
+
       <ConfirmDialog
         :open="!!deleteTarget"
         title="Delete Course?"
@@ -240,6 +265,7 @@ function clearFilters() {
       >
         <p class="mb-0 small">Delete <strong class="text-navy">{{ deleteTarget?.university_module?.module_code }} · {{ deleteTarget?.university_module?.module_name }}</strong>? This action cannot be undone.</p>
       </ConfirmDialog>
+
       <p v-if="!mappings.length" class="text-muted small mb-0 py-3 text-center" data-testid="mapping-empty">
         No course mappings recorded for this university yet.
       </p>
