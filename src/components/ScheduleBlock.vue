@@ -119,6 +119,7 @@ function addSelection(day, start, end, moduleName) {
     start,
     end,
   })
+  schedule.isAdded = true
   emit('insertModule')
   clearSelection()
 }
@@ -199,7 +200,7 @@ function removeBlockByModuleName(modName) {
 
       <!-- Lock Screen Overlay when Exchange Period is Unselected -->
       <div v-if="!props.periodSelected" class="disabled-period-overlay position-absolute inset-0 d-flex flex-column align-items-center justify-content-center text-center p-4">
-        <div class="bg-white rounded-circle p-3 shadow-sm mb-2 text-primary border border-light">
+        <div class="bg-white rounded-circle shadow-sm mb-2 text-primary border border-light d-flex align-items-center justify-content-center" style="height: 64px; width: 64px;">
           <i class="bi bi-calendar-x fs-3"></i>
         </div>
         <h4 class="h6 fw-bold text-navy mb-1">Exchange Period Required</h4>
@@ -217,7 +218,7 @@ function removeBlockByModuleName(modName) {
           <div class="icon-circle bg-warning-subtle text-warning flex-shrink-0">
             <i class="bi bi-exclamation-triangle-fill"></i>
           </div>
-          <span>Select a module from Reference first</span>
+          <span>Select a module from reference first</span>
         </div>
         <button class="btn btn-sm btn-link text-secondary p-0 ms-2" @click="noModuleError = false">
           <i class="bi bi-x-lg"></i>
@@ -427,7 +428,7 @@ table {
 }
 
 .floating-popover {
-  position: absolute;
+  position: fixed;
   bottom: 1.25rem;
   right: 1.25rem;
   width: min(calc(100% - 2.5rem), 21.5rem);
