@@ -1,8 +1,8 @@
-// Shared helpers. Dummy account comes from env vars (see README), never hard-code real passwords.
+// Shared helpers. Test accounts come from environment variables (see README).
 import { expect } from '@playwright/test'
 
-export const TEST_EMAIL = process.env.TEST_EMAIL || 'dummy@example.com'
-export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'dummy-password-123'
+export const TEST_EMAIL = process.env.TEST_EMAIL || 'student@smu.edu.sg'
+export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'student123'
 
 export async function login(page) {
   await page.goto('/login')
