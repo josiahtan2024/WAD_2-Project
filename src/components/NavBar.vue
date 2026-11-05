@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
         <template v-if="auth.user && auth.isAdmin">
         <span class="admin-mode-indicator d-none d-custom-min-inline-flex" 
           :class="auth.adminActive ? 'is-admin' : 'is-preview'" 
-          :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'">
+          :data-testid="auth.adminActive ? 'nav-staff-badge-header' : 'nav-preview-badge-header'">
           <span class="status-dot"></span>
           <template v-if="auth.adminActive">Admin</template>
           <template v-else>
@@ -218,11 +218,11 @@ onBeforeUnmount(() => {
 
           <div class="d-flex gap-2 align-items-center flex-wrap pt-3 mt-auto">
             <template v-if="auth.user">
-              <span v-if="auth.isAdmin" class="admin-mode-indicator mobile-admin-indicator d-inline-flex w-100 mb-2" :class="auth.adminActive ? 'is-admin' : 'is-preview-offcanvas'" :data-testid="auth.adminActive ? 'nav-staff-badge' : 'nav-preview-badge'">
+              <span v-if="auth.isAdmin" class="admin-mode-indicator mobile-admin-indicator d-inline-flex w-100 mb-2" :class="auth.adminActive ? 'is-admin' : 'is-preview-offcanvas'" :data-testid="auth.adminActive ? 'nav-staff-badge-mobile' : 'nav-preview-badge-mobile'">
                 <span class="status-dot"></span>
                 {{ auth.adminActive ? 'Admin Mode' : 'Student Preview' }}
               </span>
-              <button v-if="auth.isAdmin" class="btn btn-outline-light btn-sm flex-fill" data-testid="nav-preview-toggle" @click="togglePreview">
+              <button v-if="auth.isAdmin" class="btn btn-outline-light btn-sm flex-fill" data-testid="nav-preview-toggle-mobile" @click="togglePreview">
                 {{ auth.previewAsStudent ? 'Exit Preview' : 'Preview as Student' }}
               </button>
               <button class="btn btn-light btn-sm flex-fill" data-testid="nav-logout-btn" @click="logout">Log Out</button>

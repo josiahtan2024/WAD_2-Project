@@ -62,7 +62,7 @@ test('home map controls work at phone width and the footer remains reachable', a
 
   await openFirstPopulatedRegion(page)
   await page.getByTestId('map-reset-button').click()
-  await expect(allRegions).toHaveText('Regions')
+  await expect(allRegions).toHaveText('All Regions')
 })
 
 test('map details link opens in the current tab', async ({ page, context }) => {
