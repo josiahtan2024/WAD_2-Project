@@ -167,6 +167,7 @@ onMounted(async () => {
           <div class="d-flex align-items-center justify-content-between mb-3 px-1">
             <h2 class="region-panel-title mb-0">
               <span @click="resetRegions" role="button" tabindex="0"
+                data-testid="map-all-regions-toggle"
                 @keydown.enter.prevent="resetRegions"
                 @keydown.space.prevent="resetRegions"
                 :style="{ cursor: hasAnyRegionExpanded ? 'pointer' : 'default' }">
@@ -197,6 +198,7 @@ onMounted(async () => {
                   <button
                     type="button"
                     class="region-header-btn w-100 d-flex align-items-center justify-content-between border-0"
+                    data-testid="home-region-toggle"
                     :class="{ 'is-expanded': expandedRegions[regionGroup.name] }"
                     @click="toggleRegion(regionGroup.name)"
                     :aria-expanded="!!expandedRegions[regionGroup.name]">
@@ -206,7 +208,9 @@ onMounted(async () => {
                     </span>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge region-count-badge">
+                        <span data-testid="home-region-count">
                         {{ regionGroup.universities.length }}
+                        </span>
                       </span>
                       <i 
                         class="bi bi-chevron-down region-chevron" 
@@ -224,6 +228,7 @@ onMounted(async () => {
                         v-for="u in regionGroup.universities" 
                         :key="u.id"
                         class="list-group-item list-group-item-action university-list-item py-2 px-3 fs-7 border-0"
+                        data-testid="map-university-item"
                         :class="{ 'is-selected': selected?.id === u.id }"
                         role="button"
                         tabindex="0"

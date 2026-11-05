@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { login, clearShortlist } from './helpers'
+import { login, clearShortlist, hasStudentCredentials } from './helpers'
 
 test.describe('shortlist', () => {
+  test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
   test.beforeEach(async ({ page }) => {
     await login(page)
     await clearShortlist(page)

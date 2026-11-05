@@ -1,5 +1,8 @@
 # SMU Exchange Planner
 
+
+> **[Vercel Live Application](https://wad-2-project-ten.vercel.app/)** | **[GitHub Repository](https://github.com/josiahtan2024/WAD_2-Project)**
+
 SMUXchange helps SMU students explore partner universities and prepare for an exchange. University information and planning tools come together to help students compare destinations, consider courses and costs, and build a plan for their exchange.
 
 ## Features
@@ -73,10 +76,9 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
    supabase/schema.sql
    supabase/seed.sql
    supabase/policies.sql
-   supabase/preserve-saved-schedules.sql
    ```
 
-   Run `supabase/preserve-saved-schedules.sql` on an existing database as well. It updates saved schedules so they no longer depend on cart entries.
+   Run `supabase/reset.sql` if you want to drop the database.
 
 4. In Supabase Authentication settings for this development project, disable email confirmation or mark the test users' email addresses as confirmed.
 
@@ -121,7 +123,7 @@ set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "a
 where email = 'staff@smu.edu.sg';
 ```
 
-Admins see an extra **Staff** badge in the navigation bar, and a **View as student** switch to check what students see.
+Admins see an extra **Admin** badge in the navigation bar, and a **Preview as student** switch to check what students see.
 
 ### Environment variables
 
@@ -152,30 +154,18 @@ The live tests in `tests/e2e` use a real browser and the development Supabase pr
 The project can be deployed to Vercel as a Vite app. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project environment. The included `vercel.json` rewrites application routes to `index.html` to support direct navigation and page refreshes.
 Deployment Link: wad-2-project-ten.vercel.app
 
-## Data notes
+## Data Notes
 
-University and cost records are initialized from `supabase/seed.sql`. Treat seeded estimates as planning guidance and verify current costs and exchange requirements with the university before making travel or financial decisions. Exchange rates are retrieved from Frankfurter when available.
+University and cost records are initialized via `supabase/seed.sql`, with live exchange rates fetched from the Frankfurter API when available.
 
 ## Use of AI/LLM
+AI/LLM tools were used strictly within course guidelines for lower-order tasks.
 
-AI/LLM tools were used only for the lower-order tasks the course allows.
-The application's business logic, backend queries and feature
-implementation were written by the team.
+**AI-Generated**
+- Functional test suite (`tests/functional/`), including spec files, mock    Supabase backend (`support/backend.js`, `seed.js`), and its README.
+- CI/CD automation (GitHub Actions job and npm script for running the test suite).
 
-**Parts that rely mainly on AI/LLM**
-- The functional test suite in `tests/functional/`: the spec files, the
-  fake Supabase backend used as mock data (`support/backend.js`, `seed.js`),
-  and its README.
-- The GitHub Actions job and npm script that run the functional suite.
-
-**Where AI/LLM assisted**
-- Explaining errors and suggesting debugging hints, for example failing CI
-  runs and test selectors that broke after UI changes.
-- Generating test cases for unit and e2e testing, sample inputs and mock data.
-- Boilerplate and starter code for the test setup.
-
-**Not done with AI/LLM**
-- Core implementation: the Vue components, Pinia stores, Supabase queries
-  and the main app features.
-- Problem solving on the application itself. The team diagnosed and fixed
-  issues the tests found in the app.
+**AI-Assisted**
+- Debugging support (explaining errors, troubleshooting failing CI runs and broken selectors).
+- Generating test cases (unit/E2E), sample inputs, and mock data.
+- Boilerplate setup for testing environments.
