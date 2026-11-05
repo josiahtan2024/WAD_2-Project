@@ -1,5 +1,8 @@
 # SMU Exchange Planner
 
+
+> **[Vercel Live Application](https://wad-2-project-ten.vercel.app/)** | **[GitHub Repository](https://github.com/josiahtan2024/WAD_2-Project)**
+
 SMUXchange helps SMU students explore partner universities and prepare for an exchange. University information and planning tools come together to help students compare destinations, consider courses and costs, and build a plan for their exchange.
 
 ## Features
