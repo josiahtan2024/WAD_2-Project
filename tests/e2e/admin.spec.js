@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { login } from './helpers'
+import { login, hasStudentCredentials } from './helpers'
 
 // Needs an account whose app_metadata has role = admin (see README, "Admin accounts").
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim()
@@ -22,7 +22,7 @@ async function loginAsAdmin(page) {
   await page.getByTestId('login-submit-btn').click()
   const loggedIn = page.getByTestId('nav-logout-btn')
   const loginError = page.getByTestId('login-error')
-  await expect(loggedIn.or(loginError)).toHaveCount(1)
+  await expect(loggedIn.first().or(loginError)).toBeAttached()
   if (await loginError.isVisible()) {
     throw new Error(`Admin login failed: ${await loginError.innerText()}`)
   }
@@ -35,6 +35,7 @@ async function openFirstUniversity(page) {
 }
 
 test('students do not see staff controls', async ({ page }) => {
+  test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
   await login(page)
   await openFirstUniversity(page)
   await expect(page.getByTestId('nav-staff-badge')).toHaveCount(0)
@@ -72,18 +73,18 @@ test.describe('admins', () => {
   test('see the staff controls and can switch to the student view', async ({ page }) => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
-    await expect(page.getByTestId('nav-staff-badge').first()).toBeVisible()
+    await expect(page.locator('[data-testid="nav-staff-badge"]:visible').first()).toBeVisible()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
     await expect(page.getByTestId('admin-edit-cost')).toBeVisible()
 
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-preview-toggle').click()
+    await page.locator('[data-testid="nav-preview-toggle"]:visible').click()
     await expect(page.getByTestId('admin-bar')).toHaveCount(0)
     await expect(page.getByTestId('admin-edit-cost')).toHaveCount(0)
-    await expect(page.getByTestId('nav-preview-badge').first()).toBeVisible()
+    await expect(page.locator('[data-testid="nav-preview-badge"]:visible').first()).toBeVisible()
 
     await page.getByTestId('nav-toggle').click()
-    await page.getByTestId('nav-preview-toggle').click()
+    await page.locator('[data-testid="nav-preview-toggle"]:visible').click()
     await expect(page.getByTestId('admin-bar')).toBeVisible()
   })
 
@@ -91,9 +92,9 @@ test.describe('admins', () => {
     await loginAsAdmin(page)
     await openFirstUniversity(page)
     await page.getByTestId('admin-edit-cost').click()
-    await page.getByTestId('admin-field-currency').fill('')
+    await page.getByTestId('admin-field-accommodation').fill('-1')
     await page.getByTestId('admin-drawer-save').click()
-    await expect(page.getByTestId('admin-field-error').first()).toContainText('currency')
+    await expect(page.getByTestId('admin-field-error').first()).toContainText('zero or a positive number')
     await page.getByTestId('admin-drawer-cancel').click()
     await expect(page.getByTestId('admin-drawer')).toHaveCount(0)
   })
@@ -116,14 +117,14 @@ test.describe('admins', () => {
     await page.getByTestId('admin-add-university').click()
     await page.getByTestId('admin-field-name').fill(name)
     await page.getByTestId('admin-field-country').fill('Testland')
-    await page.getByTestId('admin-field-region').fill('Europe')
+    await page.getByTestId('admin-field-region').selectOption('Europe')
     await page.getByTestId('admin-drawer-save').click()
     await expect(page.getByTestId('admin-hidden-banner')).toBeVisible()
     createdUniversity = { id: Number(page.url().split('/').pop()), name }
     await expect(page.getByTestId('admin-delete')).toBeEnabled()
 
     await page.getByTestId('admin-edit-cost').click()
-    await page.getByTestId('admin-field-currency').fill('EUR')
+    await page.getByTestId('admin-field-currency').selectOption('EUR')
     await page.getByTestId('admin-field-accommodation').fill('1000')
     await page.getByTestId('admin-drawer-save').click()
     await expect(page.getByTestId('admin-drawer')).toHaveCount(0)
@@ -134,11 +135,17 @@ test.describe('admins', () => {
     await page.getByTestId('admin-publish').click()
     await expect(page.getByTestId('admin-hidden-banner')).toHaveCount(0)
     await expect(page.getByTestId('admin-delete')).toBeDisabled()
-    expect(await listed()).toBe(1)
+    await listed()
+    await expect(
+      visitor.getByTestId('university-card-name').filter({ hasText: name })
+    ).toHaveCount(1)
 
     await page.getByTestId('admin-hide').click()
     await expect(page.getByTestId('admin-hidden-banner')).toBeVisible()
-    expect(await listed()).toBe(0)
+    await listed()
+    await expect(
+      visitor.getByTestId('university-card-name').filter({ hasText: name })
+    ).toHaveCount(0)
 
     await page.getByTestId('admin-delete').click()
     await expect(page.getByTestId('delete-impact')).toBeVisible()

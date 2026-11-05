@@ -12,29 +12,30 @@ test.describe('schedule', () => {
   })
 
   test('university and period selection reveal the current schedule controls', async ({ page }) => {
+    await page.goto('/universities')
+    const firstCard = page.getByTestId('university-card').first()
+    await expect(firstCard).toBeVisible()
+    const addToShortlist = firstCard.getByTestId('shortlist-add-btn')
+    const removeFromShortlist = firstCard.getByTestId('shortlist-remove-btn')
+    await expect(addToShortlist.or(removeFromShortlist)).toBeVisible()
+    if (await addToShortlist.isVisible()) {
+      await addToShortlist.click()
+      await expect(removeFromShortlist).toBeVisible()
+    }
+
     await page.goto('/schedule')
     await expect(page.getByTestId('schedule-page')).toBeVisible()
 
     const universitySelect = page.getByTestId('schedule-university-select')
-    const optionCount = await universitySelect.locator('option').count()
-    if (optionCount <= 1) {
-      await expect(page.getByTestId('schedule-no-universities')).toBeVisible()
-      return
-    }
-
-    await universitySelect.selectOption({ index: 1 })
+    const universityId = await universitySelect.locator('option').evaluateAll((options) =>
+      options.find((option) => option.value && !option.disabled)?.value ?? ''
+    )
+    test.skip(!universityId, 'Schedule requires a published university in the student shortlist.')
+    await universitySelect.selectOption(universityId)
     await expect(page).toHaveURL(/\/schedule\/\d+/)
-    await expect(page.getByTestId('schedule-period-select')).toBeVisible()
-
-    const viewMode = page.getByTestId('schedule-view-mode')
-    if (await viewMode.count()) {
-      await page.getByTestId('schedule-edit-mode').check()
-      await expect(page.getByTestId('schedule-edit-mode')).toBeChecked()
-      await viewMode.check()
-      await expect(viewMode).toBeChecked()
-    } else {
-      await page.getByTestId('schedule-create-button').click()
-      await expect(page.getByTestId('schedule-block')).toBeVisible({ timeout: 5000 })
-    }
+    await expect(page.getByTestId('module-table')).toBeVisible()
+    await expect(page.getByTestId('schedule-block')).toBeVisible()
+    await page.getByTestId('schedule-edit-toggle-btn').click()
+    await expect(page.getByTestId('module-table')).toContainText('Save')
   })
 })
