@@ -67,9 +67,13 @@ function submit() {
     </div>
 
     <div>
-      <label class="form-label fw-semibold text-navy small mb-1" for="det-logo">{{ currentLogo ? 'Replace Logo' : 'University Logo' }}</label>
-      <div v-if="currentLogo" class="p-2 border rounded-3 bg-surface mb-2 d-inline-block">
-        <img :src="currentLogo" :alt="`${university.name} logo`" class="img-fluid rounded" style="max-height: 4.5rem; object-fit: contain;" />
+      <label class="form-label fw-semibold text-navy small mb-1 d-block" for="det-logo">{{ currentLogo ? 'Replace Logo' : 'University Logo' }}</label>
+      <div 
+        v-if="currentLogo" 
+        class="p-0 border rounded-3 bg-surface mb-2 d-flex align-items-center justify-content-center overflow-hidden" 
+        style="width: 6.5rem; height: 6.5rem;"
+      >
+        <img :src="currentLogo" :alt="`${university.name} logo`" class="img-fluid rounded" style="width: 100%; height: 100%; object-fit: contain;" />
       </div>
       <input id="det-logo" type="file" accept="image/jpeg,image/png,image/webp" class="form-control shadow-none" data-testid="admin-field-logo" @change="pickLogo" />
       <div class="form-text small text-muted mt-1">Accepts JPG, PNG or WebP up to 2 MB.</div>
