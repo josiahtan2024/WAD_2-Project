@@ -24,7 +24,7 @@ const impact = ref(null)
 let noticeTimer
 
 const TITLES = {
-  create: 'Add a University',
+  create: 'Add University',
   details: 'Edit Details',
   location: 'Edit Location',
   cost: 'Edit Costs',
@@ -149,7 +149,7 @@ watch(
   <ConfirmDialog
     :open="section === 'delete'"
     title="Delete University?"
-    confirm-label="Delete permanently"
+    confirm-label="Delete Permanently"
     danger
     :working="admin.saving"
     :error="error"

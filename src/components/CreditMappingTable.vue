@@ -221,15 +221,15 @@ function clearFilters() {
         <form id="admin-course-form" data-testid="admin-course-form" @submit.prevent="saveCourse">
           <div class="row g-3">
             <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold text-navy" for="course-code">Course Code <span class="text-danger">*</span></label>
+              <label class="form-label small fw-semibold text-navy" for="course-code">Course Code</label>
               <input id="course-code" v-model="form.module_code" class="form-control shadow-none" placeholder="e.g. COMP3001" required data-testid="admin-course-code" />
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold text-navy" for="course-name">Course Name <span class="text-danger">*</span></label>
+              <label class="form-label small fw-semibold text-navy" for="course-name">Course Name</label>
               <input id="course-name" v-model="form.module_name" class="form-control shadow-none" placeholder="e.g. Database Systems" required data-testid="admin-course-name" />
             </div>
             <div class="col-12">
-              <label class="form-label small fw-semibold text-navy" for="course-area">SMU Course Area <span class="text-danger">*</span></label>
+              <label class="form-label small fw-semibold text-navy" for="course-area">SMU Course Area</label>
               <select id="course-area" v-model="form.smu_module_id" class="form-select shadow-none" required data-testid="admin-course-area">
                 <option value="" disabled>Select SMU Area</option>
                 <option v-for="area in areas" :key="area.id" :value="area.id">
@@ -256,14 +256,14 @@ function clearFilters() {
       <ConfirmDialog
         :open="!!deleteTarget"
         title="Delete Course?"
-        confirm-label="Delete course"
+        confirm-label="Delete Permanently"
         danger
         :working="deleting"
         :error="deleteError"
         @cancel="deleteTarget = null"
         @confirm="confirmDeleteCourse"
       >
-        <p class="mb-0 small">Delete <strong class="text-navy">{{ deleteTarget?.university_module?.module_code }} · {{ deleteTarget?.university_module?.module_name }}</strong>? This action cannot be undone.</p>
+        <p class="mb-0 small">Delete <strong class="text-navy">{{ deleteTarget?.university_module?.module_code }} · {{ deleteTarget?.university_module?.module_name }}</strong>? <br>This action cannot be undone.</p>
       </ConfirmDialog>
 
       <p v-if="!mappings.length" class="text-muted small mb-0 py-3 text-center" data-testid="mapping-empty">
