@@ -7,7 +7,6 @@ import { useCourseCartStore } from '@/stores/courseCart'
 import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue'
-import InstructionAlert from '@/components/InstructionAlert.vue'
 import ModuleTable from '@/components/ModuleTable.vue'
 
 const route = useRoute()
@@ -21,37 +20,16 @@ const auth = useAuthStore()
 const saving = ref(false)
 const discarding = ref(false)
 const saved = ref(false)
-const scheduleDeleted = ref(false)
-const deleteModules = ref([])
-const deleteStatus = ref(false)
 const selectedModule = ref('')
 const hasSchedule = ref(false)
 const editSchedule = ref(false)
-const showGrid = ref(false)
-const showFloatingTable = ref(false)
 const changesMade = ref(false)
-const instructionsInsert = [
-  'Select a module below',
-  'Select a start time and an end time on the table',
-  "Click on 'Add' and repeat for next module",
-  "Click on 'Save Schedule' to save",
-]
-const instructionsDelete = [
-  'Select your module(s) below',
-  "Click 'Delete from Schedule'",
-  "To update module timings: Repeat steps under 'To Insert/Update Modules' after deletions",
-  "Click on 'Save Schedule' to update",
-]
 
-let loadedUniversityId = null // whose name, mappings and periods are loaded
-// The timetable being planned comes from the URL: /schedule/2?period=4 is university 2, exchange period 4.
-// Each university + period pair is its own timetable. Both are null on plain /schedule.
-const universityId = computed(() =>
-  route.params.universityId ? Number(route.params.universityId) : null
-)
+let loadedUniversityId = null
+
+const universityId = computed(() => (route.params.universityId ? Number(route.params.universityId) : null))
 const periodId = computed(() => (route.query.period ? Number(route.query.period) : null))
 
-// Dropdown options: shortlisted universities plus any university the student has carted courses for
 const universityOptions = computed(() => {
   const ids = new Set([
     ...shortlist.items.map((s) => s.university_id),
@@ -67,46 +45,21 @@ const universityOptions = computed(() => {
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 })
-const selectedModuleCode = computed(() => {
-  if (selectedModule.value) {
-    return schedule.moduleData.find((x) => x.module_name == selectedModule.value).module_code
-  }
-  return ''
-})
 
-function openScheduleBlock() {
-  editSchedule.value = true
-  setTimeout(() => {
-    showGrid.value = true
-  }, 1500)
-}
-function removeModules() {
-  if (deleteModules.value.length === 0 || deleteStatus.value) return
-
-  for (const day in schedule.currentSchedule) {
-    schedule.currentSchedule[day] = schedule.currentSchedule[day].filter(
-      (mod) => !deleteModules.value.includes(mod.moduleName)
-    )
+function handleToggleEdit() {
+  editSchedule.value = !editSchedule.value
+  if (!editSchedule.value) {
+    selectedModule.value = ''
   }
-  deleteStatus.value = !deleteStatus.value //change button status text to 'deleting'
-
-  setTimeout(() => {
-    deleteStatus.value = !deleteStatus.value // revert button status to normal
-  }, 1000)
-  changesMade.value = true
-  deleteModules.value = []
-}
-function checkScheduleModule(modName) {
-  for (const day in schedule.currentSchedule) {
-    let record = schedule.currentSchedule[day].find((lesson) => lesson.moduleName === modName)
-    if (record) {
-      return record
-    }
-  }
-  return false
 }
 
-// Courses added to the cart on the Courses page become the modules this schedule can use
+function handleSelectModule(modName) {
+  if (!editSchedule.value) {
+    editSchedule.value = true
+  }
+  selectedModule.value = selectedModule.value === modName ? '' : modName
+}
+
 function addCartModules() {
   schedule.addModules(
     cart.forUniversity(universityId.value).map((item) => ({
@@ -119,61 +72,73 @@ function addCartModules() {
 }
 
 function formatDate(date) {
+  if (!date) return ''
   return new Date(date).toLocaleDateString('en-SG', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   })
 }
+
 function confirmDiscard() {
-  //display confirmation alert before switching views
   if (!changesMade.value) return true
   return window.confirm('You have unsaved changes to this schedule. Discard them?')
 }
 
 function resetView() {
   editSchedule.value = false
-  showGrid.value = false
   hasSchedule.value = false
   changesMade.value = false
   saved.value = false
-  scheduleDeleted.value = false
   selectedModule.value = ''
-  deleteModules.value = []
   schedule.resetStore()
 }
 
-// Picking a university or period changes the URL; the route guards below ask before dropping unsaved changes
 async function selectUniversity(event) {
-  // no period in the URL: loadTimetable() opens a default period for the new university
+  const val = event.target.value
+  if (!val) {
+    await router.push({ name: 'schedule' })
+    return
+  }
   const failure = await router.push({
     name: 'schedule',
-    params: { universityId: event.target.value },
+    params: { universityId: val },
   })
-  if (failure) event.target.value = universityId.value ?? '' // switch cancelled: show the current university again
+  if (failure) event.target.value = universityId.value ?? ''
 }
+
 async function selectPeriod(event) {
+  const val = event.target.value
+  if (!val) {
+    await router.push({
+      name: 'schedule',
+      params: { universityId: universityId.value },
+    })
+    return
+  }
   const failure = await router.push({
     name: 'schedule',
     params: { universityId: universityId.value },
-    query: { period: event.target.value },
+    query: { period: val },
   })
-  if (failure) event.target.value = periodId.value ?? '' // switch cancelled: show the current period again
+  if (failure) event.target.value = periodId.value ?? ''
 }
+
 async function discardChange() {
-  await schedule.load(universityId.value, false, periodId.value) // reset the currentSchedule record
-  discarding.value = true // show discarding text
+  selectedModule.value = ''
+  await schedule.load(universityId.value, false, periodId.value)
+  discarding.value = true
 
   setTimeout(() => {
     changesMade.value = false
-    discarding.value = false // revert to original button form
-  }, 700)
+    discarding.value = false
+    editSchedule.value = false
+  }, 400)
 }
 
-onBeforeRouteUpdate(confirmDiscard) // switching university or period from the dropdowns
-onBeforeRouteLeave(confirmDiscard) // leaving the schedule page
+onBeforeRouteUpdate(confirmDiscard)
+onBeforeRouteLeave(confirmDiscard)
 
-// Load the timetable for the university + period in the URL, with that university's cart modules
 async function loadTimetable() {
   const id = universityId.value
   resetView()
@@ -188,51 +153,48 @@ async function loadTimetable() {
       schedule.savedPeriodIds = []
       uni.scheduleUniName = null
       await uni.loadMappings(id)
-
       await uni.getUniversityName(id)
       await uni.loadExchangePeriods(id)
       await schedule.loadSavedPeriods(id)
       loadedUniversityId = id
     }
-    if (!uni.exchangePeriods.some((p) => p.id === periodId.value)) {
-      // no (valid) period chosen: open the earliest period with a saved timetable, else the earliest period
+    if (periodId.value && !uni.exchangePeriods.some((p) => p.id === periodId.value)) {
       const first =
         uni.exchangePeriods.find((p) => schedule.savedPeriodIds.includes(p.id)) ??
         uni.exchangePeriods[0]
-      if (first)
+      if (first) {
         await router.replace({
           name: 'schedule',
           params: { universityId: id },
           query: { period: first.id },
         })
-      return // the URL change runs loadTimetable() again with that period
+      }
+      return
     }
     await schedule.load(id, true, periodId.value)
-    await cart.ensureLoaded() // the cart comes from Supabase, so wait for it before reading it
+    await cart.ensureLoaded()
     addCartModules()
     hasSchedule.value =
       Object.keys(schedule.currentSchedule).length > 0 || schedule.studentTimeTableId !== null
   } catch (e) {
     schedule.error = e.message
-    console.log(schedule.error)
   }
 }
 
-//final save function to database
 async function save() {
   saving.value = true
   saved.value = false
-  scheduleDeleted.value = false
   schedule.error = null
-  // update when a timetable row already exists (even if all its modules were removed), else create one
   const mode = schedule.studentTimeTableId ? 'update' : 'insert'
   try {
     await schedule.save(universityId.value, mode, periodId.value)
     saved.value = !schedule.error
     if (!schedule.error) {
-      changesMade.value = false // hide the bar
+      changesMade.value = false
+      selectedModule.value = ''
+      editSchedule.value = false
       hasSchedule.value = Object.keys(schedule.currentSchedule).length > 0
-      await loadTimetable() //reload the whole view to display updated timetable
+      await loadTimetable()
     }
   } catch (e) {
     schedule.error = e.message
@@ -245,7 +207,6 @@ watch([universityId, periodId], loadTimetable)
 
 onMounted(async () => {
   try {
-    // names for the dropdown come from the universities list; options from the shortlist and cart
     await Promise.all([
       uni.items.length ? Promise.resolve() : uni.load(),
       shortlist.load(),
@@ -260,386 +221,86 @@ onMounted(async () => {
 
 <template>
   <section class="container py-4 mb-5" data-testid="schedule-page">
-    <div class="card schedule-header mb-2" :class="{ 'schedule-header-sticky': changesMade }">
-      <div class="card-body">
-        <div
-          class="d-flex flex-column align-items-center"
-          :class="{ 'justify-content-between': changesMade }"
-        >
-          <h1 class="page-title text-center">Weekly Schedule</h1>
-          <p v-if="uni.scheduleUniName" class="text-primary fw-semibold text-center">
-            {{ uni.scheduleUniName }}
-          </p>
-          <template v-if="changesMade">
-            <div class="changes-pill btn-group w-lg-50 mx-auto my-1" role="group">
-              <button
-                class="btn btn-danger"
-                :disabled="discarding"
-                data-testid="schedule-save-btn"
-                @click="discardChange()"
-              >
-                {{ discarding ? 'Discarding..' : 'Discard Changes' }}
-              </button>
-              <button
-                class="btn btn-primary"
-                :disabled="saving"
-                data-testid="schedule-save-btn"
-                @click="save()"
-              >
-                {{ saving ? 'Saving...' : 'Save Schedule' }}
-              </button>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
-    <div
-      v-if="schedule.loading"
-      class="text-muted py-3"
-      role="status"
-      data-testid="schedule-loading"
-    >
-      Loading schedule...
-    </div>
-    <div
-      v-if="schedule.error"
-      class="alert alert-danger mt-3"
-      role="alert"
-      data-testid="schedule-error"
-    >
-      {{ schedule.error }}
-    </div>
-    <div v-if="saved" class="alert alert-success mt-3" role="status" data-testid="schedule-saved">
-      Schedule saved.
+    <div class="mb-4 pb-3 border-bottom">
+      <h1 class="page-title h3 fw-bold text-navy mb-1">Exchange Weekly Schedule</h1>
+      <p class="text-muted small mb-0">
+        Plan and save your weekly class schedule for your exchange partner university.
+      </p>
     </div>
 
-    <div class="filter-panel mb-4">
+    <div class="filter-panel mb-4 p-4 border rounded-4" data-testid="schedule-filters">
       <div class="row g-3 align-items-end">
         <div class="col-12 col-md-6">
-          <label for="schedule-university" class="form-label fw-semibold">Partner University</label>
+          <label for="schedule-university" class="form-label fw-semibold small text-navy">Partner University</label>
           <select
             id="schedule-university"
-            class="form-select"
+            class="form-select shadow-none"
             :value="universityId ?? ''"
             data-testid="schedule-university-select"
             @change="selectUniversity($event)"
           >
-            <option value="" disabled>Choose a University</option>
+            <option value="">Choose a University</option>
             <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
           </select>
         </div>
+
         <div
-          v-if="
-            universityId && universityOptions.some((university) => university.id === universityId)
-          "
+          v-if="universityId && universityOptions.some((university) => university.id === universityId)"
           class="col-12 col-md-6"
         >
-          <label for="schedule-period" class="form-label fw-semibold">Exchange Period</label>
+          <label for="schedule-period" class="form-label fw-semibold small text-navy">Exchange Period</label>
           <select
             id="schedule-period"
-            class="form-select"
+            class="form-select shadow-none"
             :value="periodId ?? ''"
             data-testid="schedule-period-select"
             @change="selectPeriod($event)"
           >
-            <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
-              {{ p.period_name }} ({{ formatDate(p.start_date) }} – {{ formatDate(p.end_date) }}){{
-                schedule.savedPeriodIds.includes(p.id) ? ' · saved' : ''
-              }}
-            </option>
+          <option value="">Choose a Period</option>
+          <option v-for="p in uni.exchangePeriods" :key="p.id" :value="p.id">
+            {{ p.period_name }} | {{ formatDate(p.start_date) }} - {{ formatDate(p.end_date) }}
+            {{ schedule.savedPeriodIds.includes(p.id) ? '(Saved)' : '' }}
+          </option>
           </select>
         </div>
       </div>
-
-      <div
-        v-if="
-          universityId && universityOptions.some((university) => university.id === universityId)
-        "
-      >
-        <p
-          v-if="schedule.moduleData.length"
-          class="mt-3 mb-0 text-primary text-center"
-          data-testid="schedule-module-count"
-        >
-          <b
-            >{{ schedule.moduleData.length }} module{{
-              schedule.moduleData.length === 1 ? ' is' : 's are'
-            }}
-            available from your cart and saved schedule.</b
-          >
-        </p>
-      </div>
-      <p
-        v-else-if="!universityOptions.length"
-        class="text-muted mt-3 mb-0"
-        data-testid="schedule-no-universities"
-      >
-        <RouterLink to="/universities">Shortlist a Partner University</RouterLink> or
-        <RouterLink to="/courses">Add Courses to Your Cart</RouterLink> to start planning.
-      </p>
-      <p v-else class="text-muted mt-3 mb-0" data-testid="schedule-choose-university">
-        Choose a university to plan its schedule.
-      </p>
     </div>
 
-    <template v-if="universityId">
-      <div class="container-fluid">
-        <div class="row">
-          <template v-if="hasSchedule">
-            <div class="row justify-content-center">
-              <div
-                class="schedule-mode-toggle btn-group my-3"
-                role="group"
-                aria-label="Schedule mode"
-              >
-                <input
-                  type="radio"
-                  class="btn-check"
-                  id="view"
-                  name="schedule-mode"
-                  autocomplete="off"
-                  data-testid="schedule-view-mode"
-                  :checked="!editSchedule"
-                  @change="editSchedule = false"
-                />
-                <label
-                  class="btn"
-                  :class="editSchedule ? 'btn-outline-primary' : 'btn-primary'"
-                  for="view"
-                  >View Schedule</label
-                >
+    <div v-if="schedule.loading" class="text-muted text-center py-5" data-testid="schedule-loading">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading timetable...
+    </div>
 
-                <input
-                  type="radio"
-                  class="btn-check"
-                  id="edit"
-                  name="schedule-mode"
-                  autocomplete="off"
-                  data-testid="schedule-edit-mode"
-                  :checked="editSchedule"
-                  @change="editSchedule = true"
-                />
-                <label
-                  class="btn"
-                  :class="editSchedule ? 'btn-primary' : 'btn-outline-primary'"
-                  for="edit"
-                  >Edit Schedule</label
-                >
-              </div>
-            </div>
-          </template>
-          <template v-else-if="!hasSchedule && !showGrid">
-            <div
-              class="alert row justify-content-between align-items-center w-75 mx-auto"
-              role="alert"
-            >
-              <div class="col-md-8 text-center p-1">
-                You have no schedules planned for this university and this exchange period. <br />
-                Click on <span class="text-primary fw-bold">'New Schedule'</span> to start.
-              </div>
-              <button
-                type="button"
-                class="btn btn-outline-primary col-md-3"
-                id="create-schedule-btn"
-                data-testid="schedule-create-button"
-                @click="openScheduleBlock()"
-              >
-                {{ editSchedule ? 'Loading..' : 'New Schedule' }}
-              </button>
-            </div>
-          </template>
-
-          <template v-if="showGrid">
-            <div class="col-md-6">
-              <ModuleTable></ModuleTable>
-              <InstructionAlert
-                action="Insert"
-                :instructions="instructionsInsert"
-                @select-mod="onSelectMod()"
-                id="instructionSelect"
-                :modules="schedule.moduleData"
-              >
-                <template v-slot:form>
-                  <div class="row justify-content-center">
-                    <template v-for="mod in schedule.moduleData" :key="mod.id">
-                      <div class="col-4 my-1">
-                        <input
-                          type="radio"
-                          :value="mod.module_name"
-                          class="btn-check"
-                          :id="`${mod.id}-1`"
-                          v-model="selectedModule"
-                        />
-                        <label class="btn btn-outline-dark w-100 px-1" :for="`${mod.id}-1`"
-                          >{{ mod.module_code }}
-                        </label>
-                      </div>
-                    </template>
-                    <!-- modules from the cart appear here, so the empty message and the link to add more sit here too -->
-                    <p
-                      v-if="!schedule.moduleData.length"
-                      class="text-muted text-center m-0 card-footer"
-                      data-testid="schedule-no-modules"
-                    >
-                      No modules in your cart for this university yet. Add some to start planning.
-                    </p>
-                    <div class="col-12 text-center mt-2">
-                      <RouterLink
-                        :to="{ name: 'courses', query: { university: universityId } }"
-                        data-testid="schedule-add-courses-link"
-                      >
-                        Add courses from Course search
-                      </RouterLink>
-                    </div>
-                  </div>
-                </template>
-              </InstructionAlert>
-            </div>
-            <div class="col-md-6">
-              <ScheduleBlock
-                :modules="schedule.moduleData"
-                :selected-module="selectedModule"
-                mode="edit"
-                @insertModule="changesMade = true"
-              ></ScheduleBlock>
-            </div>
-          </template>
-          <template v-else-if="editSchedule && hasSchedule">
-            <div class="col-md-6">
-              <ModuleTable></ModuleTable>
-              <InstructionAlert
-                action="Delete"
-                :instructions="instructionsDelete"
-                id="instructionDelete"
-              >
-                <template v-slot:form>
-                  <div class="row g-2 mx-auto">
-                    <template v-for="mod in schedule.moduleData" :key="mod.id">
-                      <div class="col-4">
-                        <label
-                          class="module-delete-option"
-                          :class="{ 'is-disabled': !checkScheduleModule(mod.module_name) }"
-                          :for="`${mod.id}-2`"
-                        >
-                          <input
-                            type="checkbox"
-                            :value="mod.module_name"
-                            class="form-check-input m-0"
-                            :id="`${mod.id}-2`"
-                            v-model="deleteModules"
-                            :disabled="!checkScheduleModule(mod.module_name)"
-                          />
-                          <span class="text-break">{{ mod.module_code }}</span>
-                        </label>
-                      </div>
-                    </template>
-                  </div>
-                  <div class="row justify-content-center mt-3">
-                    <div class="col-6 col-md-4">
-                      <button
-                        class="btn btn-outline-danger w-100"
-                        :disabled="deleteModules.length === 0 || deleteStatus"
-                        @click="removeModules()"
-                      >
-                        {{ !deleteStatus ? 'Delete from Schedule' : 'Deleting..' }}
-                      </button>
-                    </div>
-                  </div>
-                </template>
-              </InstructionAlert>
-              <InstructionAlert
-                action="Insert/Update"
-                :modules="schedule.moduleData"
-                :instructions="instructionsInsert"
-                id="instructionSelect"
-              >
-                <template v-slot:form>
-                  <div class="row justify-content-center">
-                    <template v-for="mod in schedule.moduleData" :key="mod.id">
-                      <div class="col-4 my-1">
-                        <input
-                          type="radio"
-                          :value="mod.module_name"
-                          class="btn-check"
-                          :id="mod.id"
-                          v-model="selectedModule"
-                        />
-                        <label class="btn btn-outline-dark w-100 px-1 text-break" :for="mod.id"
-                          >{{ mod.module_code }}
-                        </label>
-                      </div>
-                    </template>
-                    <p
-                      v-if="!schedule.moduleData.length"
-                      class="text-muted text-center m-0"
-                      data-testid="schedule-no-modules"
-                    >
-                      No modules in your cart for this university yet. Add some to start planning.
-                    </p>
-                    <div class="col-12 text-center mt-2">
-                      <RouterLink
-                        :to="{ name: 'courses', query: { university: universityId } }"
-                        data-testid="schedule-add-courses-link"
-                      >
-                        Add/Replace courses from Course search
-                      </RouterLink>
-                    </div>
-                  </div>
-                </template>
-              </InstructionAlert>
-            </div>
-            <div class="col-md-6 p-0">
-              <ScheduleBlock
-                :modules="schedule.moduleData"
-                :current-schedule="schedule.currentSchedule"
-                :selected-module="selectedModule"
-                mode="edit"
-                @insertModule="changesMade = true"
-              ></ScheduleBlock>
-            </div>
-          </template>
-
-          <template v-else-if="!editSchedule && hasSchedule">
-            <div class="col-md-6">
-              <ModuleTable></ModuleTable>
-            </div>
-            <div class="col-md-6 p-0">
-              <ScheduleBlock
-                :modules="schedule.moduleData"
-                :current-schedule="schedule.currentSchedule"
-                mode="view"
-              ></ScheduleBlock>
-            </div>
-          </template>
+    <!-- Workspace -->
+    <template v-else-if="universityId">
+      <div class="row g-4">
+        <!-- Module Reference List with Controls -->
+        <div class="col-12 col-lg-5">
+          <ModuleTable
+            :selected-module="selectedModule"
+            :is-editing="editSchedule"
+            :changes-made="changesMade"
+            :saving="saving"
+            :discarding="discarding"
+            @select-module="handleSelectModule"
+            @toggle-edit="handleToggleEdit"
+            @save="save"
+            @discard="discardChange"
+          />
         </div>
-      </div>
 
-      <!-- `collapse` lets Bootstrap animate both opening and closing -->
-
-      <div
-        class="selected-info-float btn rounded-5 btn-info text-end d-inline d-md-none p-2"
-        v-if="selectedModule"
-        @click="showFloatingTable = !showFloatingTable"
-      >
-        <i class="bi bi-info-circle-fill"></i>
-      </div>
-      <div
-        class="selected-module-float card d-block fixed-bottom d-md-none z-3 w-50"
-        id="mod-data"
-        v-if="showFloatingTable"
-      >
-        <div class="close">
-          <button
-            type="button"
-            class="btn-close"
-            aria-label="Close"
-            @click="showFloatingTable = !showFloatingTable"
-          ></button>
-        </div>
-        <div class="d-inline d-md-none card-body d-flex flex-column text-center">
-          <div class="fw-bold">Selected Module:</div>
-          <div>{{ selectedModuleCode }}</div>
-          <div>{{ selectedModule }}</div>
+        <!-- Timetable Grid -->
+        <div class="col-12 col-lg-7">
+          <ScheduleBlock
+            :modules="schedule.moduleData"
+            :selected-module="selectedModule"
+            :mode="editSchedule ? 'edit' : 'view'"
+            :error-message="schedule.error"
+            :period-selected="Boolean(periodId)"
+            @insert-module="changesMade = true"
+            @remove-module="changesMade = true"
+            @clear-error="schedule.error = null"
+          />
         </div>
       </div>
     </template>
@@ -647,138 +308,15 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.schedule-header-sticky {
-  position: sticky;
-  top: 30px;
-  z-index: 1030;
-  padding: 1rem;
-  border-radius: 1rem;
-  background: oklab(100% 0 -0.00011);
-  box-shadow: 0 0.25rem 0.75rem rgba(11, 35, 72, 0.12);
+.text-navy {
+  color: var(--app-navy, #141b4d);
 }
 
-.schedule-filters {
-  background: #f8f9fc;
-  border: 1px solid #e8eaf0;
-}
-
-.schedule-mode-toggle {
-  width: min(100%, 32rem);
-  padding: 0.25rem;
-  gap: 0.25rem;
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  background: var(--app-surface);
-}
-
-.schedule-mode-toggle .btn {
-  flex: 1 1 0;
-  border-radius: calc(var(--app-radius) - 0.25rem) !important;
-}
-
-.schedule-module-controls :deep(.schedule-instructions) {
-  box-shadow: 0 0.125rem 0.5rem rgba(11, 35, 72, 0.06);
-}
-
-.module-select-chip,
-.module-delete-chip {
-  display: flex;
-  min-height: 2.35rem;
-  align-items: center;
-  justify-content: center;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.module-delete-option {
-  display: flex;
-  min-height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.4rem;
-  border: 1px solid var(--app-border);
-  border-radius: 0.5rem;
-  background: var(--app-surface);
-  cursor: pointer;
-  text-align: center;
-}
-
-.module-delete-option:has(input:checked) {
-  border-color: var(--app-blue);
-  background: rgba(var(--bs-primary-rgb), 0.08);
-}
-
-.module-delete-option.is-disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.module-reference {
-  position: fixed;
-  right: 2em;
-  bottom: 2rem;
-  width: fit-content;
-  padding: 1rem;
-}
-/* no fixed height on the panel: Bootstrap's collapse animates its height when opening and closing */
-.selected-info-float {
-  position: fixed;
-  right: 2em;
-  bottom: 2rem;
-  padding: 0; /* padding lives on the inner wrapper so the panel can shrink fully to 0 */
-  max-width: min(26rem, calc(100vw - 4em));
-}
-.selected-module-float {
-  margin: 2rem auto;
-}
-.close {
-  position: absolute;
-  top: 7%;
-  right: 5%;
-}
-.selected-module-float.card {
-  background-color: rgba(255, 255, 255, 0.258);
-}
-.module-reference-panel {
-  position: absolute;
-  right: 0;
-  bottom: 100%;
-  width: min(26rem, calc(100vw - 2rem));
-  max-height: min(55vh, 32rem);
-  overflow-y: auto;
-  border: 1px solid var(--app-border);
-  border-radius: 1rem;
-  background: #fff;
-  box-shadow: 0 0.5rem 1.5rem rgba(11, 35, 72, 0.18);
-}
-/* codes in an even-width column, names left-aligned and wrapping onto a second line when long */
-.module-code {
-  white-space: nowrap;
-  padding-right: 1.25rem;
-  vertical-align: top;
-}
-.module-name {
-  text-align: left;
-  vertical-align: top;
-}
-.module-reference-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--app-border);
-}
-.module-reference-row:last-child {
-  border-bottom: 0;
-}
-@media (max-width: 575.98px) {
-  .module-reference {
-    right: 0.75rem;
-    bottom: 0.75rem;
-  }
-  .module-reference-trigger {
-    padding: 0.65rem 0.85rem;
-  }
+.filter-panel .btn-outline-secondary {
+  --bs-btn-color: var(--app-gray-blue);
+  --bs-btn-border-color: #d5d8e5;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-gray-blue);
+  --bs-btn-hover-border-color: var(--app-gray-blue);
 }
 </style>

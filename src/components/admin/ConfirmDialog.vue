@@ -64,7 +64,7 @@ watch(
           <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4">
             <button
               type="button"
-              class="btn btn-outline-secondary rounded-pill px-4 py-2"
+              class="btn btn-outline-secondary"
               :disabled="working"
               data-testid="confirm-cancel"
               @click="emit('cancel')"
@@ -73,7 +73,7 @@ watch(
             </button>
             <button
               type="button"
-              class="btn rounded-pill px-4 py-2"
+              class="btn"
               :class="danger ? 'btn-danger' : 'btn-primary'"
               :disabled="working || !allowed"
               data-testid="confirm-ok"
