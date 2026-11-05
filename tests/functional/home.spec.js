@@ -59,6 +59,9 @@ test.describe('choosing a university', () => {
     const panel = page.getByTestId('info-panel')
     await expect(panel).toContainText('Kyoto, Japan')
     await expect(panel).toContainText(`SGD ${Math.round(monthlyCostSgd(5)).toLocaleString('en-US')}`)
+    // leaving while the map is still flying to the marker makes Leaflet throw, so let it finish first
+    await page.waitForFunction(() => !document.querySelector('.leaflet-zoom-anim, .leaflet-pan-anim, .leaflet-fade-anim.leaflet-zoom-anim'))
+    await page.waitForTimeout(600)
     await page.getByTestId('info-details-link').click()
     await expect(page).toHaveURL(/\/universities\/5$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kyoto University')
