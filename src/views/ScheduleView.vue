@@ -29,7 +29,11 @@ const changesMade = ref(false)
 let loadedUniversityId = null
 
 const universityId = computed(() => (route.params.universityId ? Number(route.params.universityId) : null))
-const periodId = computed(() => (route.query.period ? Number(route.query.period) : null))
+
+const periodId = computed(() => {
+  const parsed = Number(route.query.period)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
 
 const universityOptions = computed(() => {
   const ids = new Set([
@@ -81,12 +85,11 @@ function formatDate(date) {
   })
 }
 
-// While the discard dialog is open this holds the waiting navigation's answer (true = discard and go)
 const discardPrompt = ref(null)
 
 function confirmDiscard() {
   if (!changesMade.value) return true
-  discardPrompt.value?.(false) // a newer navigation replaces one still waiting
+  discardPrompt.value?.(false)
   return new Promise((resolve) => {
     discardPrompt.value = resolve
   })
@@ -138,7 +141,11 @@ async function selectPeriod(event) {
 
 async function discardChange() {
   selectedModule.value = ''
-  await schedule.load(universityId.value, false, periodId.value)
+  if (periodId.value) {
+    await schedule.load(universityId.value, false, periodId.value)
+  } else {
+    schedule.resetStore()
+  }
   discarding.value = true
 
   setTimeout(() => {
@@ -153,13 +160,16 @@ onBeforeRouteLeave(confirmDiscard)
 
 async function loadTimetable() {
   const id = universityId.value
+  const currentPeriod = periodId.value
   resetView()
+
   if (!id) {
     loadedUniversityId = null
     schedule.savedPeriodIds = []
     uni.scheduleUniName = null
     return
   }
+
   try {
     if (loadedUniversityId !== id) {
       schedule.savedPeriodIds = []
@@ -170,7 +180,8 @@ async function loadTimetable() {
       await schedule.loadSavedPeriods(id)
       loadedUniversityId = id
     }
-    if (periodId.value && !uni.exchangePeriods.some((p) => p.id === periodId.value)) {
+
+    if (currentPeriod && !uni.exchangePeriods.some((p) => p.id === currentPeriod)) {
       const first =
         uni.exchangePeriods.find((p) => schedule.savedPeriodIds.includes(p.id)) ??
         uni.exchangePeriods[0]
@@ -183,7 +194,11 @@ async function loadTimetable() {
       }
       return
     }
-    await schedule.load(id, true, periodId.value)
+
+    if (currentPeriod) {
+      await schedule.load(id, true, currentPeriod)
+    }
+
     await cart.ensureLoaded()
     addCartModules()
     hasSchedule.value =
@@ -194,6 +209,11 @@ async function loadTimetable() {
 }
 
 async function save() {
+  if (!periodId.value) {
+    schedule.error = 'Please select an Exchange Period before saving.'
+    return
+  }
+
   saving.value = true
   saved.value = false
   schedule.error = null
