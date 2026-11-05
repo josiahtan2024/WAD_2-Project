@@ -151,8 +151,6 @@ CREATE TABLE IF NOT EXISTS user_budgets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (user_id, university_id),
-
     FOREIGN KEY (exchange_period_id, university_id)
         REFERENCES exchange_periods(id, university_id)
         ON DELETE SET NULL (exchange_period_id)

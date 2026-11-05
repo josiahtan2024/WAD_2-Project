@@ -308,6 +308,7 @@ onMounted(async () => {
             :changes-made="changesMade"
             :saving="saving"
             :discarding="discarding"
+            :uniId="universityId"
             @select-module="handleSelectModule"
             @toggle-edit="handleToggleEdit"
             @save="save"
