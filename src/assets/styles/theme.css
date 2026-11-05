@@ -24,6 +24,11 @@ body {
   font-family: var(--bs-body-font-family);
 }
 
+select:not(:disabled),
+.dropdown-toggle:not(:disabled) {
+  cursor: pointer;
+}
+
 h1,
 h2,
 h3,

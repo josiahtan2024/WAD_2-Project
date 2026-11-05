@@ -16,6 +16,7 @@ function secondsToTime(seconds) {
   const pad = (n) => String(n).padStart(2, '0')
   return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:00`
 }
+
 function timeToSeconds(time) {
   if (typeof time === 'number') return time
   const [h, m, s = 0] = String(time).split(':').map(Number)
@@ -34,9 +35,8 @@ export const useScheduleStore = defineStore('schedule', {
     universityId: null,
     savedPeriodIds: [],
     isAdded: false,
-  }), // rows from `schedule_blocks`
+  }),
   actions: {
-    /** @param {number|string} universityId Load the user's blocks for this university. */
     resetStore() {
       this.currentSchedule = {}
       this.studentTimeTableId = null
@@ -86,6 +86,8 @@ export const useScheduleStore = defineStore('schedule', {
       this.savedPeriodIds = (data ?? []).map((t) => t.exchange_period_id)
     },
     async load(uniId, isInitial, periodId) {
+      const cleanPeriodId = Number.isInteger(Number(periodId)) && Number(periodId) > 0 ? Number(periodId) : null
+
       // 1. Reset states before fetching
       this.loading = true
       this.error = null
@@ -94,12 +96,18 @@ export const useScheduleStore = defineStore('schedule', {
         this.moduleData = []
         this.currentSchedule = {}
         this.studentTimeTableId = null
-        this.exchangePeriodId = Number(periodId)
+        this.exchangePeriodId = cleanPeriodId
         this.universityId = Number(uniId)
       }
 
+      // Exit early if periodId is missing or invalid to avoid querying database with null
+      if (!cleanPeriodId) {
+        this.loading = false
+        return
+      }
+
       try {
-        // 2. Target the table and filter by universityId
+        // 2. Target the table and filter by universityId and cleanPeriodId
         let { data, error } = await supabase
           .from('timetables')
           .select(
@@ -120,11 +128,8 @@ export const useScheduleStore = defineStore('schedule', {
           )
           .eq('user_id', currentUserId.value)
           .eq('university_id', uniId)
-          .eq('exchange_period_id', periodId)
+          .eq('exchange_period_id', cleanPeriodId)
 
-        // Existing databases may not have the stable course ID column until
-        // preserve-saved-schedules.sql has been applied. Fall back to the
-        // cart reference so users can still open their existing schedules.
         const missingStableCourseColumn =
           error?.code === '42703' ||
           error?.message?.includes('planned_modules.university_module_id') ||
@@ -151,7 +156,7 @@ export const useScheduleStore = defineStore('schedule', {
             )
             .eq('user_id', currentUserId.value)
             .eq('university_id', uniId)
-            .eq('exchange_period_id', periodId)
+            .eq('exchange_period_id', cleanPeriodId)
           data = legacyResult.data
           error = legacyResult.error
         }
@@ -164,8 +169,6 @@ export const useScheduleStore = defineStore('schedule', {
           return
         }
 
-        // Load course details separately instead of relying on PostgREST to
-        // resolve the planned_modules -> university_modules relationship.
         const plannedModules = data[0].planned_modules || []
         const cartModuleIds = [
           ...new Set(plannedModules.map((mod) => mod.cart_module_id).filter(Boolean)),
@@ -236,12 +239,18 @@ export const useScheduleStore = defineStore('schedule', {
         this.error = err.message
         console.error('Failed to load schedule:', err.message)
       } finally {
-        // 5. Disable the loading spinner state
         this.loading = false
       }
     },
     /** Save the current blocks to Supabase. */
     async save(uniId, mode, exchangePeriodId) {
+      const cleanPeriodId = Number.isInteger(Number(exchangePeriodId)) && Number(exchangePeriodId) > 0 ? Number(exchangePeriodId) : null
+      
+      if (!cleanPeriodId) {
+        this.error = 'Select a valid Exchange Period before saving.'
+        return
+      }
+
       const rows = this.serialiseToDb()
       const moduleIds = rows.map((row) => row.university_module_id)
       if (new Set(moduleIds).size !== moduleIds.length) {
@@ -249,31 +258,30 @@ export const useScheduleStore = defineStore('schedule', {
         return
       }
 
-      // applies for both updating existing schedule records & inserting fresh schedule records
-      // 1. check if there are existing schedule records, then delete if any
       if (mode == 'update') {
-        await this.deleteScheduleModules(uniId)
+        await this.deleteScheduleModules()
         await this.insertScheduleModules()
       } else if (mode == 'insert') {
-        await this.insertTimetable(uniId, exchangePeriodId)
+        await this.insertTimetable(uniId, cleanPeriodId)
       }
-
-      // 2. Insert the currentSchedule record fresh into the database
     },
     /** Delete one saved timetable for this user, university, and exchange period. */
     async deleteForPeriod(uniId, exchangePeriodId) {
+      const cleanPeriodId = Number.isInteger(Number(exchangePeriodId)) && Number(exchangePeriodId) > 0 ? Number(exchangePeriodId) : null
+      if (!cleanPeriodId) return 0
+
       const { data, error } = await supabase
         .from('timetables')
         .delete()
         .eq('user_id', currentUserId.value)
         .eq('university_id', uniId)
-        .eq('exchange_period_id', exchangePeriodId)
+        .eq('exchange_period_id', cleanPeriodId)
         .select('id, exchange_period_id')
 
       if (error) throw error
 
       this.savedPeriodIds = this.savedPeriodIds.filter(
-        (periodId) => periodId !== Number(exchangePeriodId)
+        (periodId) => periodId !== cleanPeriodId
       )
       this.currentSchedule = {}
       this.studentTimeTableId = null
@@ -282,11 +290,17 @@ export const useScheduleStore = defineStore('schedule', {
       return data?.length ?? 0
     },
     async insertTimetable(uniId, exchangePeriodId) {
-      // every timetable belongs to one exchange period (timetables.exchange_period_id is NOT NULL)
+      const cleanPeriodId = Number.isInteger(Number(exchangePeriodId)) && Number(exchangePeriodId) > 0 ? Number(exchangePeriodId) : null
+      
+      if (!cleanPeriodId) {
+        this.error = 'Cannot insert timetable without a valid Exchange Period.'
+        return
+      }
+
       let newTimetableRecord = {
         user_id: currentUserId.value,
-        university_id: uniId,
-        exchange_period_id: exchangePeriodId,
+        university_id: Number(uniId),
+        exchange_period_id: cleanPeriodId,
       }
       let { data, error } = await supabase
         .from('timetables')
@@ -297,20 +311,21 @@ export const useScheduleStore = defineStore('schedule', {
         this.error = error.message
       } else if (data) {
         this.studentTimeTableId = data.id
-        this.exchangePeriodId = exchangePeriodId
-        this.savedPeriodIds.push(exchangePeriodId)
+        this.exchangePeriodId = cleanPeriodId
+        if (!this.savedPeriodIds.includes(cleanPeriodId)) {
+          this.savedPeriodIds.push(cleanPeriodId)
+        }
         await this.insertScheduleModules()
       }
     },
     async deleteScheduleModules() {
-      //Delete all planned modules linked to this timetable_id
       const { error: deleteError } = await supabase
         .from('planned_modules')
         .delete()
         .eq('timetable_id', this.studentTimeTableId)
 
       if (deleteError) {
-        this.error = 'Failed to delete planned modules:' + deleteError.message
+        this.error = 'Failed to delete planned modules: ' + deleteError.message
       }
     },
     async insertScheduleModules() {
