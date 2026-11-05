@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useScheduleStore } from '@/stores/schedule'
 
 const props = defineProps({
@@ -98,7 +98,7 @@ function handleSlotClick(day, time) {
     noModuleError.value = true
     setTimeout(() => {
       noModuleError.value = false
-    }, 2000)
+    }, 2500)
   }
 }
 
@@ -133,6 +133,16 @@ function removeBlockByModuleName(modName) {
   emit('removeModule')
   activeSlotMenu.value = null
 }
+
+let errorTimer = null
+watch(() => props.errorMessage, (newVal) => {
+  if (newVal) {
+    if (errorTimer) clearTimeout(errorTimer)
+    errorTimer = setTimeout(() => {
+      emit('clearError')
+    }, 7500)
+  }
+})
 </script>
 
 <template>
@@ -349,7 +359,7 @@ function removeBlockByModuleName(modName) {
   right: 0;
   bottom: 0;
   background: rgba(248, 249, 252, 0.95);
-  z-index: 10;
+  z-index: 1;
 }
 
 .schedule-grid-scroll::-webkit-scrollbar {
