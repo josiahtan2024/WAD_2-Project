@@ -74,7 +74,9 @@ onBeforeUnmount(() => {
 <template>
   <nav class="navbar border-bottom app-navbar" data-bs-theme="dark" data-testid="nav-bar">
     <div class="container-fluid">
+      
       <RouterLink class="navbar-brand fw-semibold" to="/" data-testid="nav-brand">
+        <i class="bi bi-globe-americas" aria-hidden="true"></i>
         SMUXchange
       </RouterLink>
 

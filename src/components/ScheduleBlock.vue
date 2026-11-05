@@ -319,6 +319,12 @@ function removeBlockByModuleName(modName) {
   flex-direction: column;
 }
 
+@media (max-width: 767.98px) {
+  .schedule-block-card {
+    height: 400px;
+  }
+}
+
 .grid-container-body {
   flex: 1;
   overflow: hidden;
