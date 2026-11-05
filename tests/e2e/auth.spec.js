@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { TEST_EMAIL, TEST_PASSWORD, login } from './helpers'
+import { TEST_EMAIL, TEST_PASSWORD, hasStudentCredentials, login } from './helpers'
 
 test('logged-out user is redirected from a protected page', async ({ page }) => {
   await page.goto('/shortlist')
@@ -7,16 +7,17 @@ test('logged-out user is redirected from a protected page', async ({ page }) => 
 })
 
 test('log in and log out', async ({ page }) => {
+  test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
   await login(page)
   await page.getByTestId('nav-toggle').click()
-  await page.getByTestId('nav-logout-btn').click()
-  await expect(page.getByTestId('nav-login-link')).toBeVisible()
+  await page.getByTestId('nav-logout-btn').last().click()
+  await expect(page.getByTestId('nav-login-link').last()).toBeVisible()
 })
 
 test('wrong password shows an error', async ({ page }) => {
   await page.goto('/login')
-  await page.getByTestId('login-email-input').fill(TEST_EMAIL)
-  await page.getByTestId('login-password-input').fill(TEST_PASSWORD + 'x')
+  await page.getByTestId('login-email-input').fill(TEST_EMAIL || 'invalid@example.invalid')
+  await page.getByTestId('login-password-input').fill(`${TEST_PASSWORD}x`)
   await page.getByTestId('login-submit-btn').click()
   await expect(page.getByTestId('login-error')).toBeVisible()
 })

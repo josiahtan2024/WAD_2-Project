@@ -1,8 +1,9 @@
 // Shared helpers. Test accounts come from environment variables (see README).
 import { expect } from '@playwright/test'
 
-export const TEST_EMAIL = process.env.TEST_EMAIL || 'student@smu.edu.sg'
-export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'student123'
+export const TEST_EMAIL = process.env.TEST_EMAIL || ''
+export const TEST_PASSWORD = process.env.TEST_PASSWORD || ''
+export const hasStudentCredentials = Boolean(TEST_EMAIL && TEST_PASSWORD)
 
 export async function login(page) {
   await page.goto('/login')
@@ -13,8 +14,8 @@ export async function login(page) {
   const loginError = page.getByTestId('login-error')
   // On phone widths the logout button is inside the collapsed nav, so wait for
   // it to be attached instead of visible. Auth can take longer on a cold run.
-  await expect(logoutButton.or(loginError)).toHaveCount(1, { timeout: 30000 })
-  if (await loginError.count()) {
+  await expect(logoutButton.first().or(loginError)).toBeAttached({ timeout: 30000 })
+  if (await loginError.isVisible()) {
     throw new Error(`Test account login failed: ${await loginError.innerText()}`)
   }
 }

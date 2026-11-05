@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { login } from './helpers'
+import { login, hasStudentCredentials } from './helpers'
 
 // 1x1 PNG, enough to exercise the upload path
 const TINY_PNG = Buffer.from(
@@ -18,6 +18,9 @@ async function postReview(page, text, stars = 4) {
   await page.getByTestId(`review-rating-${stars}`).click()
   await page.getByTestId('review-body-input').fill(text)
   await page.getByTestId('review-submit-btn').click()
+  await expect(page.getByTestId('notice-success-message')).toContainText(
+    'review was posted successfully'
+  )
 }
 
 // One review per user per university, so every test starts without one.
@@ -40,6 +43,7 @@ test.describe('reviews (logged out)', () => {
 })
 
 test.describe('reviews', () => {
+  test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
   test.beforeEach(async ({ page }) => {
     await login(page)
     await openFirstUniversity(page)
@@ -61,7 +65,7 @@ test.describe('reviews', () => {
   test('shows topic ratings that were filled in', async ({ page }) => {
     await page.getByTestId('review-academics_rating-3').click()
     await postReview(page, 'Topic ratings test')
-    await expect(page.getByTestId('review-item').first()).toContainText('Academics 3/5')
+    await expect(page.getByTestId('review-item').first()).toContainText(/Academics:\s*3\/5/)
     await expect(page.getByTestId('review-item').first()).not.toContainText('Campus life')
   })
 
@@ -125,7 +129,7 @@ test.describe('reviews', () => {
     await mine.getByTestId('review-submit-btn').click()
 
     await expect(mine).toContainText('Changed my mind, it was great')
-    await expect(mine).toContainText('Cost of living 4/5')
+    await expect(mine).toContainText(/Cost of living:\s*4\/5/)
     await expect(mine.getByTestId('review-rating')).toHaveAttribute('aria-label', '5 out of 5')
     await expect(mine.getByTestId('review-edited')).toBeVisible()
     await expect(page.getByTestId('review-delete-btn')).toHaveCount(1)
@@ -188,6 +192,9 @@ test.describe('reviews', () => {
     await page.reload()
     await expect(page.getByTestId('review-item').first().getByTestId('comment-item')).toHaveCount(1)
     await page.getByTestId('review-item').first().getByTestId('comment-delete-btn').click()
+    const confirmation = page.getByTestId('delete-confirm-dialog')
+    await expect(confirmation).toBeVisible()
+    await confirmation.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('review-item').first().getByTestId('comment-item')).toHaveCount(0)
   })
 
@@ -205,6 +212,7 @@ test.describe('reviews', () => {
 
 test.describe('reviews on a phone', () => {
   test.use({ viewport: { width: 375, height: 700 } })
+  test.skip(!hasStudentCredentials, 'set TEST_EMAIL and TEST_PASSWORD in .env.test to run account tests')
 
   test('the form and carousel fit the screen', async ({ page }) => {
     await login(page)

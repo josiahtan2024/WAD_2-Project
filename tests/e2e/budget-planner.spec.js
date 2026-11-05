@@ -18,7 +18,7 @@ test.describe('saved budget planner', () => {
     await page.goto('/cost-estimator')
     const newestBudget = page.getByTestId('budget-row').first()
     await expect(newestBudget).toBeVisible()
-    await newestBudget.getByTestId('budget-delete-button').click()
+    await newestBudget.getByTestId('budget-delete-btn').click()
     await page.getByTestId('delete-confirm-action').click()
     budgetCreated = false
   })
@@ -99,13 +99,13 @@ test.describe('saved budget planner', () => {
 
     const updatedBudget = page.getByTestId('budget-row').first()
     await expect(updatedBudget).toContainText('5 months')
-    await updatedBudget.getByTestId('budget-delete-button').click()
+    await updatedBudget.getByTestId('budget-delete-btn').click()
     const confirmation = page.getByTestId('delete-confirm-dialog')
     await expect(confirmation).toBeVisible()
     await confirmation.getByTestId('delete-confirm-cancel').click()
     await expect(page.getByTestId('budget-row').first()).toContainText('5 months')
 
-    await page.getByTestId('budget-row').first().getByTestId('budget-delete-button').click()
+    await page.getByTestId('budget-row').first().getByTestId('budget-delete-btn').click()
     await page.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('notice-success-message')).toContainText(
       'Budget deleted successfully.'
