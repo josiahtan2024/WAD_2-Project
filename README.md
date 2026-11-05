@@ -111,10 +111,13 @@ npm run dev       # Start the Vite development server
 npm run build     # Create a production build in dist/
 npm run preview   # Preview the production build locally
 npm run lint      # Run ESLint
-npm test          # Run Playwright end-to-end tests
+npm run test:functional  # Run the functional test suite (no account or database needed)
+npm test                # Run the live Playwright end-to-end tests
 ```
 
-Playwright tests use a real browser and a configured Supabase account. Install the browser once with `npx playwright install chromium`, then provide `TEST_EMAIL` and `TEST_PASSWORD` for the test account before running `npm test`. The tests also expect the local environment and database to be set up. The admin tests in `tests/e2e/admin.spec.js` need an admin account, given as `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and skip themselves without one.
+The functional suite in `tests/functional` builds the app and drives it in a real browser against a built-in fake Supabase, so it runs anywhere with no keys, no account and no network. See [tests/functional/README.md](tests/functional/README.md) for what it covers and how to add to it.
+
+The live tests in `tests/e2e` use a real browser and a configured Supabase account. Install the browser once with `npx playwright install chromium`, then provide `TEST_EMAIL` and `TEST_PASSWORD` for the test account before running `npm test`. The tests also expect the local environment and database to be set up. The admin tests in `tests/e2e/admin.spec.js` need an admin account, given as `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and skip themselves without one.
 
 ## Deployment
 

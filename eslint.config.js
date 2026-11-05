@@ -3,7 +3,7 @@ import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 
 export default [
-  { ignores: ['dist/', 'node_modules/', 'playwright-report/', 'test-results/'] },
+  { ignores: ['dist/', 'dist-e2e/', 'node_modules/', 'playwright-report/', 'test-results/'] },
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   {
