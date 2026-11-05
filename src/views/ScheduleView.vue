@@ -8,6 +8,7 @@ import { useShortlistStore } from '@/stores/shortlist'
 import { useAuthStore } from '@/stores/auth'
 import ScheduleBlock from '@/components/ScheduleBlock.vue'
 import ModuleTable from '@/components/ModuleTable.vue'
+import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,9 +81,20 @@ function formatDate(date) {
   })
 }
 
+// While the discard dialog is open this holds the waiting navigation's answer (true = discard and go)
+const discardPrompt = ref(null)
+
 function confirmDiscard() {
   if (!changesMade.value) return true
-  return window.confirm('You have unsaved changes to this schedule. Discard them?')
+  discardPrompt.value?.(false) // a newer navigation replaces one still waiting
+  return new Promise((resolve) => {
+    discardPrompt.value = resolve
+  })
+}
+
+function answerDiscard(discard) {
+  discardPrompt.value?.(discard)
+  discardPrompt.value = null
 }
 
 function resetView() {
@@ -221,6 +233,20 @@ onMounted(async () => {
 
 <template>
   <section class="container py-4 mb-5" data-testid="schedule-page">
+    <DeleteConfirmDialog
+      :open="!!discardPrompt"
+      title="Discard Changes?"
+      action-label="Discard"
+      working-label="Discarding..."
+      close-label="Keep editing"
+      @cancel="answerDiscard(false)"
+      @confirm="answerDiscard(true)"
+    >
+      <template #description>
+        You have unsaved changes to this schedule.
+        <br>Discarding them cannot be undone.
+      </template>
+    </DeleteConfirmDialog>
     <div class="mb-4 pb-3 border-bottom">
       <h1 class="page-title h3 fw-bold text-navy mb-1">Exchange Weekly Schedule</h1>
       <p class="text-muted small mb-0">
