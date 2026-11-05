@@ -566,12 +566,10 @@ async function loadBudgets() {
         period_name: period
           ? [
               period.period_name,
-              period.term,
               period.academic_year ? `(${period.academic_year})` : '',
             ]
               .filter(Boolean)
-              .join(' — ')
-              .replace(/ — \(/g, ' (')
+              .join(' - ')
           : '',
         total_budget:
           budget.total_budget == null
