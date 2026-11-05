@@ -38,13 +38,13 @@ test.describe('reviews: reading', () => {
 
   test('shows only the topics that were rated', async ({ page }) => {
     await openUniversity(page)
-    await expect(current(page)).toContainText('Accommodation 2/5')
+    await expect(current(page)).toContainText('Accommodation: 2/5')
     await expect(current(page)).not.toContainText('Academics')
     await page.getByTestId('review-next-btn').click()
     await expect(current(page)).toContainText('London was incredible')
-    await expect(current(page)).toContainText('Academics 4/5')
-    await expect(current(page)).toContainText('Cost of living 2/5')
-    await expect(current(page)).toContainText('Campus life 5/5')
+    await expect(current(page)).toContainText('Academics: 4/5')
+    await expect(current(page)).toContainText('Cost of living: 2/5')
+    await expect(current(page)).toContainText('Campus life: 5/5')
     await expect(current(page)).not.toContainText('Accommodation')
   })
 
@@ -125,8 +125,8 @@ test.describe('reviews: writing one', () => {
     await page.getByTestId('review-academics_rating-3').click()
     await page.getByTestId('review-campus_rating-5').click()
     await post(page, 'Topic ratings')
-    await expect(current(page)).toContainText('Academics 3/5')
-    await expect(current(page)).toContainText('Campus life 5/5')
+    await expect(current(page)).toContainText('Academics: 3/5')
+    await expect(current(page)).toContainText('Campus life: 5/5')
     await expect(current(page)).not.toContainText('Cost of living')
     const mine = reviewsOf(backend, UCL).find((r) => r.user_id === student.id)
     expect(mine).toMatchObject({ academics_rating: 3, campus_rating: 5, cost_rating: null, accommodation_rating: null })
@@ -290,7 +290,7 @@ test.describe('reviews: editing your own', () => {
     await current(page).getByTestId('review-submit-btn').click()
     await expect(page.getByTestId('notice-success-message')).toHaveText('Your review was updated successfully.')
     await expect(current(page)).toContainText('Changed my mind, it was great')
-    await expect(current(page)).toContainText('Cost of living 4/5')
+    await expect(current(page)).toContainText('Cost of living: 4/5')
     await expect(current(page).getByTestId('review-rating')).toHaveAttribute('aria-label', '5 out of 5')
     await expect(current(page).getByTestId('review-edited')).toBeVisible()
     expect(reviewsOf(backend, UCL).find((r) => r.id === 50)).toMatchObject({ rating: 5, cost_rating: 4, review: 'Changed my mind, it was great' })
@@ -307,7 +307,7 @@ test.describe('reviews: editing your own', () => {
   test('can clear a topic rating by editing', async ({ page, backend }) => {
     backend.find('university_reviews', (r) => r.id === 50).cost_rating = 3
     await page.reload()
-    await expect(current(page)).toContainText('Cost of living 3/5')
+    await expect(current(page)).toContainText('Cost of living: 3/5')
   })
 
   test('Cancel keeps the review as it was', async ({ page }) => {
@@ -376,7 +376,7 @@ test.describe('reviews: deleting your own', () => {
 
   test('asks first; Cancel keeps it', async ({ page, backend }) => {
     await current(page).getByTestId('review-delete-btn').click()
-    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('Delete This Review?')
+    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('Delete Review?')
     await page.getByTestId('delete-confirm-cancel').click()
     await expect(page.getByTestId('delete-confirm-dialog')).toBeHidden()
     expect(reviewsOf(backend, UCL)).toHaveLength(3)
@@ -476,8 +476,8 @@ test.describe('reviews: moderation by staff', () => {
     await expect(current(page).getByTestId('review-remove-btn')).toBeVisible()
     await expect(current(page).getByTestId('review-edit-btn')).toHaveCount(0)
     await current(page).getByTestId('review-remove-btn').click()
-    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('Remove This Review?')
-    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('The student will not be told')
+    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('Remove Student Review?')
+    await expect(page.getByTestId('delete-confirm-dialog')).toContainText('the student will not be notified')
     await page.getByTestId('delete-confirm-action').click()
     await expect(page.getByTestId('notice-success-message')).toHaveText('The review was removed successfully.')
     expect(reviewsOf(backend, UCL)).toHaveLength(1)

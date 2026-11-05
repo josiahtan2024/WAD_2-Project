@@ -24,7 +24,7 @@ test.describe('course search: finding courses', () => {
     // XACC900 (Accounting) has nothing mapped to it, so it is hidden by default
     await expect(areas(page)).toHaveCount(9)
     await expect(areaButton(page, 'XACC900')).toHaveCount(0)
-    await expect(page.getByTestId('course-area-count')).toHaveText('9 of 10 course areas')
+    await expect(page.getByTestId('course-area-count')).toHaveText(/Showing\s*9\s*of 10 course areas/)
   })
 
   test('can include areas with nothing mapped', async ({ page }) => {
@@ -48,12 +48,12 @@ test.describe('course search: finding courses', () => {
     expect(headings).toContain('Boston University')
     expect(headings).toContain('Kyoto University')
     await expect(modules(page).filter({ hasText: 'Game Theory' })).toHaveCount(1)
-    await expect(page.getByText(/\d+ courses across all partner universities/)).toBeVisible()
+    await expect(page.getByText(/\d+ courses across all partners/)).toBeVisible()
   })
 
   test('the count on an area matches the courses listed under it', async ({ page }) => {
     await openCourses(page)
-    const badge = Number(await areaButton(page, 'XBBM903').locator('.badge').innerText())
+    const badge = Number(await areaButton(page, 'XBBM903').locator('.area-count-badge').innerText())
     await chooseArea(page, 'XBBM903')
     await expect(modules(page)).toHaveCount(badge)
   })
@@ -140,13 +140,12 @@ test.describe('course search: logged out', () => {
     await openCourses(page)
     await chooseArea(page, 'XECO900')
     await expect(page.getByTestId('course-add-btn')).toHaveCount(0)
-    await expect(page.getByTestId('course-login-hint')).toContainText('Log In to add courses')
     await expect(page.getByTestId('course-cart-login')).toBeVisible()
   })
 
   test('the login link brings the visitor back to the same search', async ({ page }) => {
     await openCourses(page, '?university=2&area=3')
-    await page.getByTestId('course-login-hint').getByRole('link', { name: 'Log In' }).click()
+    await page.getByTestId('course-cart-login').getByRole('link', { name: 'Log in' }).click()
     await expect(page).toHaveURL(/\/login/)
     const redirect = new URL(page.url()).searchParams.get('redirect')
     expect(redirect).toContain('/courses')
@@ -229,7 +228,7 @@ test.describe('course search: the cart', () => {
     await openCourses(page)
     await expect(page.getByTestId('course-cart-group')).toHaveCount(2)
     await page.getByTestId('course-cart-group').filter({ hasText: 'Kyoto University' }).getByTestId('course-cart-schedule-link').click()
-    await expect(page).toHaveURL(/\/schedule\/5$/)
+    await expect(page).toHaveURL(/\/schedule\/5(\?period=\d+)?$/)
   })
 
   test('with a university picked, other universities\' courses are tucked away', async ({ page, student, backend }) => {

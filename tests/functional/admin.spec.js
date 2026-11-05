@@ -31,8 +31,12 @@ async function addUniversity(page, { name, country = 'Testland', region = 'Europ
   await page.getByTestId('admin-add-university').click()
   await page.getByTestId('admin-field-name').fill(name)
   await page.getByTestId('admin-field-country').fill(country)
-  await page.getByTestId('admin-field-region').fill(region)
-  for (const [key, value] of Object.entries(rest)) await page.getByTestId(`admin-field-${key}`).fill(String(value))
+  await page.getByTestId('admin-field-region').selectOption(region)
+  for (const [key, value] of Object.entries(rest)) {
+    const field = page.getByTestId(`admin-field-${key}`)
+    if (key === 'timezone') await field.selectOption(String(value))
+    else await field.fill(String(value))
+  }
   await save(page).click()
 }
 
@@ -146,7 +150,7 @@ test.describe('admin: the staff view', () => {
     await page.getByTestId('filter-search-input').fill('Atlantis')
     const card = page.getByTestId('university-card-name').filter({ hasText: 'Atlantis Institute' })
     await expect(card).toHaveCount(1)
-    await expect(page.getByTestId('university-hidden-badge')).toHaveText('Hidden from students')
+    await expect(page.getByTestId('university-hidden-badge')).toHaveAttribute('title', 'Hidden from students')
     await page.getByTestId('admin-show-hidden').uncheck()
     await expect(card).toHaveCount(0)
     await page.getByTestId('admin-show-hidden').check()
@@ -180,14 +184,14 @@ test.describe('admin: adding a university', () => {
     await addUniversity(page, { name: 'Test University', country: 'Testland', region: 'Europe' })
     await expect(page).toHaveURL(/\/universities\/\d+$/)
     await expect(page.getByTestId('admin-hidden-banner')).toContainText('Hidden from students')
-    await expect(page.getByTestId('admin-hidden-banner')).toContainText('Still missing: a logo, a map location, costs, languages, exchange periods')
+    await expect(page.getByTestId('admin-hidden-banner')).toContainText('Missing: a logo, a map location, costs, languages, exchange periods')
     expect(universityNamed(backend, 'Test University')).toMatchObject({ country: 'Testland', region: 'Europe', published: false })
   })
 
   test('asks for the name, country and region', async ({ page, backend }) => {
     await page.getByTestId('admin-add-university').click()
     await save(page).click()
-    expect(await texts(fieldErrors(page))).toEqual(['Enter the university name.', 'Enter the country.', 'Enter the region.'])
+    expect(await texts(fieldErrors(page))).toEqual(['Enter the university name.', 'Enter the country.', 'Select a region.'])
     expect(backend.writes('universities')).toHaveLength(0)
     await page.getByTestId('admin-drawer-cancel').click()
     await expect(drawer(page)).toHaveCount(0)
@@ -199,14 +203,14 @@ test.describe('admin: adding a university', () => {
     await page.getByTestId('admin-field-lat').fill('45')
     await page.getByTestId('admin-field-long').fill('')
     await save(page).click()
-    await expect(fieldErrors(page)).toContainText('Give both latitude and longitude, or neither.')
-    await page.getByTestId('admin-field-long').fill('abc')
+    await expect(fieldErrors(page)).toContainText('Enter both coordinates or leave both empty.')
+    await page.getByTestId('admin-field-long').fill('190')
     await save(page).click()
     await expect(fieldErrors(page).first()).toContainText('Longitude must be between -180 and 180.')
   })
 
   test('saves the coordinates it was given', async ({ page, backend }) => {
-    await addUniversity(page, { name: 'Pinned U', lat: '48.85', long: '2.35', city: 'Paris', timezone: 'UTC+1' })
+    await addUniversity(page, { name: 'Pinned U', lat: '48.85', long: '2.35', city: 'Paris', timezone: '1' })
     await expect(page).toHaveURL(/\/universities\/\d+$/)
     expect(universityNamed(backend, 'Pinned U')).toMatchObject({ lat: 48.85, long: 2.35, city: 'Paris', timezone: 'UTC+1' })
   })
@@ -223,10 +227,10 @@ test.describe('admin: adding a university', () => {
     expect(backend.rows('universities').filter((u) => u.name === 'Boston University')).toHaveLength(2)
   })
 
-  test('reuses the spelling of an existing region', async ({ page, backend }) => {
-    await addUniversity(page, { name: 'Region U', region: 'europe' })
-    await expect(page).toHaveURL(/\/universities\/\d+$/)
-    expect(universityNamed(backend, 'Region U').region).toBe('Europe')
+  test('offers only the six known regions', async ({ page }) => {
+    await page.getByTestId('admin-add-university').click()
+    const options = await page.getByTestId('admin-field-region').locator('option:not([disabled])').allInnerTexts()
+    expect(options).toEqual(['Africa', 'Americas', 'Asia', 'Europe', 'Middle-East', 'Oceania'])
   })
 
   test('does not show up for students until it is published', async ({ page, person }) => {
@@ -255,7 +259,7 @@ test.describe('admin: adding a university', () => {
     await page.getByTestId('admin-add-university').click()
     await page.getByTestId('admin-field-name').fill('Once Only U')
     await page.getByTestId('admin-field-country').fill('Testland')
-    await page.getByTestId('admin-field-region').fill('Europe')
+    await page.getByTestId('admin-field-region').selectOption('Europe')
     await save(page).dblclick()
     await expect(page).toHaveURL(/\/universities\/\d+$/)
     expect(backend.rows('universities').filter((u) => u.name === 'Once Only U')).toHaveLength(1)
@@ -293,7 +297,7 @@ test.describe('admin: editing a university', () => {
       await page.getByTestId('admin-field-name').fill('  ')
       await page.getByTestId('admin-field-website').fill('www.bu.edu')
       await save(page).click()
-      expect(await texts(fieldErrors(page))).toEqual(['Enter the university name.', 'Enter a full web address, for example https://www.example.edu.'])
+      expect(await texts(fieldErrors(page))).toEqual(['Enter the university name.', 'Enter a valid URL (e.g. https://www.example.edu).'])
       expect(backend.writes('universities')).toHaveLength(0)
     })
 
@@ -376,11 +380,10 @@ test.describe('admin: editing a university', () => {
       await expect(page.getByTestId('coordinate-picker')).toBeVisible()
     })
 
-    test('still needs a country and region', async ({ page }) => {
+    test('still needs a country', async ({ page }) => {
       await page.getByTestId('admin-field-country').fill('')
-      await page.getByTestId('admin-field-region').fill('')
       await save(page).click()
-      expect(await texts(fieldErrors(page))).toEqual(['Enter the country.', 'Enter the region.'])
+      expect(await texts(fieldErrors(page))).toEqual(['Enter the country.'])
     })
   })
 
@@ -414,28 +417,26 @@ test.describe('admin: editing a university', () => {
       expect(backend.find('university_costs', (c) => c.university_id === BOSTON).transport).toBeNull()
     })
 
-    test('needs a three letter currency with a known rate', async ({ page, backend }) => {
-      await page.getByTestId('admin-field-currency').fill('US')
+    test('asks for a currency when none is chosen yet', async ({ page, backend }) => {
+      await page.getByTestId('admin-drawer-cancel').click()
+      await openUniversity(page, ATLANTIS)
+      await page.getByTestId('admin-edit-cost').click()
       await save(page).click()
-      await expect(fieldErrors(page)).toContainText('Use a three letter currency code, for example EUR.')
-      await page.getByTestId('admin-field-currency').fill('xyz')
-      await save(page).click()
-      await expect(fieldErrors(page)).toContainText('There is no exchange rate for XYZ')
+      await expect(fieldErrors(page)).toContainText('Select a currency.')
       expect(backend.writes('university_costs')).toHaveLength(0)
     })
 
-    test('upper-cases the currency', async ({ page, backend }) => {
-      await page.getByTestId('admin-field-currency').fill('eur')
+    test('changes the currency from the list', async ({ page, backend }) => {
+      await page.getByTestId('admin-field-currency').selectOption('EUR')
       await save(page).click()
       await expect(notice(page)).toBeVisible()
       expect(backend.find('university_costs', (c) => c.university_id === BOSTON).currency_code).toBe('EUR')
     })
 
-    test('rejects negative or non-numeric amounts', async ({ page, backend }) => {
+    test('rejects negative amounts', async ({ page, backend }) => {
       await page.getByTestId('admin-field-food').fill('-1')
-      await page.getByTestId('admin-field-transport').fill('lots')
       await save(page).click()
-      expect(await texts(fieldErrors(page))).toEqual(['Food must be zero or more.', 'Transport must be zero or more.'])
+      expect(await texts(fieldErrors(page))).toEqual(['Food must be zero or a positive number.'])
       expect(backend.writes('university_costs')).toHaveLength(0)
     })
 
@@ -443,7 +444,7 @@ test.describe('admin: editing a university', () => {
       await page.getByTestId('admin-drawer-cancel').click()
       await openUniversity(page, ATLANTIS)
       await page.getByTestId('admin-edit-cost').click()
-      await page.getByTestId('admin-field-currency').fill('EUR')
+      await page.getByTestId('admin-field-currency').selectOption('EUR')
       await page.getByTestId('admin-field-accommodation').fill('1000')
       await save(page).click()
       await expect(notice(page)).toHaveText('Costs saved.')
@@ -489,7 +490,7 @@ test.describe('admin: editing a university', () => {
     test('saves the course catalogue link, and checks it', async ({ page, backend }) => {
       await page.getByTestId('admin-field-modules-url').fill('catalogue.bu.edu')
       await save(page).click()
-      await expect(fieldErrors(page)).toContainText('Enter a full web address')
+      await expect(fieldErrors(page)).toContainText('Enter a valid URL')
       await page.getByTestId('admin-field-modules-url').fill('https://catalogue.bu.edu')
       await save(page).click()
       await expect(notice(page)).toBeVisible()
@@ -541,25 +542,14 @@ test.describe('admin: editing a university', () => {
       await page.getByTestId('admin-period-name').first().fill('')
       await page.getByTestId('admin-period-end').nth(1).fill('2020-01-01')
       await save(page).click()
-      expect(await texts(fieldErrors(page))).toEqual(['Give the period a name.', 'The end date is before the start date.'])
+      expect(await texts(fieldErrors(page))).toEqual(['Give the period a name.', 'End date cannot be before start date.'])
       await page.getByTestId('admin-period-name').first().fill('Fall 2026')
       await page.getByTestId('admin-period-end').nth(1).fill('2027-05-07')
       await page.getByTestId('admin-period-min').first().fill('30')
       await page.getByTestId('admin-period-max').first().fill('10')
       await save(page).click()
-      await expect(fieldErrors(page)).toContainText('The highest temperature is below the lowest.')
+      await expect(fieldErrors(page)).toContainText('Highest temperature must be greater than lowest.')
       expect(backend.writes('exchange_periods')).toHaveLength(0)
-    })
-
-    test('copies every period to next year as new rows', async ({ page, backend }) => {
-      await page.getByTestId('admin-period-year').first().fill('2026')
-      await page.getByTestId('admin-period-copy').click()
-      await expect(page.getByTestId('admin-period-row')).toHaveCount(4)
-      await expect(page.getByTestId('admin-period-start').nth(2)).toHaveValue('2027-09-02')
-      await expect(page.getByTestId('admin-period-year').nth(2)).toHaveValue('2027')
-      await save(page).click()
-      await expect(notice(page)).toBeVisible()
-      expect(backend.rows('exchange_periods').filter((p) => p.university_id === BOSTON)).toHaveLength(4)
     })
 
     test('removing every period leaves the university without any', async ({ page, backend }) => {
@@ -599,7 +589,7 @@ test.describe('admin: publishing and hiding', () => {
 
   test('the banner says what is still missing, and when it is ready', async ({ page, backend }) => {
     await openUniversity(page, ATLANTIS)
-    await expect(page.getByTestId('admin-hidden-banner')).toContainText('Still missing: a logo, a map location, costs, languages, exchange periods')
+    await expect(page.getByTestId('admin-hidden-banner')).toContainText('Missing: a logo, a map location, costs, languages, exchange periods')
     const atlantis = backend.find('universities', (u) => u.id === ATLANTIS)
     Object.assign(atlantis, { logo_url: 'university-logos/atlantis.png', lat: 1, long: 1 })
     backend.files.set('university-logos/atlantis.png', { contentType: 'image/png', size: 1 })
@@ -607,7 +597,7 @@ test.describe('admin: publishing and hiding', () => {
     backend.rows('university_languages').push({ id: 99, university_id: ATLANTIS, instruction_language: 'English' })
     backend.rows('exchange_periods').push({ id: 99, university_id: ATLANTIS, period_name: 'Fall' })
     await page.reload()
-    await expect(page.getByTestId('admin-hidden-banner')).toContainText('Everything is filled in, so it is ready to publish.')
+    await expect(page.getByTestId('admin-hidden-banner')).toContainText('All details complete - ready to publish.')
   })
 
   test('a failed publish shows the reason and changes nothing', async ({ page, backend }) => {

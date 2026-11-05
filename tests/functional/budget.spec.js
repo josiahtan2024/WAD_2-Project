@@ -65,7 +65,7 @@ test.describe('budget planner: your budgets', () => {
   test('starts with an invitation to create the first budget', async ({ page }) => {
     await openBudgets(page)
     await expect(page.getByTestId('budget-empty-state')).toHaveText('No Budgets Yet')
-    await page.getByRole('button', { name: 'Create Your First Budget' }).click()
+    await page.getByRole('button', { name: 'Create First Budget' }).click()
     await expect(page.getByTestId('budget-university-select')).toBeVisible()
   })
 
@@ -110,8 +110,9 @@ test.describe('budget planner: your budgets', () => {
       await expect(rows(page)).toHaveCount(1)
       await expect(rows(page)).toContainText('University College London')
       await page.getByLabel('Search Budgets').fill('nowhere')
-      await expect(page.getByText('No Matching Budgets')).toBeVisible()
-      await page.getByRole('button', { name: 'Clear Filters' }).click()
+      await expect(rows(page)).toHaveCount(0)
+      await expect(page.getByText(/Showing\s*0\s*of 4 budgets/)).toBeVisible()
+      await page.getByRole('button', { name: 'Reset Filters' }).click()
       await expect(rows(page)).toHaveCount(4)
     })
 
@@ -263,7 +264,7 @@ test.describe('budget planner: creating a budget', () => {
 
   test('going back discards the draft', async ({ page }) => {
     await chooseUniversity(page, BOSTON.name)
-    await page.getByRole('button', { name: /Back to My Budgets/ }).click()
+    await page.getByRole('button', { name: /Back to Budgets/ }).click()
     await expect(page.getByTestId('budget-heading')).toBeVisible()
     await startNew(page)
     await expect(page.getByTestId('budget-university-select')).toHaveValue('')
@@ -335,7 +336,7 @@ test.describe('budget planner: reading, editing and deleting', () => {
   })
 
   test('Delete asks first, and Cancel keeps the budget', async ({ page, student, backend }) => {
-    await page.getByTestId('budget-delete-button').click()
+    await page.getByTestId('budget-delete-btn').click()
     await expect(page.getByTestId('delete-confirm-dialog')).toContainText('Boston University')
     await page.getByTestId('delete-confirm-cancel').click()
     await expect(page.getByTestId('delete-confirm-dialog')).toBeHidden()
@@ -344,7 +345,7 @@ test.describe('budget planner: reading, editing and deleting', () => {
   })
 
   test('confirming deletes it', async ({ page, student, backend }) => {
-    await page.getByTestId('budget-delete-button').click()
+    await page.getByTestId('budget-delete-btn').click()
     await page.getByTestId('delete-confirm-action').click()
     await expect(notice(page)).toHaveText('Budget deleted successfully.')
     await expect(page.getByTestId('budget-empty-state')).toBeVisible()
@@ -353,7 +354,7 @@ test.describe('budget planner: reading, editing and deleting', () => {
 
   test('a failed delete leaves the budget and says why', async ({ page, backend, student }) => {
     backend.fail('/rest/v1/user_budgets', { status: 500, body: { message: 'cannot delete right now' }, times: 1 })
-    await page.getByTestId('budget-delete-button').click()
+    await page.getByTestId('budget-delete-btn').click()
     await page.getByTestId('delete-confirm-action').click()
     await expect(page.getByRole('alert')).toContainText('cannot delete right now')
     await expect(rows(page)).toHaveCount(1)
@@ -361,7 +362,7 @@ test.describe('budget planner: reading, editing and deleting', () => {
   })
 
   test('the success notice can be dismissed', async ({ page }) => {
-    await page.getByTestId('budget-delete-button').click()
+    await page.getByTestId('budget-delete-btn').click()
     await page.getByTestId('delete-confirm-action').click()
     await page.getByTestId('notice-dismiss-success').click()
     await expect(notice(page)).toBeHidden()

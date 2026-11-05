@@ -462,6 +462,6 @@ test.describe('schedule: connected to the course cart', () => {
     await expect(page.getByTestId('course-cart-count')).toHaveText('1')
     await page.getByTestId('course-cart-schedule-link').click()
     await expect(page).toHaveURL(/\/schedule\/2/)
-    await expect(page.getByTestId('schedule-module-count')).toContainText('1 module are available')
+    await expect(page.getByTestId('schedule-module-count')).toContainText('1 module is available')
   })
 })

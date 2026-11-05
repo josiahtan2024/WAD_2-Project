@@ -112,7 +112,9 @@ test.describe('compare: remembering the selection', () => {
     await pick(page, 0, 'Boston University')
     await page.getByTestId('nav-toggle').click()
     await page.getByTestId('nav-about').click()
+    await expect(page).toHaveURL(/\/about$/)
     await page.goBack()
+    await expect(page).toHaveURL(/\/compare$/)
     await expect(slot(page, 0)).toHaveValue('2')
   })
 

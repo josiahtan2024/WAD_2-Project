@@ -111,7 +111,9 @@ test.describe('using the menu', () => {
   test('the browser back and forward buttons follow the pages', async ({ page }) => {
     await page.goto('/')
     await goTo(page, 'nav-universities')
+    await expect(page).toHaveURL(/\/universities$/)
     await goTo(page, 'nav-about')
+    await expect(page).toHaveURL(/\/about$/)
     await page.goBack()
     await expect(page).toHaveURL(/\/universities$/)
     await page.goBack()

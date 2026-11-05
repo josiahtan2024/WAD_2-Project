@@ -22,7 +22,7 @@ test.describe('resilience: slow servers', () => {
     await signIn(page, student, backend)
     backend.slow('/rest/v1/universities', 800)
     await page.goto('/cost-estimator')
-    await expect(page.getByText('Loading your exchange budget...')).toBeVisible()
+    await expect(page.getByText('Loading exchange budget planner...')).toBeVisible()
     await expect(page.getByTestId('budget-heading')).toBeVisible()
   })
 

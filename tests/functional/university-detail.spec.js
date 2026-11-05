@@ -4,7 +4,7 @@ import { distanceFromSmu, monthlyCostSgd, universityNamed } from './support/seed
 
 const money = (amount, currency) => new Intl.NumberFormat('en-SG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount).replace(/\s/g, ' ')
 const section = (page, heading) => page.locator('section.card').filter({ has: page.getByRole('heading', { name: heading, exact: true }) })
-const row = (box, label) => box.locator('dl > div').filter({ has: box.page().getByText(label, { exact: true }) })
+const row = (box, label) => box.locator('dl > div').filter({ has: box.page().locator('dt').getByText(new RegExp(`^${label}$`, 'i')) })
 
 test.describe('the page for one university', () => {
   test('shows the name, place, logo and a link to the university website', async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('the page for one university', () => {
     await openUniversity(page, 'Kyoto University')
     const location = section(page, 'Location')
     const kyoto = universityNamed('Kyoto University')
-    for (const [label, value] of [['City', 'Kyoto'], ['State / province', 'Kyoto'], ['Country', 'Japan'], ['Region', 'Asia'], ['Timezone', 'UTC+9'], ['Distance from SMU', `${distanceFromSmu(kyoto.lat, kyoto.long)} km`]]) {
+    for (const [label, value] of [['City', 'Kyoto'], ['State / province', 'Kyoto'], ['Country', 'Japan'], ['Region', 'Asia'], ['Timezone', 'UTC+9'], ['Distance from SG', `${distanceFromSmu(kyoto.lat, kyoto.long)} km`]]) {
       await expect(row(location, label)).toContainText(value)
     }
     await expect(location.getByRole('link', { name: 'Open Map' })).toBeVisible()
@@ -64,7 +64,7 @@ test.describe('the page for one university', () => {
     await expect(periods.first()).toHaveAttribute('aria-pressed', 'true')
     await expect(row(exchange, 'Programme')).toContainText('Fall 2026')
     await expect(row(exchange, 'Exchange period')).toContainText('Sep 2026 to Dec 2026')
-    await expect(row(exchange, 'Temperature')).toContainText('2 – 22 °C')
+    await expect(row(exchange, 'Temperature')).toContainText('2 - 22 °C')
 
     await periods.nth(1).click()
     await expect(periods.nth(1)).toHaveAttribute('aria-pressed', 'true')
@@ -73,7 +73,7 @@ test.describe('the page for one university', () => {
     await expect(row(exchange, 'Term')).toContainText('2')
     await expect(row(exchange, 'Academic year')).toContainText('2026/2027')
     await expect(row(exchange, 'Exchange period')).toContainText('Jan 2027 to May 2027')
-    await expect(row(exchange, 'Temperature')).toContainText('-3 – 18 °C')
+    await expect(row(exchange, 'Temperature')).toContainText('-3 - 18 °C')
     await expect(row(exchange, 'Overview')).toContainText('Cold to mild')
   })
 
@@ -96,7 +96,7 @@ test.describe('the page for one university', () => {
     Object.assign(backend.rows('universities').find((u) => u.id === 5), { lat: null, long: null })
     await openUniversity(page, 'Kyoto University')
     await expect(page.getByRole('link', { name: 'Open Map' })).toHaveCount(0)
-    await expect(row(section(page, 'Location'), 'Distance from SMU')).toContainText('Not available')
+    await expect(row(section(page, 'Location'), 'Distance from SG')).toContainText('Not available')
   })
 
   test('Open Map goes to the map with this university selected', async ({ page }) => {
@@ -167,7 +167,7 @@ test.describe('the course mapping list', () => {
 
   test('groups the partner courses under the SMU course area they count towards', async ({ page }) => {
     const table = await open(page)
-    await expect(table.getByTestId('mapping-count')).toHaveText('12 of 12 mapped courses')
+    await expect(table.getByTestId('mapping-count')).toHaveText(/Showing\s*12\s*of 12 mapped courses/)
     await expect(table.getByTestId('mapping-group')).toHaveCount(6)
     const economics = table.getByTestId('mapping-group').filter({ hasText: 'XECO900' })
     await expect(economics).toContainText('School of Economics')
@@ -188,11 +188,11 @@ test.describe('the course mapping list', () => {
   test('search narrows the list by course name, code or SMU course area', async ({ page }) => {
     const table = await open(page)
     await table.getByTestId('mapping-search').fill('derivatives')
-    await expect(table.getByTestId('mapping-count')).toHaveText('1 of 12 mapped courses')
+    await expect(table.getByTestId('mapping-count')).toHaveText(/Showing\s*1\s*of 12 mapped courses/)
     await table.getByTestId('mapping-search').fill('QST MK')
-    await expect(table.getByTestId('mapping-count')).toHaveText('2 of 12 mapped courses')
+    await expect(table.getByTestId('mapping-count')).toHaveText(/Showing\s*2\s*of 12 mapped courses/)
     await table.getByTestId('mapping-search').fill('xism927')
-    await expect(table.getByTestId('mapping-count')).toHaveText('2 of 12 mapped courses')
+    await expect(table.getByTestId('mapping-count')).toHaveText(/Showing\s*2\s*of 12 mapped courses/)
   })
 
   test('says so when nothing matches, and the reset button brings everything back', async ({ page }) => {
@@ -201,17 +201,17 @@ test.describe('the course mapping list', () => {
     await expect(table.getByTestId('mapping-no-results')).toBeVisible()
     await table.getByTestId('mapping-clear-filters').click()
     await expect(table.getByTestId('mapping-search')).toHaveValue('')
-    await expect(table.getByTestId('mapping-count')).toHaveText('12 of 12 mapped courses')
+    await expect(table.getByTestId('mapping-count')).toHaveText(/Showing\s*12\s*of 12 mapped courses/)
   })
 
-  test('the course area filter shows only that area', async ({ page }) => {
+  test('the school filter shows only that school\'s areas', async ({ page }) => {
     const table = await open(page)
-    const options = await texts(table.getByTestId('mapping-area-filter').locator('option'))
-    expect(options[0]).toBe('All Course Areas')
-    expect(options).toHaveLength(7)
-    await table.getByTestId('mapping-area-filter').selectOption({ label: 'XBBM906' })
+    const options = await texts(table.getByTestId('mapping-school-filter').locator('option'))
+    expect(options[0]).toBe('All Schools')
+    expect(options).toHaveLength(5)
+    await table.getByTestId('mapping-school-filter').selectOption({ label: 'School of Economics' })
     await expect(table.getByTestId('mapping-group')).toHaveCount(1)
-    await expect(table.getByTestId('mapping-row')).toHaveCount(2)
+    await expect(table.getByTestId('mapping-row')).toHaveCount(3)
   })
 
   test('says so when the university has no mapped courses', async ({ page }) => {

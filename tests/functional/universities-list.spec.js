@@ -79,7 +79,7 @@ test.describe('the list', () => {
     await page.goto('/universities')
     await expect(page.getByTestId('university-card').first()).toBeVisible()
     await expect(page.getByTestId('exchange-rates-error')).toBeVisible()
-    await expect(card(page, 'Boston University')).toContainText('SGD estimate unavailable')
+    await expect(card(page, 'Boston University')).toContainText('Not available')
   })
 })
 
@@ -279,7 +279,7 @@ test.describe('shortlisting from the list', () => {
     await openUniversities(page)
     const boston = card(page, 'Boston University')
     await boston.getByTestId('shortlist-add-btn').click()
-    await expect(boston.getByTestId('shortlist-remove-btn')).toHaveText('Remove From Shortlist')
+    await expect(boston.getByTestId('shortlist-remove-btn')).toHaveText('Shortlisted')
     expect(backend.rows('shortlists')).toMatchObject([{ user_id: student.id, university_id: 2 }])
     await boston.getByTestId('shortlist-remove-btn').click()
     await expect(boston.getByTestId('shortlist-add-btn')).toBeVisible()

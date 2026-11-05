@@ -58,7 +58,7 @@ test.describe('accessibility: names and labels', () => {
     expect(await unnamed(page)).toEqual([])
     await page.keyboard.press('Escape')
     await page.getByTestId('admin-delete').click()
-    await expect(page.getByRole('alertdialog', { name: 'Delete this university?' })).toBeVisible()
+    await expect(page.getByRole('alertdialog', { name: 'Delete University?' })).toBeVisible()
   })
 })
 

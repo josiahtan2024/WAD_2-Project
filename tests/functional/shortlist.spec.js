@@ -11,7 +11,7 @@ test.describe('your shortlist', () => {
 
   test('is empty to begin with and points to the universities', async ({ page }) => {
     await page.goto('/shortlist')
-    await expect(page.getByTestId('shortlist-empty')).toContainText('Nothing shortlisted yet.')
+    await expect(page.getByTestId('shortlist-empty')).toContainText('Nothing shortlisted yet')
     await page.getByTestId('shortlist-empty').getByRole('link', { name: 'Browse Partner Universities' }).click()
     await expect(page).toHaveURL(/\/universities$/)
   })
@@ -50,7 +50,7 @@ test.describe('your shortlist', () => {
     await expect(page).toHaveURL(/\/universities\/2$/)
     await page.goBack()
     await items(page).getByTestId('shortlist-schedule-link').click()
-    await expect(page).toHaveURL(/\/schedule\/2$/)
+    await expect(page).toHaveURL(/\/schedule\/2(\?period=\d+)?$/)
   })
 
   test('shows a loading message while the shortlist arrives', async ({ page, student, backend }) => {
@@ -113,15 +113,15 @@ test.describe('removing', () => {
 test.describe('a long shortlist', () => {
   test.beforeEach(async ({ page, student, backend }) => {
     await signIn(page, student, backend)
-    backend.shortlist(student, [1, 2, 3, 4, 5, 6, 7, 8]) // eight, so two pages of six
+    backend.shortlist(student, [1, 2, 3, 4, 5, 6, 7, 8]) // eight, so two pages of five
   })
 
-  test('is split into pages of six', async ({ page }) => {
+  test('is split into pages of five', async ({ page }) => {
     await page.goto('/shortlist')
-    await expect(items(page)).toHaveCount(6)
+    await expect(items(page)).toHaveCount(5)
     const pagination = page.getByTestId('shortlist-pagination')
     await pagination.getByRole('button', { name: 'Page 2' }).click()
-    await expect(items(page)).toHaveCount(2)
+    await expect(items(page)).toHaveCount(3)
     await expect(pagination.getByRole('button', { name: 'Next page' })).toBeDisabled()
   })
 
@@ -131,7 +131,8 @@ test.describe('a long shortlist', () => {
     await pagination.getByRole('button', { name: 'Page 2' }).click()
     await items(page).nth(0).getByTestId('shortlist-remove-btn').click()
     await items(page).nth(0).getByTestId('shortlist-remove-btn').click()
-    await expect(items(page)).toHaveCount(6)
+    await items(page).nth(0).getByTestId('shortlist-remove-btn').click()
+    await expect(items(page)).toHaveCount(5)
     await expect(page.getByTestId('shortlist-pagination')).toHaveCount(0)
   })
 
