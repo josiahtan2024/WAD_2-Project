@@ -136,15 +136,21 @@ async function addToCart(mapping) {
     await cart.add(mapping) } catch { /* shown via cart.error */ }
 }
 // Removing a course also deletes its saved schedule timeslots, so ask first when it has any
-async function confirmScheduleLoss(universityModuleId, uniId) {
-  const slots = await cart.scheduledSlotCount(universityModuleId, uniId)
+async function confirmTimeslotLoss(universityModuleId) {
+  const slots = await cart.scheduledSlotCount(universityModuleId)
   if (!slots) return true
-  const what = universityModuleId == null ? 'These courses have' : 'This course has'
-  return window.confirm(`${what} ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing ${universityModuleId == null ? 'them' : 'it'} from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}. Continue?`)
+  return window.confirm(`This course has ${slots} timeslot${slots === 1 ? '' : 's'} in your saved schedule. Removing it from the cart also deletes ${slots === 1 ? 'that timeslot' : 'those timeslots'}. Continue?`)
+}
+// Clearing the cart also deletes the saved schedules it was used for, so ask first when there are any
+async function confirmScheduleLoss(uniId) {
+  const schedules = await cart.savedScheduleCount(uniId)
+  if (!schedules) return true
+  const where = uniId == null ? '' : ` for ${universityName(uniId)}`
+  return window.confirm(`Clearing the cart also deletes your ${schedules === 1 ? 'saved schedule' : `${schedules} saved schedules`}${where}. Continue?`)
 }
 async function removeFromCart(universityModuleId) {
   try {
-    if (!(await confirmScheduleLoss(universityModuleId))) return
+    if (!(await confirmTimeslotLoss(universityModuleId))) return
     await cart.remove(universityModuleId)
   } catch (error) {
     cart.error ??= error.message // a failed timeslot check is not recorded by the store
@@ -154,7 +160,7 @@ async function clearCart() {
   // while filtered to one university, only clear what is shown
   const uniId = cartFiltered.value ? universityId.value : undefined
   try {
-    if (!(await confirmScheduleLoss(undefined, uniId))) return
+    if (!(await confirmScheduleLoss(uniId))) return
     await cart.clear(uniId)
   } catch (error) {
     cart.error ??= error.message
