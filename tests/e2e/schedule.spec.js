@@ -12,6 +12,14 @@ test.describe('schedule', () => {
   })
 
   test('university and period selection reveal the current schedule controls', async ({ page }) => {
+    // Let the shortlist store finish loading before reading the card's toggle state.
+    await page.goto('/shortlist')
+    const shortlistState = page
+      .getByTestId('shortlist-item')
+      .first()
+      .or(page.getByTestId('shortlist-empty'))
+    await expect(shortlistState).toBeVisible()
+
     await page.goto('/universities')
     const firstCard = page.getByTestId('university-card').first()
     await expect(firstCard).toBeVisible()
