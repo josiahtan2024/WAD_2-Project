@@ -50,6 +50,10 @@ const universityOptions = computed(() => {
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 })
+// Grouped like the Course Search dropdown: shortlisted first, then the rest (universities with courses in the cart)
+const isShortlisted = (id) => shortlist.items.some((s) => s.university_id === id)
+const shortlistedOptions = computed(() => universityOptions.value.filter((u) => isShortlisted(u.id)))
+const otherOptions = computed(() => universityOptions.value.filter((u) => !isShortlisted(u.id)))
 
 function handleToggleEdit() {
   editSchedule.value = !editSchedule.value
@@ -309,7 +313,13 @@ onMounted(async () => {
             @change="selectUniversity($event)"
           >
             <option value="">Choose a University</option>
-            <option v-for="u in universityOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+            <optgroup label="My Shortlist">
+              <option v-for="u in shortlistedOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+              <option v-if="!shortlistedOptions.length" disabled>No shortlisted universities yet</option>
+            </optgroup>
+            <optgroup v-if="otherOptions.length" label="Other Universities in My Cart">
+              <option v-for="u in otherOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </optgroup>
           </select>
         </div>
 

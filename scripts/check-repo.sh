@@ -28,9 +28,10 @@ if git grep -nE '\.only\(' -- tests; then
   err "test.only / describe.only found in tests/."
 fi
 
-# 5. Every route/test hook must use data-testid (tests select by testid only)
-if git grep -nE 'getBy(Text|Role|Label|Placeholder)\(|page\.locator\(' -- tests; then
-  err "Tests must select elements by data-testid only (page.getByTestId)."
+# 5. The live end-to-end tests select by data-testid only. (tests/functional runs against a fake
+#    backend and selects the way a person would: by role, label and text.)
+if git grep -nE 'getBy(Text|Role|Label|Placeholder)\(|page\.locator\(' -- tests/e2e; then
+  err "Tests in tests/e2e must select elements by data-testid only (page.getByTestId)."
 fi
 
 # 6. Only one Supabase client

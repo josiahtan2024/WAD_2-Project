@@ -5,12 +5,12 @@ SMUXchange helps SMU students explore partner universities and prepare for an ex
 ## Features
 
 - **Explore universities:** Search by keyword, filter by region, sort by name, country, or estimated cost, and open a university profile.
-- **Learn about the project:** Visit the About Us page from the site footer to learn about the exchange-planning problem SMUXchange addresses, the tools it provides, and how to get started.
+- **Learn about the project:** Visit the About Us page to learn about the exchange-planning problem SMUXchange addresses, the tools it provides, and how to get started.
 - **Review university details:** See university information, estimated costs, and student reviews. Signed-in users can submit a review.
 - **Shortlist options:** Save universities to a personal shortlist for later planning.
 - **Compare universities:** Review shortlisted choices side by side.
 - **Check credit mappings:** Review how courses at a partner university map to SMU courses to help plan your exchange modules.
-- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account. Saved schedules remain available even after courses are cleared from the cart.
+- **Plan a weekly schedule:** View and edit a weekly schedule for a university and save it to your account. 
 - **Estimate exchange costs:** Set the exchange duration and monthly accommodation, food, transport, personal, and other expenses. The planner can use published estimates as a starting point and show local currency and SGD totals when exchange-rate data is available.
 - **Create an account:** Sign up and log in through Supabase Authentication. Shortlists, schedules, and budget planning require a signed-in account.
 - **Manage universities (staff):** Admins can add, edit, hide, and delete universities and their details, and remove reviews and comments. See [Admin accounts](#admin-accounts).
@@ -130,19 +130,47 @@ Do not put a Supabase service-role key in frontend environment variables.
 ## Development commands
 
 ```sh
-pnpm dev             # Start the Vite development server
-pnpm build           # Create a production build in dist/
-pnpm preview         # Preview the production build locally
-pnpm lint            # Run ESLint
-pnpm test            # Run Playwright end-to-end tests
+pnpm dev                 # Start the Vite development server
+pnpm build               # Create a production build in dist/
+pnpm preview             # Preview the production build locally
+pnpm lint                # Run ESLint
+pnpm test:functional     # Run the functional test suite (no account or database needed)
+pnpm test                # Run the live Playwright end-to-end tests
 ```
 
-Playwright tests use a real browser and the development Supabase project. Install the browser once with `pnpm exec playwright install chromium`, then create the student and admin test users above. Test credentials can be set in `.env.test`; admin tests skip when admin credentials are absent.
+The functional suite in `tests/functional` builds the app and drives it in a real browser against a built-in fake Supabase, so it runs anywhere with no keys, no account and no network. See [tests/functional/README.md](tests/functional/README.md) for what it covers and how to add to it.
+
+The live tests in `tests/e2e` use a real browser and the development Supabase project. Install the browser once with `pnpm exec playwright install chromium`, then create the student and admin test users above. Test credentials can be set in `.env.test`; admin tests skip when admin credentials are absent.
 
 ## Deployment
 
 The project can be deployed to Vercel as a Vite app. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project environment. The included `vercel.json` rewrites application routes to `index.html` to support direct navigation and page refreshes.
+Deployment Link: wad-2-project-ten.vercel.app
 
 ## Data notes
 
 University and cost records are initialized from `supabase/seed.sql`. Treat seeded estimates as planning guidance and verify current costs and exchange requirements with the university before making travel or financial decisions. Exchange rates are retrieved from Frankfurter when available.
+
+## Use of AI/LLM
+
+AI/LLM tools were used only for the lower-order tasks the course allows.
+The application's business logic, backend queries and feature
+implementation were written by the team.
+
+**Parts that rely mainly on AI/LLM**
+- The functional test suite in `tests/functional/`: the spec files, the
+  fake Supabase backend used as mock data (`support/backend.js`, `seed.js`),
+  and its README.
+- The GitHub Actions job and npm script that run the functional suite.
+
+**Where AI/LLM assisted**
+- Explaining errors and suggesting debugging hints, for example failing CI
+  runs and test selectors that broke after UI changes.
+- Generating test cases for unit and e2e testing, sample inputs and mock data.
+- Boilerplate and starter code for the test setup.
+
+**Not done with AI/LLM**
+- Core implementation: the Vue components, Pinia stores, Supabase queries
+  and the main app features.
+- Problem solving on the application itself. The team diagnosed and fixed
+  issues the tests found in the app.

@@ -54,6 +54,29 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-key
 
+  # Drives the real built app in a browser against a fake Supabase (tests/functional),
+  # so it needs no secrets, no database and no account.
+  functional:
+    name: Functional tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:functional
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: functional-report
+          path: |
+            playwright-report/
+            test-results/
+
   # Advisory only: reports known vulnerable packages without blocking merges.
   audit:
     name: Dependency audit

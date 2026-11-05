@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:functional": "playwright test --config=playwright.functional.config.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
