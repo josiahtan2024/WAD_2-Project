@@ -275,7 +275,10 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="pageLoading" class="text-muted" data-testid="course-search-loading">Loading course areas...</div>
+    <div v-if="pageLoading" class="text-muted text-center py-5" data-testid="course-search-loading">
+      <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+      Loading course information...
+    </div>
 
     <div v-else class="row g-4">
       <!-- Course areas -->
@@ -359,7 +362,7 @@ onMounted(async () => {
                   <li
                     v-for="m in group.rows"
                     :key="m.id"
-                    class="list-group-item d-flex justify-content-between align-items-center bg-white border rounded-3"
+                    class="list-group-item d-flex justify-content-between align-items-center bg-white border rounded-3 gap-1"
                     data-testid="course-module-item"
                   >
                     <div class="min-w-0">

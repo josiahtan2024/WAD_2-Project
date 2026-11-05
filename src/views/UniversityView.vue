@@ -508,7 +508,7 @@ watch(
                   <div>
                     <dt>Exchange Period</dt>
                     <dd>
-                      {{ formatExchangeDate(selectedPeriod.start_date) }} to
+                      {{ formatExchangeDate(selectedPeriod.start_date) }} -
                       {{ formatExchangeDate(selectedPeriod.end_date) }}
                     </dd>
                   </div>

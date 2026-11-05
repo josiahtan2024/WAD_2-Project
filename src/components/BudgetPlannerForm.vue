@@ -62,7 +62,7 @@ onMounted(() => {
           :key="university.id"
           :value="String(university.id)"
         >
-          {{ university.name }} — {{ university.country }}
+          {{ university.name }}
         </option>
       </select>
 
@@ -70,7 +70,9 @@ onMounted(() => {
         <i class="bi bi-geo-alt text-primary me-1"></i>
         <span v-if="selectedUniversity.city">{{ selectedUniversity.city }}, </span>
         {{ selectedUniversity.country }}
-        <span v-if="selectedUniversity.region">· {{ selectedUniversity.region }}</span>
+        <span v-if="selectedUniversity.region">
+        <span class="mx-1">·</span>
+        {{ selectedUniversity.region }}</span>
       </div>
     </div>
 
@@ -88,8 +90,7 @@ onMounted(() => {
         <option value="">Select Period</option>
         <option v-for="period in exchangePeriods" :key="period.id" :value="String(period.id)">
           {{ period.period_name }}
-          <template v-if="period.term"> — {{ period.term }}</template>
-          <template v-if="period.academic_year"> ({{ period.academic_year }})</template>
+          <template v-if="period.academic_year">- ({{ period.academic_year }})</template>
         </option>
       </select>
 
@@ -97,7 +98,7 @@ onMounted(() => {
         <div class="mb-2 d-flex justify-content-between align-items-center">
           <span class="small text-muted">Dates</span>
           <span class="fw-semibold small text-navy">
-            {{ formatDate(selectedPeriod.start_date) }} – {{ formatDate(selectedPeriod.end_date) }}
+            {{ formatDate(selectedPeriod.start_date) }} - {{ formatDate(selectedPeriod.end_date) }}
           </span>
         </div>
 
