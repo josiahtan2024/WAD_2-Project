@@ -75,7 +75,7 @@ const estimatedMonthlyCost = computed(() => {
             loading="lazy"
           />
         </div>
-        <div v-else class="university-logo-box d-flex align-items-center justify-content-center rounded-3 border bg-light">
+        <div v-else class="university-logo-box d-flex align-items-center justify-content-center rounded-3 border">
           <i class="bi bi-mortarboard fs-4 text-muted"></i>
         </div>
 

@@ -6,7 +6,6 @@ import { supabase, STORAGE_URL } from '@/lib/supabase'
 import axios from 'axios'
 import CompareRow from '@/components/CompareRow.vue'
 import CompareRowHeader from '@/components/CompareRowHeader.vue'
-import Notice from '@/components/AppNotice.vue'
 
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -82,11 +81,11 @@ async function fetchUniversities() {
                 logo: logoURL,
                 website: uni.website_url,
                 location: {
-                    city: uni.city,
-                    state: uni.state,
-                    country: uni.country,
-                    region: uni.region,
-                    timezone: uni.timezone,
+                    city: uni.city || '-',
+                    state: uni.state || '-',
+                    country: uni.country || '-',
+                    region: uni.region || '-', 
+                    timezone: uni.timezone || '-',
                     coordinates: {
                         lat: uni.lat,
                         lon: uni.long
@@ -111,11 +110,12 @@ async function fetchUniversities() {
                 }
             }
         }).sort((a, b) => a.name.localeCompare(b.name))
-        if (!auth.adminActive) {
-            uniSlots.value = uniSlots.value.map((id) =>
-                allUniversities.value.some((university) => university.id === id && university.published !== false) ? id : null
-            )
-        }
+        const validIds = new Set(universities.value.map(u => u.id))
+        const nonNullSlots = uniSlots.value.filter(id => id !== null && validIds.has(id))
+        
+        uniSlots.value = [...nonNullSlots, ...Array(3 - nonNullSlots.length).fill(null)]
+
+        await nextTick()
     } catch (error) {
         console.error('Error fetching universities from Supabase:', error.message)
     } finally {
@@ -362,15 +362,20 @@ async function createMap(idx) {
 
 // Location Helper
 function formatLocation(location) {
-    if (!location) return ''
-    const { city, state, country } = location
-    if (city === state && state === country) return country
-    if (city === state || state === country) return `${city}, ${country}`
-    return `${city}, ${state}, ${country}`
+    if (!location) return '-'
+
+    const isBlank = (val) => !val || val === '-' || val.trim() === '-' || val.trim() === ''
+    const city = isBlank(location.city) ? null : location.city.trim()
+    const state = isBlank(location.state) ? null : location.state.trim()
+    const country = isBlank(location.country) ? null : location.country.trim()
+    const parts = [city, state, country].filter(Boolean)
+
+    if (parts.length === 0) return '-'
+    return [...new Set(parts)].join(', ')
 }
 
 function distanceFromSMU(coordinates) {
-    if (!coordinates?.lat || !coordinates?.lon) return '-'
+    if (!coordinates?.lat || !coordinates?.lon) return null
     const lat1 = 1.29627
     const lon1 = 103.85185
     const lat2 = coordinates.lat
@@ -627,7 +632,7 @@ watch(
                 <CompareRow :unis-to-compare="unisToCompare">
                     <template #default="{ uni }">
                         <div class="text-break">
-                            {{ distanceFromSMU(uni.location.coordinates) }} km
+                            {{ distanceFromSMU(uni.location.coordinates) ? `${distanceFromSMU(uni.location.coordinates)} km` : '-' }} 
                         </div>
                     </template>
                 </CompareRow>  
@@ -778,8 +783,7 @@ watch(
                     <template #default="{ uni }">
                         <div class="mt-3 pt-3 border-top">
                             <a :href="uni.academic.modulesURL" class="link-primary text-decoration-none custom-hover-link" 
-                                target="_blank" rel="noopener noreferrer">View Course
-                                <span class="d-inline-block">Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i></span>
+                                target="_blank" rel="noopener noreferrer">View Course Catalogue<i class="bi bi-chevron-right ms-1" style="font-size: 12px;"></i>
                             </a>
                         </div>
                     </template>
