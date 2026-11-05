@@ -8,6 +8,8 @@ const props = defineProps({
   changesMade: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   discarding: { type: Boolean, default: false },
+  uniId:{type:String,default:''},
+  disableSave: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['selectModule', 'toggleEdit', 'save', 'discard'])
@@ -44,6 +46,9 @@ function handleCancel() {
 }
 
 function handleSave() {
+  if (schedule.isAdded) {
+    schedule.isAdded = false;
+  }
   emit('selectModule', '')
   emit('save')
 }
@@ -77,7 +82,7 @@ function handleSave() {
           <button
             type="button"
             class="btn btn-primary btn-sm rounded-pill px-3 py-2 flex-shrink-0"
-            :disabled="saving || discarding"
+            :disabled="!schedule.isAdded"
             @click="handleSave">Save
           </button>
         </template>
@@ -94,6 +99,9 @@ function handleSave() {
       <div v-if="!schedule.moduleData.length" class="text-muted small py-4 text-center border border-dashed rounded-3 bg-surface h-100 d-flex flex-column align-items-center justify-content-center">
         <i class="bi bi-book fs-3 text-secondary d-block mb-1"></i>
         <span>No modules added to reference yet.</span>
+        <RouterLink :to="`/courses?university=${uniId}`">
+          Browse courses here.
+        </RouterLink>
       </div>
 
       <!-- Module List -->

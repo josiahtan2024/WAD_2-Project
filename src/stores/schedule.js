@@ -33,6 +33,7 @@ export const useScheduleStore = defineStore('schedule', {
     exchangePeriodId: null,
     universityId: null,
     savedPeriodIds: [],
+    isAdded: false,
   }), // rows from `schedule_blocks`
   actions: {
     /** @param {number|string} universityId Load the user's blocks for this university. */
