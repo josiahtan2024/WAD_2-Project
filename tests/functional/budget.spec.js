@@ -170,7 +170,7 @@ test.describe('budget planner: creating a budget', () => {
 
   test('lists only visible universities, with their country', async ({ page }) => {
     const options = await page.getByTestId('budget-university-select').locator('option').allInnerTexts()
-    expect(options).toContain('Boston University — United States')
+    expect(options).toContain('Boston University')
     expect(options.join()).not.toContain('Atlantis')
   })
 

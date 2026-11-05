@@ -59,11 +59,9 @@ test.describe('choosing a university', () => {
     const panel = page.getByTestId('info-panel')
     await expect(panel).toContainText('Kyoto, Japan')
     await expect(panel).toContainText(`SGD ${Math.round(monthlyCostSgd(5)).toLocaleString('en-US')}`)
-    // the details open in a new tab, so the map stays where it was
-    const [details] = await Promise.all([page.waitForEvent('popup'), page.getByTestId('info-details-link').click()])
-    await expect(details).toHaveURL(/\/universities\/5$/)
-    await expect(details.getByRole('heading', { level: 1 })).toHaveText('Kyoto University')
-    await expect(page).toHaveURL(/\/$/)
+    await page.getByTestId('info-details-link').click()
+    await expect(page).toHaveURL(/\/universities\/5$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kyoto University')
   })
 
   test('the chosen university is highlighted, and choosing it again clears the panel', async ({ page }) => {

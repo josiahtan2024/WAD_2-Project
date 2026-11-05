@@ -63,7 +63,7 @@ test.describe('the page for one university', () => {
     expect(await texts(periods)).toEqual(['Sep 2026', 'Jan 2027'])
     await expect(periods.first()).toHaveAttribute('aria-pressed', 'true')
     await expect(row(exchange, 'Programme')).toContainText('Fall 2026')
-    await expect(row(exchange, 'Exchange period')).toContainText('Sep 2026 to Dec 2026')
+    await expect(row(exchange, 'Exchange period')).toContainText('Sep 2026 - Dec 2026')
     await expect(row(exchange, 'Temperature')).toContainText('2 - 22 °C')
 
     await periods.nth(1).click()
@@ -72,7 +72,7 @@ test.describe('the page for one university', () => {
     await expect(row(exchange, 'Programme')).toContainText('Spring 2027')
     await expect(row(exchange, 'Term')).toContainText('2')
     await expect(row(exchange, 'Academic year')).toContainText('2026/2027')
-    await expect(row(exchange, 'Exchange period')).toContainText('Jan 2027 to May 2027')
+    await expect(row(exchange, 'Exchange period')).toContainText('Jan 2027 - May 2027')
     await expect(row(exchange, 'Temperature')).toContainText('-3 - 18 °C')
     await expect(row(exchange, 'Overview')).toContainText('Cold to mild')
   })
